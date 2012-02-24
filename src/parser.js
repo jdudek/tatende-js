@@ -327,6 +327,16 @@ var stringLiteral = function () {
   );
 }();
 
+var booleanLiteral = function () {
+  var trueLiteral = decorate(keyword("true"), function () {
+    return { booleanLiteral: true };
+  });
+  var falseLiteral = decorate(keyword("false"), function () {
+    return { booleanLiteral: false };
+  });
+  return choice([trueLiteral, falseLiteral]);
+}();
+
 // Many parsers need to be defined recursively. For example, an object literal
 // will contain expression, so we need to use expr parser. However, expr cannot
 // be defined yet, as it will need objectLiteral parser.
@@ -402,6 +412,7 @@ var expr = function (input) {
   var simple = choice([
     numberLiteral,
     stringLiteral,
+    booleanLiteral,
     objectLiteral,
     arrayLiteral,
     variable,
@@ -522,6 +533,56 @@ var tryStatement = function (input) {
   )(input);
 };
 
+var whileStatement = function (input) {
+  var p = sequence(
+    [keyword("while"), parens(expr), braces(many(statement))],
+    function (k_, condition, body) {
+      return { whileStatement: [condition, body] };
+    }
+  );
+
+  return p(input);
+}
+
+var doWhileStatement = function (input) {
+  var p = sequence(
+    [keyword("do"), braces(many(statement)), keyword("while"), parens(expr)],
+    function (k_, body, k2_, condition) {
+      return { doWhileStatement: [condition, body] };
+    }
+  );
+
+  return p(input);
+}
+
+// for loop has the following form: for (initial; condition; finalize) { body }
+// When condition is omitted, it's assumed to be "true" expression.
+var forStatement = function (input) {
+  var p = sequence(
+    [
+      keyword("for"),
+      parens(sequence(
+        [
+          choice([varStatement, exprStatement, emptyStatement]),
+          semicolon,
+          choice([expr, ret({ booleanLiteral: true })]),
+          semicolon,
+          choice([exprStatement, emptyStatement])
+        ],
+        function (initial, s1_, condition, s2_, finalize) {
+          return { initial: initial, condition: condition, finalize: finalize };
+        }
+      )),
+      braces(many(statement))
+    ],
+    function (k_, inParens, body) {
+      return { forStatement: [inParens.initial, inParens.condition, inParens.finalize, body] };
+    }
+  );
+
+  return p(input);
+}
+
 throwStatement = sequence(
   [keyword("throw"), expr],
   function (t_, expr) {
@@ -533,6 +594,8 @@ exprStatement = decorate(expr, function (e) {
   return { exprStatement: e };
 });
 
+var emptyStatement = ret(null);
+
 var semicolon = lexeme(character(";"));
 
 var statement = choice([
@@ -541,14 +604,17 @@ var statement = choice([
     skipTrailing(semicolon, returnStatement),
     skipTrailing(semicolon, throwStatement),
     skipTrailing(semicolon, exprStatement),
+    skipTrailing(semicolon, doWhileStatement),
 
     // if and try statements, unlike others, are not followed by a semicolon.
     ifStatement,
     tryStatement,
+    whileStatement,
+    forStatement,
 
     // But we want to allow programs with unnecessary semicolons, so we add
     // "empty" statement that parses to null.
-    decorate(lexeme(semicolon), function () { return null; })
+    skipTrailing(semicolon, emptyStatement)
 ]);
 
 // A program consists of many statements.

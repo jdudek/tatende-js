@@ -34,6 +34,32 @@ testParser("try { return 5; } catch (e) { return e; }", [
 testParser("throw x;", [{ throwStatement: { variable: "x" } }]);
 testParser("var x;;", [{ varStatement: [ "x" ] }, null]);
 testParser("x;", [{ exprStatement: { variable: "x" } }]);
+testParser("while (i < 5) { f(x); }", [
+  { whileStatement: [
+    { binaryOp: ["<", { variable: "i" }, { numberLiteral: 5 }] },
+    [{ exprStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
+  ]}
+]);
+testParser("do { f(x); } while (i < 5);", [
+  { doWhileStatement: [
+    { binaryOp: ["<", { variable: "i" }, { numberLiteral: 5 }] },
+    [{ exprStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
+  ]}
+]);
+testParser("for (var i = 0; i < 5; i) { f(x); }", [
+  { forStatement: [
+    { varStatement: ["i", { numberLiteral: 0 }] },
+    { binaryOp: ["<", { variable: "i" }, { numberLiteral: 5 }] },
+    { exprStatement: { variable: "i" } },
+    [{ exprStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
+  ]}
+]);
+testParser("for (;;) { f(x); }", [
+  { forStatement: [
+    null, { booleanLiteral: true }, null,
+    [{ exprStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
+  ]}
+]);
 
 // tests for lexer
 testParser("var x ; ", [{ varStatement: [ "x" ] }]);
@@ -52,6 +78,8 @@ testParser("(5)", { numberLiteral: 5 }, parser.expr);
 testParser("x", { variable: "x" }, parser.expr);
 testParser("'abc'", { stringLiteral: "abc" }, parser.expr);
 testParser('"abc"', { stringLiteral: "abc" }, parser.expr);
+testParser("true", { booleanLiteral: true }, parser.expr);
+testParser("false", { booleanLiteral: false }, parser.expr);
 testParser("{}", { objectLiteral: [] }, parser.expr);
 testParser("{x: 2}", { objectLiteral: [["x", { numberLiteral: 2 }]] }, parser.expr);
 testParser("{x: 2, y: 3}", { objectLiteral: [
