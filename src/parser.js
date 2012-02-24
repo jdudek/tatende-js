@@ -204,6 +204,16 @@ var anyChar = function (input) {
   }
 };
 
+var otherThanChar = function (aChar) {
+  return function (input) {
+    if (input.length > 0 && input.charAt(0) !== aChar) {
+      return [[input.charAt(0), input.slice(1)]];
+    } else {
+      return [];
+    }
+  };
+};
+
 // For given string, returns a parser that will accept and return that string.
 var string = function (str) {
   var parsers = str.split("").map(character);
@@ -233,7 +243,7 @@ var delimitedComment = sequence(
 );
 
 var lineComment = sequence(
-  [string("//"), many(anyChar), character("\n")],
+  [string("//"), many(otherThanChar("\n")), character("\n")],
   function () { return "comment" }
 );
 
