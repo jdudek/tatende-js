@@ -417,6 +417,19 @@ var refinement = function (input) {
   return choice([dotStyle, squareStyle])(input);
 };
 
+var preDecrement = decorate(operator("--"), function () {
+  return function (e) { return { preDecrement: e }; }
+});
+var preIncrement = decorate(operator("++"), function () {
+  return function (e) { return { preIncrement: e }; }
+});
+var postDecrement = decorate(operator("--"), function () {
+  return function (e) { return { postDecrement: e }; }
+});
+var postIncrement = decorate(operator("++"), function () {
+  return function (e) { return { postIncrement: e }; }
+});
+
 // This is the most complex parser.
 var expr = function (input) {
   var simple = choice([
@@ -459,13 +472,16 @@ var expr = function (input) {
   }
 
   // Suffix operators have highest priority. They can be denoted as () and [].
-  simple = suffix(simple, choice([invocation, refinement]));
+  simple = suffix(simple, choice([
+    invocation, refinement, postDecrement, postIncrement
+  ]));
 
   // Prefix operator have precedence over all binary operators.
-  simple = prefix(simple, choice(
-    ["+", "-", "!"].map(unaryOp).concat(
-      ["new", "delete", "typeof"].map(unaryKeyword))
-  ));
+  simple = prefix(simple, choice([
+    unaryOp("+"), unaryOp("-"), unaryOp("!"),
+    unaryKeyword("new"), unaryKeyword("delete"), unaryKeyword("typeof"),
+    preDecrement, preIncrement
+  ]));
 
   // Below we define binary operators in their order of precedence.
   // All of them are left-associative.

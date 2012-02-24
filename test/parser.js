@@ -119,6 +119,10 @@ testParser("-2 + 3 == 1", { binaryOp: [
     { binaryOp: ["+", { unaryOp: ["-", { numberLiteral: 2 }] }, { numberLiteral: 3 }] },
     { numberLiteral: 1 },
   ] }, parser.expr);
+testParser("--x", { preDecrement: { variable: "x" } }, parser.expr);
+testParser("++x", { preIncrement: { variable: "x" } }, parser.expr);
+testParser("x--", { postDecrement: { variable: "x" } }, parser.expr);
+testParser("x++", { postIncrement: { variable: "x" } }, parser.expr);
 testParser("x()", { invocation: [ { variable: "x" }, [] ] }, parser.expr);
 testParser("x.y", { refinement: [ { variable: "x" }, { stringLiteral: "y" } ] }, parser.expr);
 testParser("x['y']", { refinement: [ { variable: "x" }, { stringLiteral: "y" } ] }, parser.expr);
