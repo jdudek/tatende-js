@@ -57,8 +57,8 @@ var decorate = function (parser, decorator) {
   return sequence([parser], decorator);
 }
 
-// choice() will try running each of given parsers. It'll return combined
-// results from all of them (as list of alternatives).
+// choice() will try running each of given parsers. It'll concatenate results
+// from all of them. This way we can specify alternatives in grammar.
 var choice = function (parsers) {
   return function (input) {
     return parsers.reduce(function (results, parser) {
@@ -99,6 +99,75 @@ var sepBy = function (separator, parser) {
   return choice([ sepBy1(separator, parser), ret([]) ]);
 };
 
+// Now we'll define combinators needed to create expressions parser.
+
+// chainl1() returns parser that accepts many (at least one) occurences of
+// given parser, separated by op, creating parse tree for left-associative
+// operators. For example, chainl1(number, plus) will parse 1+2+3 as (1+2)+3,
+// given appropriate plus and number parsers.
+var chainl1 = function(parser, op) {
+  // rest(x) tries to parse remaining expression, which starts with operator
+  // op. If found op, it parses next argument (y). Op is a special parser,
+  // which returns a two-argument function. We apply this function to x and y.
+  // The result is parsed expression: x op y.
+  // Then we apply rest() again with this result, trying to find next part of
+  // the expression. (e.g. x op y op z).
+  // If next term is not found, we just return x.
+  var rest = function (x) {
+    return choice([
+      bind(op, function (f) {
+        return bind(parser, function (y) {
+          return rest(f(x, y));
+        })
+      }),
+      ret(x)
+    ]);
+  }
+
+  // Parse first part of the expression and try to parse rest.
+  return bind(parser, rest);
+};
+
+// prefix() allows input accepted by parser to be preceded by input accepted
+// by op, multiple times.
+// Similar to chainl1, the result from op should be a function (unary).
+// For example, prefix(bool, bang) will parse !true and !!true.
+var prefix = function (parser, op) {
+  return choice([sequence([op, parser], function (f, x) {
+    return f(x);
+  }), parser]);
+}
+
+// suffix() allows input accepted by parser to be followed by input accepted
+// by op, multiple times.
+var suffix = function (parser, op) {
+  var rest = function (x) {
+    return choice([
+      bind(op, function (f) {
+        return rest(f(x));
+      }),
+      ret(x)
+    ]);
+  }
+
+  return bind(parser, rest);
+}
+
+// These combinators create new parser that skips leading or trailing input
+// accepted by toSkip and returns result from parser.
+
+var skipLeading = function (toSkip, parser) {
+  return sequence([toSkip, parser], function (skipped_, parsed) {
+    return parsed;
+  })
+};
+
+var skipTrailing = function (toSkip, parser) {
+  return sequence([parser, toSkip], function (parsed, skipped_) {
+    return parsed;
+  })
+};
+
 // debug() is a combinator that wraps a parser and prints given input every
 // time wrapped parser is called.
 var debug = function(parser) {
@@ -126,6 +195,15 @@ var character = function (expected) {
   };
 };
 
+// This parser accepts any char and returns it.
+var anyChar = function (input) {
+  if (input.length > 0) {
+    return [[input.charAt(0), input.slice(1)]];
+  } else {
+    return [];
+  }
+};
+
 // For given string, returns a parser that will accept and return that string.
 var string = function (str) {
   var parsers = str.split("").map(character);
@@ -145,21 +223,31 @@ var digit = choice(
 
 var semicolon = character(";");
 
-var whiteSpace = many(character(" "));
+var whiteSpace = choice([character(" "), character("\t"), character("\n")]);
 
-// This is an identity function, which skips all arguments except first one.
-// We'll use it when defining parsers with sequence() when only first result
-// is needed.
-var returnFirst = function (x) { return x; };
+// And parsers for comments.
+
+var delimitedComment = sequence(
+  [string("/*"), many(anyChar), string("*/")],
+  function () { return "comment" }
+);
+
+var lineComment = sequence(
+  [string("//"), many(anyChar), character("\n")],
+  function () { return "comment" }
+);
+
+var whiteSpaceOrComments = many(choice(
+  [whiteSpace, delimitedComment, lineComment]
+));
 
 // lexeme() creates a parser that will accept the same input as given parser,
 // but will also skip any trailing whitespace and comments.
 var lexeme = function (parser) {
-  // TODO skip comments
-  return sequence([parser, whiteSpace], returnFirst);
+  return skipTrailing(whiteSpaceOrComments, parser);
 };
 
-// From now on, every parser will a be lexeme parser or use lexeme parser at
+// From now on, every parser will be a lexeme parser or use lexeme parser at
 // its end. In other words, every parser defined below will accept and skip
 // trailing whitespace and comments.
 
@@ -251,17 +339,21 @@ var objectLiteral = function (input) {
     function (id, s_, expr) { return [id, expr]; }
   );
 
-  return decorate(
+  var p = decorate(
     braces(sepBy(symbol(","), pair)),
     function (pairs) { return { objectLiteral: pairs }; }
-  )(input);
+  );
+
+  return p(input);
 };
 
 var arrayLiteral = function (input) {
-  return decorate(
+  var p = decorate(
     squares(sepBy(symbol(","), expr)),
     function (exprs) { return { arrayLiteral: exprs }; }
-  )(input);
+  )
+
+  return p(input);
 };
 
 var variable = decorate(identifier, function (i) {
@@ -272,14 +364,42 @@ var func = function (input) {
   var args = parens(sepBy(symbol(","), identifier));
   var body = braces(many(statement));
 
-  return sequence(
+  var p = sequence(
     [keyword("function"), args, body],
     function (k_, args, statements) { return { func: [args, statements] }; }
-  )(input);
+  );
+
+  return p(input);
 };
 
+var invocation = function (input) {
+  var p = decorate(parens(sepBy(symbol(","), expr)), function (args) {
+    return function (e) {
+      return { invocation: [e, args] };
+    };
+  });
+
+  return p(input);
+};
+
+var refinement = function (input) {
+  var dotStyle = sequence([operator("."), identifier], function (d_, key) {
+    return function (e) {
+      return { refinement: [e, { stringLiteral: key }] };
+    };
+  });
+  var squareStyle = decorate(squares(expr), function (keyExpr) {
+    return function (e) {
+      return { refinement: [e, keyExpr] };
+    }
+  });
+
+  return choice([dotStyle, squareStyle])(input);
+};
+
+// This is the most complex parser.
 var expr = function (input) {
-  return choice([
+  var simple = choice([
     numberLiteral,
     stringLiteral,
     objectLiteral,
@@ -287,7 +407,57 @@ var expr = function (input) {
     variable,
     func,
     parens(expr)
-  ])(input);
+  ]);
+
+  // This is special use of decorate(): instead of returning AST node, we
+  // return a function. chainl1 expects such functions and will apply them
+  // to parsed arguments.
+  // In final result there won't by any functions, only {binaryOp} nodes.
+  var binaryOp = function (op) {
+    return decorate(operator(op), function (op) {
+      return function (x, y) {
+        return { binaryOp: [op, x, y] };
+      };
+    });
+  };
+
+  // Similar to binaryOp, but creates unary functions.
+  var unaryOp = function (op) {
+    return decorate(operator(op), function (op) {
+      return function (x) {
+        return { unaryOp: [op, x] };
+      };
+    });
+  }
+  var unaryKeyword = function (op) {
+    return decorate(keyword(op), function (op) {
+      return function (x) {
+        return { unaryOp: [op, x] };
+      };
+    });
+  }
+
+  // Suffix operators have highest priority. They can be denoted as () and [].
+  simple = suffix(simple, choice([invocation, refinement]));
+
+  // Prefix operator have precedence over all binary operators.
+  simple = prefix(simple, choice(
+    ["+", "-", "!"].map(unaryOp).concat(
+      ["new", "delete", "typeof"].map(unaryKeyword))
+  ));
+
+  // Below we define binary operators in their order of precedence.
+  // All of them are left-associative.
+  var complex = [
+    choice(["*", "/", "%"].map(binaryOp)),
+    choice(["+", "-"].map(binaryOp)),
+    choice([">=", "<=", ">", "<"].map(binaryOp)),
+    choice(["==", "!=", "===", "!=="].map(binaryOp)),
+    binaryOp("&&"),
+    binaryOp("||"),
+  ].reduce(chainl1, simple);
+
+  return complex(input);
 };
 
 var varStatementWithoutAssignment = sequence(
@@ -304,7 +474,8 @@ var varStatementWithAssignment = sequence(
   }
 );
 
-var varStatement = choice([varStatementWithAssignment, varStatementWithoutAssignment]);
+var varStatement = choice([
+  varStatementWithAssignment, varStatementWithoutAssignment]);
 
 var assignStatement = sequence(
   [expr, operator("="), expr],
@@ -362,12 +533,14 @@ exprStatement = decorate(expr, function (e) {
   return { exprStatement: e };
 });
 
+var semicolon = lexeme(character(";"));
+
 var statement = choice([
-    sequence([varStatement,    lexeme(semicolon)], returnFirst),
-    sequence([assignStatement, lexeme(semicolon)], returnFirst),
-    sequence([returnStatement, lexeme(semicolon)], returnFirst),
-    sequence([throwStatement,  lexeme(semicolon)], returnFirst),
-    sequence([exprStatement,   lexeme(semicolon)], returnFirst),
+    skipTrailing(semicolon, varStatement),
+    skipTrailing(semicolon, assignStatement),
+    skipTrailing(semicolon, returnStatement),
+    skipTrailing(semicolon, throwStatement),
+    skipTrailing(semicolon, exprStatement),
 
     // if and try statements, unlike others, are not followed by a semicolon.
     ifStatement,
@@ -380,6 +553,10 @@ var statement = choice([
 
 // A program consists of many statements.
 var program = many1(statement);
+
+// We also skip any comments or whitespace at the beginning, because our lexeme
+// parsers take care only of trailing whitespace.
+program = skipLeading(whiteSpaceOrComments, program);
 
 // The runner for parsers. By default uses "program" parser.
 // It will apply parser to the input, reject any incomplete parses (i.e. those

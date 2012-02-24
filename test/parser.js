@@ -35,6 +35,17 @@ testParser("throw x;", [{ throwStatement: { variable: "x" } }]);
 testParser("var x;;", [{ varStatement: [ "x" ] }, null]);
 testParser("x;", [{ exprStatement: { variable: "x" } }]);
 
+// tests for lexer
+testParser("var x ; ", [{ varStatement: [ "x" ] }]);
+testParser(" var x ; ", [{ varStatement: [ "x" ] }]);
+testParser("var   x   ;  ", [{ varStatement: [ "x" ] }]);
+testParser("var\tx;", [{ varStatement: [ "x" ] }]);
+testParser("var\nx\n;\n", [{ varStatement: [ "x" ] }]);
+testParser("var /*c*/ x;", [{ varStatement: [ "x" ] }]);
+testParser("var /*c*/x; /*c*/", [{ varStatement: [ "x" ] }]);
+testParser("//c\n var x;", [{ varStatement: [ "x" ] }]);
+testParser("//c\nvar x; /*c*/", [{ varStatement: [ "x" ] }]);
+
 // tests for expression parser
 testParser("5", { numberLiteral: 5 }, parser.expr);
 testParser("(5)", { numberLiteral: 5 }, parser.expr);
@@ -53,3 +64,54 @@ testParser("function (x, y) { return x; }", { func: [
     ["x", "y"],
     [{ returnStatement: { variable: "x" } }]
   ] }, parser.expr);
+testParser("2 + 3", { binaryOp: ["+", { numberLiteral: 2 }, { numberLiteral: 3 }] }, parser.expr);
+testParser("2 * 3", { binaryOp: ["*", { numberLiteral: 2 }, { numberLiteral: 3 }] }, parser.expr);
+testParser("2 * 3 + 5", { binaryOp: [
+  "+",
+    { binaryOp: ["*", { numberLiteral: 2 }, { numberLiteral: 3 }] },
+    { numberLiteral: 5 }
+  ] }, parser.expr);
+testParser("2 + 3 * 5", { binaryOp: [
+  "+",
+    { numberLiteral: 2 },
+    { binaryOp: ["*", { numberLiteral: 3 }, { numberLiteral: 5 }] }
+  ] }, parser.expr);
+testParser("2 + 3 + 4", { binaryOp: [
+  "+",
+    { binaryOp: ["+", { numberLiteral: 2 }, { numberLiteral: 3 }] },
+    { numberLiteral: 4 },
+  ] }, parser.expr);
+testParser("2 + 3 == 7", { binaryOp: [
+  "==",
+    { binaryOp: ["+", { numberLiteral: 2 }, { numberLiteral: 3 }] },
+    { numberLiteral: 7 },
+  ] }, parser.expr);
+testParser("-2 + 3 == 1", { binaryOp: [
+  "==",
+    { binaryOp: ["+", { unaryOp: ["-", { numberLiteral: 2 }] }, { numberLiteral: 3 }] },
+    { numberLiteral: 1 },
+  ] }, parser.expr);
+testParser("x()", { invocation: [ { variable: "x" }, [] ] }, parser.expr);
+testParser("x.y", { refinement: [ { variable: "x" }, { stringLiteral: "y" } ] }, parser.expr);
+testParser("x['y']", { refinement: [ { variable: "x" }, { stringLiteral: "y" } ] }, parser.expr);
+testParser("function (a, b) { return 5; }(2, 3)['foo'](4, 5)[bar].baz", {
+  refinement: [
+    { refinement: [
+      { invocation: [
+        { refinement: [
+          { invocation: [
+            { func: [
+              ["a", "b"],
+              [{ returnStatement: { numberLiteral: 5 } }]
+            ] },
+            [{ numberLiteral: 2 }, { numberLiteral: 3 }]
+          ] },
+          { stringLiteral: "foo" }
+        ] },
+        [{ numberLiteral: 4 }, { numberLiteral: 5 }]
+      ] },
+      { variable: "bar" }
+    ] },
+    { stringLiteral: "baz" } ]
+}, parser.expr);
+testParser("new X()", { unaryOp: ["new", { invocation: [ { variable: "X" }, [] ] }] }, parser.expr);
