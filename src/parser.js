@@ -188,7 +188,7 @@ var skipTrailing = function (toSkip, parser) {
 };
 
 // This combinator accepts only if suffix parser fails.
-var notFolloweBy = function (suffix, parser) {
+var notFollowedBy = function (suffix, parser) {
   return bind(parser, function (result) {
     return function (input) {
       var hasSuffix = suffix(input).length > 0;
@@ -323,11 +323,11 @@ var integer = decorate(
 integer = lexeme(integer);
 
 var keyword = function (s) {
-  return lexeme(notFolloweBy(letter, string(s)));
+  return lexeme(notFollowedBy(letter, string(s)));
 };
 
 var operator = function (s) {
-  return lexeme(notFolloweBy(anyCharOf("-+=<>!|&".split("")), string(s)));
+  return lexeme(notFollowedBy(anyCharOf("-+=<>!|&".split("")), string(s)));
 };
 
 var symbol = function (s) {
@@ -706,7 +706,7 @@ var program = many1(statement);
 program = skipLeading(whiteSpaceOrComments, program);
 
 // Only match complete parses.
-program = notFolloweBy(anyChar, program);
+program = notFollowedBy(anyChar, program);
 
 // The runner for parsers. By default uses "program" parser.
 // It will apply parser to the input, reject any incomplete parses (i.e. those
