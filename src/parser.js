@@ -9,7 +9,7 @@
 // combinators like sequence() or choice(), finally leading to program() parser
 // which returns abstract syntax tree (AST) for whole program.
 
-// TODO describe or remove
+// TODO describe
 var ret = function (v) {
   return function (input) {
     return [[v, input]];
@@ -45,26 +45,45 @@ var sequence = function (parsers, decorator) {
     } else {
       return ret(decorator.apply(this, results));
     }
-  }
+  };
   return function (input) {
     return step(parsers, [])(input);
-  }
+  };
 };
 
 // decorate() is a special case of sequence(), but with only one parser given.
 // This saves us from typing [] in such cases.
 var decorate = function (parser, decorator) {
   return sequence([parser], decorator);
-}
+};
 
-// choice() will try running each of given parsers. It'll concatenate results
-// from all of them. This way we can specify alternatives in grammar.
+// choice() will try running each of given parsers. For performance reasons
+// it will return first successful result. This has two consequences:
+// 1) for ambigous results, we get only first one (not really an issue)
+// 2) parsers should not accept prefixes of input for next parsers given to
+// choice(). For example, choice([string("x"), string("xy")]) will return "x"
+// and leave "y" as not parsed input. It can be fixed by using
+// choice([string("xy"), string("x")]) instead.
 var choice = function (parsers) {
   return function (input) {
-    return parsers.reduce(function (results, parser) {
-      return results.concat(parser(input));
-    }, []);
+    var result;
+    for (var i = 0; i < parsers.length; i++) {
+      result = parsers[i](input);
+      if (result.length > 0) {
+        return result;
+      };
+    }
+    return [];
   };
+};
+
+// Same as choice(), but tries every parser, even if one of them accepts.
+// Returns all successful results (i.e. concatenates results lists).
+// Please note it may take exponential time.
+var everyChoice = function (parsers) {
+  return parsers.reduce(function (results, parser) {
+    return results.concat(parser(input));
+  }, []);
 };
 
 // many1() accepts many (at least one) occurences of input acceptable by given
@@ -92,7 +111,7 @@ var sepBy1 = function (separator, parser) {
     )],
     function (x, xs) { return [x].concat(xs); }
   );
-}
+};
 
 // Same as sepBy1, but allows no occurences.
 var sepBy = function (separator, parser) {
@@ -118,11 +137,11 @@ var chainl1 = function(parser, op) {
       bind(op, function (f) {
         return bind(parser, function (y) {
           return rest(f(x, y));
-        })
+        });
       }),
       ret(x)
     ]);
-  }
+  };
 
   // Parse first part of the expression and try to parse rest.
   return bind(parser, rest);
@@ -132,15 +151,15 @@ var chainl1 = function(parser, op) {
 // by op, multiple times.
 // Similar to chainl1, the result from op should be a function (unary).
 // For example, prefix(bool, bang) will parse !true and !!true.
-var prefix = function (parser, op) {
+var prefixOp = function (parser, op) {
   return choice([sequence([op, parser], function (f, x) {
     return f(x);
   }), parser]);
-}
+};
 
 // suffix() allows input accepted by parser to be followed by input accepted
 // by op, multiple times.
-var suffix = function (parser, op) {
+var suffixOp = function (parser, op) {
   var rest = function (x) {
     return choice([
       bind(op, function (f) {
@@ -148,10 +167,10 @@ var suffix = function (parser, op) {
       }),
       ret(x)
     ]);
-  }
+  };
 
   return bind(parser, rest);
-}
+};
 
 // These combinators create new parser that skips leading or trailing input
 // accepted by toSkip and returns result from parser.
@@ -159,13 +178,27 @@ var suffix = function (parser, op) {
 var skipLeading = function (toSkip, parser) {
   return sequence([toSkip, parser], function (skipped_, parsed) {
     return parsed;
-  })
+  });
 };
 
 var skipTrailing = function (toSkip, parser) {
   return sequence([parser, toSkip], function (parsed, skipped_) {
     return parsed;
-  })
+  });
+};
+
+// This combinator accepts only if suffix parser fails.
+var notFolloweBy = function (suffix, parser) {
+  return bind(parser, function (result) {
+    return function (input) {
+      var hasSuffix = suffix(input).length > 0;
+      if (hasSuffix) {
+        return [];
+      } else {
+        return [[result, input]];
+      }
+    };
+  });
 };
 
 // debug() is a combinator that wraps a parser and prints given input every
@@ -174,8 +207,8 @@ var debug = function(parser) {
   return function(input) {
     console.log(input.toString());
     return parser(input);
-  }
-}
+  };
+};
 
 // Now we're finished with combinators. We'll define real parsers.
 
@@ -204,6 +237,18 @@ var anyChar = function (input) {
   }
 };
 
+// This parser accepts any char from given list of allowed chars.
+var anyCharOf = function (allowed) {
+  return function (input) {
+    if (allowed.indexOf(input.charAt(0)) !== -1) {
+      return [[input.charAt(0), input.slice(1)]];
+    } else {
+      return [];
+    }
+  };
+};
+
+// This parser accepts any char other than those from given list.
 var otherThanChar = function (aChar) {
   return function (input) {
     if (input.length > 0 && input.charAt(0) !== aChar) {
@@ -238,13 +283,14 @@ var whiteSpace = choice([character(" "), character("\t"), character("\n")]);
 // And parsers for comments.
 
 var delimitedComment = sequence(
+  // TODO this is broken due to not backtracking choice()
   [string("/*"), many(anyChar), string("*/")],
-  function () { return "comment" }
+  function () { return "comment"; }
 );
 
 var lineComment = sequence(
   [string("//"), many(otherThanChar("\n")), character("\n")],
-  function () { return "comment" }
+  function () { return "comment"; }
 );
 
 var whiteSpaceOrComments = many(choice(
@@ -264,6 +310,7 @@ var lexeme = function (parser) {
 // An identifier starts with a letter, followed by letters, digits
 // or underscores (_).
 var identifier = sequence(
+  // TODO reject keywords
   [letter, many(choice([letter, digit, character("_")]))],
   function (x, xs) { return x + xs.join(""); }
 );
@@ -271,18 +318,16 @@ identifier = lexeme(identifier);
 
 var integer = decorate(
   many1(digit),
-  function (ds) { return parseInt(ds.join("")); }
+  function (ds) { return parseInt(ds.join(""), 10); }
 );
 integer = lexeme(integer);
 
-// TODO what about prefixes? e.g. fun/function?
 var keyword = function (s) {
-  return lexeme(string(s));
-}
+  return lexeme(notFolloweBy(letter, string(s)));
+};
 
-// TODO what about = and ==?
 var operator = function (s) {
-  return lexeme(string(s));
+  return lexeme(notFolloweBy(anyCharOf("-+=<>!|&".split("")), string(s)));
 };
 
 var symbol = function (s) {
@@ -324,12 +369,17 @@ var numberLiteral = decorate(integer, function (i) {
 // to define locally some simpler parsers, not visible outside.
 
 var stringLiteral = function () {
-  // TODO string literals should allow not only letters!
   // TODO escaping
-  var contents = decorate(many(letter), function (xs) { return xs.join(""); })
+  // TODO is it lexeme parser?
+  var contents = function (limiter) {
+    return decorate(
+      many(otherThanChar(limiter)),
+      function (xs) { return xs.join(""); }
+    );
+  };
 
-  var inSingleQuotes = between(character("'"), character("'"), contents);
-  var inDoubleQuotes = between(character('"'), character('"'), contents);
+  var inSingleQuotes = between(character("'"), character("'"), contents("'"));
+  var inDoubleQuotes = between(character('"'), character('"'), contents('"'));
 
   return decorate(
     choice([inSingleQuotes, inDoubleQuotes]),
@@ -371,7 +421,7 @@ var arrayLiteral = function (input) {
   var p = decorate(
     squares(sepBy(symbol(","), expr)),
     function (exprs) { return { arrayLiteral: exprs }; }
-  )
+  );
 
   return p(input);
 };
@@ -411,23 +461,23 @@ var refinement = function (input) {
   var squareStyle = decorate(squares(expr), function (keyExpr) {
     return function (e) {
       return { refinement: [e, keyExpr] };
-    }
+    };
   });
 
   return choice([dotStyle, squareStyle])(input);
 };
 
 var preDecrement = decorate(operator("--"), function () {
-  return function (e) { return { preDecrement: e }; }
+  return function (e) { return { preDecrement: e }; };
 });
 var preIncrement = decorate(operator("++"), function () {
-  return function (e) { return { preIncrement: e }; }
+  return function (e) { return { preIncrement: e }; };
 });
 var postDecrement = decorate(operator("--"), function () {
-  return function (e) { return { postDecrement: e }; }
+  return function (e) { return { postDecrement: e }; };
 });
 var postIncrement = decorate(operator("++"), function () {
-  return function (e) { return { postIncrement: e }; }
+  return function (e) { return { postIncrement: e }; };
 });
 
 // This is the most complex parser.
@@ -438,8 +488,8 @@ var expr = function (input) {
     booleanLiteral,
     objectLiteral,
     arrayLiteral,
-    variable,
     func,
+    variable,
     parens(expr)
   ]);
 
@@ -462,22 +512,22 @@ var expr = function (input) {
         return { unaryOp: [op, x] };
       };
     });
-  }
+  };
   var unaryKeyword = function (op) {
     return decorate(keyword(op), function (op) {
       return function (x) {
         return { unaryOp: [op, x] };
       };
     });
-  }
+  };
 
   // Suffix operators have highest priority. They can be denoted as () and [].
-  simple = suffix(simple, choice([
+  simple = suffixOp(simple, choice([
     invocation, refinement, postDecrement, postIncrement
   ]));
 
   // Prefix operator have precedence over all binary operators.
-  simple = prefix(simple, choice([
+  simple = prefixOp(simple, choice([
     unaryOp("+"), unaryOp("-"), unaryOp("!"),
     unaryKeyword("new"), unaryKeyword("delete"), unaryKeyword("typeof"),
     preDecrement, preIncrement
@@ -489,9 +539,9 @@ var expr = function (input) {
     choice(["*", "/", "%"].map(binaryOp)),
     choice(["+", "-"].map(binaryOp)),
     choice([">=", "<=", ">", "<"].map(binaryOp)),
-    choice(["==", "!=", "===", "!=="].map(binaryOp)),
+    choice(["===", "!==", "==", "!="].map(binaryOp)),
     binaryOp("&&"),
-    binaryOp("||"),
+    binaryOp("||")
   ].reduce(chainl1, simple);
 
   return complex(input);
@@ -568,7 +618,7 @@ var whileStatement = function (input) {
   );
 
   return p(input);
-}
+};
 
 var doWhileStatement = function (input) {
   var p = sequence(
@@ -579,7 +629,7 @@ var doWhileStatement = function (input) {
   );
 
   return p(input);
-}
+};
 
 // for loop has the following form: for (initial; condition; finalize) { body }
 // When condition is omitted, it's assumed to be "true" expression.
@@ -596,18 +646,23 @@ var forStatement = function (input) {
           choice([exprStatement, emptyStatement])
         ],
         function (initial, s1_, condition, s2_, finalize) {
-          return { initial: initial, condition: condition, finalize: finalize };
+          return {
+            initial: initial, condition: condition, finalize: finalize
+          };
         }
       )),
       braces(many(statement))
     ],
     function (k_, inParens, body) {
-      return { forStatement: [inParens.initial, inParens.condition, inParens.finalize, body] };
+      return {
+        forStatement:
+          [inParens.initial, inParens.condition, inParens.finalize, body]
+      };
     }
   );
 
   return p(input);
-}
+};
 
 throwStatement = sequence(
   [keyword("throw"), expr],
@@ -650,6 +705,9 @@ var program = many1(statement);
 // parsers take care only of trailing whitespace.
 program = skipLeading(whiteSpaceOrComments, program);
 
+// Only match complete parses.
+program = notFolloweBy(anyChar, program);
+
 // The runner for parsers. By default uses "program" parser.
 // It will apply parser to the input, reject any incomplete parses (i.e. those
 // with any remaining input) and return first AST from the list.
@@ -661,7 +719,7 @@ exports.parse = function (input, parser) {
   var completeResults = results.filter(function (result) {
     var ast = result[0];
     var rest = result[1];
-    return rest.toString().length == 0;
+    return rest.toString().length === 0;
   });
   if (completeResults.length > 0) {
     return { success: completeResults[0][0] };
@@ -672,3 +730,5 @@ exports.parse = function (input, parser) {
 
 // Here we export any parsers that we want to test individually.
 exports.expr = expr;
+exports.keyword = keyword;
+exports.operator = operator;
