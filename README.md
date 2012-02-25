@@ -21,3 +21,7 @@ No.
 * Does it work?
 
 Not yet.
+
+* Can I contribute?
+
+No. It's a project for a course at my Uni, so I cannot accept contributions, at least for now.
