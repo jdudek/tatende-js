@@ -366,9 +366,11 @@ var squares = function (parser) {
 
 // Now we start defining parsers that build AST.
 
+var AST = require("ast");
+
 // TODO support float numbers
 var numberLiteral = decorate(integer, function (i) {
-  return { numberLiteral: i };
+  return AST.NumberLiteral(i);
 });
 
 // This parser is wrapped in a function, executed immediately, because we want
@@ -395,16 +397,16 @@ var stringLiteral = function () {
 
   return decorate(
     lexeme(choice([inSingleQuotes, inDoubleQuotes])),
-    function (string) { return { stringLiteral: string }; }
+    function (string) { return AST.StringLiteral(string); }
   );
 }();
 
 var booleanLiteral = function () {
   var trueLiteral = decorate(keyword("true"), function () {
-    return { booleanLiteral: true };
+    return AST.BooleanLiteral(true);
   });
   var falseLiteral = decorate(keyword("false"), function () {
-    return { booleanLiteral: false };
+    return AST.BooleanLiteral(false);
   });
   return choice([trueLiteral, falseLiteral]);
 }();
@@ -423,7 +425,9 @@ var objectLiteral = function (input) {
 
   var p = decorate(
     braces(sepBy(symbol(","), pair)),
-    function (pairs) { return { objectLiteral: pairs }; }
+    // Our decorator function does not alter arguments at all, so we can pass
+    // AST node constructor directly to decorate
+    AST.ObjectLiteral
   );
 
   return p(input);
@@ -432,23 +436,23 @@ var objectLiteral = function (input) {
 var arrayLiteral = function (input) {
   var p = decorate(
     squares(sepBy(symbol(","), expr)),
-    function (exprs) { return { arrayLiteral: exprs }; }
+    AST.ArrayLiteral
   );
 
   return p(input);
 };
 
 var variable = decorate(identifier, function (i) {
-  return { variable: i };
+  return AST.Variable(i);
 });
 
-var func = function (input) {
+var functionLiteral = function (input) {
   var args = parens(sepBy(symbol(","), identifier));
   var body = braces(many(statement));
 
   var p = sequence(
     [keyword("function"), args, body],
-    function (k_, args, statements) { return { func: [args, statements] }; }
+    function (k_, args, statements) { return AST.FunctionLiteral(args, statements); }
   );
 
   return p(input);
@@ -457,7 +461,7 @@ var func = function (input) {
 var invocation = function (input) {
   var p = decorate(parens(sepBy(symbol(","), expr)), function (args) {
     return function (e) {
-      return { invocation: [e, args] };
+      return AST.Invocation(e, args);
     };
   });
 
@@ -467,12 +471,12 @@ var invocation = function (input) {
 var refinement = function (input) {
   var dotStyle = sequence([operator("."), identifier], function (d_, key) {
     return function (e) {
-      return { refinement: [e, { stringLiteral: key }] };
+      return AST.Refinement(e, AST.StringLiteral(key));
     };
   });
   var squareStyle = decorate(squares(expr), function (keyExpr) {
     return function (e) {
-      return { refinement: [e, keyExpr] };
+      return AST.Refinement(e, keyExpr);
     };
   });
 
@@ -480,16 +484,16 @@ var refinement = function (input) {
 };
 
 var preDecrement = decorate(operator("--"), function () {
-  return function (e) { return { preDecrement: e }; };
+  return AST.PreDecrement;
 });
 var preIncrement = decorate(operator("++"), function () {
-  return function (e) { return { preIncrement: e }; };
+  return AST.PreIncrement;
 });
 var postDecrement = decorate(operator("--"), function () {
-  return function (e) { return { postDecrement: e }; };
+  return AST.PostDecrement;
 });
 var postIncrement = decorate(operator("++"), function () {
-  return function (e) { return { postIncrement: e }; };
+  return AST.PostIncrement;
 });
 
 // This is the most complex parser.
@@ -500,7 +504,7 @@ var expr = function (input) {
     booleanLiteral,
     objectLiteral,
     arrayLiteral,
-    func,
+    functionLiteral,
     variable,
     parens(expr)
   ]);
@@ -512,7 +516,7 @@ var expr = function (input) {
   var binaryOp = function (op) {
     return decorate(operator(op), function (op) {
       return function (x, y) {
-        return { binaryOp: [op, x, y] };
+        return AST.BinaryOp(op, x, y);
       };
     });
   };
@@ -521,14 +525,14 @@ var expr = function (input) {
   var unaryOp = function (op) {
     return decorate(operator(op), function (op) {
       return function (x) {
-        return { unaryOp: [op, x] };
+        return AST.UnaryOp(op, x);
       };
     });
   };
   var unaryKeyword = function (op) {
     return decorate(keyword(op), function (op) {
       return function (x) {
-        return { unaryOp: [op, x] };
+        return AST.UnaryOp(op, x);
       };
     });
   };
@@ -538,7 +542,7 @@ var expr = function (input) {
     invocation, refinement, postDecrement, postIncrement
   ]));
 
-  // Prefix operator have precedence over all binary operators.
+  // Prefix operators have precedence over all binary operators.
   simple = prefixOp(simple, choice([
     unaryOp("+"), unaryOp("-"), unaryOp("!"),
     unaryKeyword("new"), unaryKeyword("delete"), unaryKeyword("typeof"),
@@ -562,14 +566,14 @@ var expr = function (input) {
 var varStatementWithoutAssignment = sequence(
   [keyword("var"), identifier],
   function (k_, id) {
-    return { varStatement: [id] };
+    return AST.VarStatement(id);
   }
 );
 
 var varStatementWithAssignment = sequence(
   [keyword("var"), identifier, operator("="), expr],
   function (k_, id, op_, expr) {
-    return { varStatement: [id, expr] };
+    return AST.VarStatement(id, expr);
   }
 );
 
@@ -579,14 +583,14 @@ var varStatement = choice([
 var assignStatement = sequence(
   [expr, operator("="), expr],
   function (lexpr, op_, rexpr) {
-    return { assignStatement: [lexpr, rexpr] };
+    return AST.AssignStatement(lexpr, rexpr);
   }
 );
 
 var returnStatement = sequence(
   [keyword("return"), expr],
   function (k_, expr) {
-    return { returnStatement: expr };
+    return AST.ReturnStatement(expr);
   }
 );
 
@@ -594,7 +598,7 @@ var ifStatementWithoutElse = function (input) {
   return sequence(
     [keyword("if"), parens(expr), braces(many(statement))],
     function (k_, expr, statements) {
-      return { ifStatement: [expr, statements, []] };
+      return AST.IfStatement(expr, statements, []);
     }
   )(input);
 };
@@ -604,7 +608,7 @@ var ifStatementWithElse = function (input) {
     [keyword("if"), parens(expr), braces(many(statement)),
       keyword("else"), braces(many(statement))],
     function (k_, expr, statements1, k2_, statements2) {
-      return { ifStatement: [expr, statements1, statements2] };
+      return AST.IfStatement(expr, statements1, statements2);
     }
   )(input);
 };
@@ -616,7 +620,7 @@ var tryStatement = function (input) {
     [keyword("try"), braces(many(statement)),
       keyword("catch"), parens(identifier), braces(many(statement))],
     function (try_, tryStatements, catch_, id, catchStatements) {
-      return { tryStatement: [tryStatements, id, catchStatements] };
+      return AST.TryStatement(tryStatements, id, catchStatements);
     }
   )(input);
 };
@@ -625,7 +629,7 @@ var whileStatement = function (input) {
   var p = sequence(
     [keyword("while"), parens(expr), braces(many(statement))],
     function (k_, condition, body) {
-      return { whileStatement: [condition, body] };
+      return AST.WhileStatement(condition, body);
     }
   );
 
@@ -636,7 +640,7 @@ var doWhileStatement = function (input) {
   var p = sequence(
     [keyword("do"), braces(many(statement)), keyword("while"), parens(expr)],
     function (k_, body, k2_, condition) {
-      return { doWhileStatement: [condition, body] };
+      return AST.DoWhileStatement(condition, body);
     }
   );
 
@@ -666,10 +670,8 @@ var forStatement = function (input) {
       braces(many(statement))
     ],
     function (k_, inParens, body) {
-      return {
-        forStatement:
-          [inParens.initial, inParens.condition, inParens.finalize, body]
-      };
+      return AST.ForStatement(
+        inParens.initial, inParens.condition, inParens.finalize, body);
     }
   );
 
@@ -679,12 +681,12 @@ var forStatement = function (input) {
 throwStatement = sequence(
   [keyword("throw"), expr],
   function (t_, expr) {
-    return { throwStatement: expr };
+    return AST.ThrowStatement(expr);
   }
 );
 
 exprStatement = decorate(expr, function (e) {
-  return { exprStatement: e };
+  return AST.ExpressionStatement(e);
 });
 
 var emptyStatement = ret(null);

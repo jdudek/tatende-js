@@ -39,31 +39,31 @@ testParser("try { return 5; } catch (e) { return e; }", [
 ]);
 testParser("throw x;", [{ throwStatement: { variable: "x" } }]);
 testParser("var x;;", [{ varStatement: [ "x" ] }, null]);
-testParser("x;", [{ exprStatement: { variable: "x" } }]);
+testParser("x;", [{ expressionStatement: { variable: "x" } }]);
 testParser("while (i < 5) { f(x); }", [
   { whileStatement: [
     { binaryOp: ["<", { variable: "i" }, { numberLiteral: 5 }] },
-    [{ exprStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
+    [{ expressionStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
   ]}
 ]);
 testParser("do { f(x); } while (i < 5);", [
   { doWhileStatement: [
     { binaryOp: ["<", { variable: "i" }, { numberLiteral: 5 }] },
-    [{ exprStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
+    [{ expressionStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
   ]}
 ]);
 testParser("for (var i = 0; i < 5; i) { f(x); }", [
   { forStatement: [
     { varStatement: ["i", { numberLiteral: 0 }] },
     { binaryOp: ["<", { variable: "i" }, { numberLiteral: 5 }] },
-    { exprStatement: { variable: "i" } },
-    [{ exprStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
+    { expressionStatement: { variable: "i" } },
+    [{ expressionStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
   ]}
 ]);
 testParser("for (;;) { f(x); }", [
   { forStatement: [
     null, { booleanLiteral: true }, null,
-    [{ exprStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
+    [{ expressionStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
   ]}
 ]);
 
@@ -102,7 +102,7 @@ testParser("{x: 2, y: 3}", { objectLiteral: [
   ] }, parser.expr);
 testParser("[]", { arrayLiteral: [] }, parser.expr);
 testParser("[12, x]", { arrayLiteral: [{ numberLiteral: 12 }, { variable: "x" }] }, parser.expr);
-testParser("function (x, y) { return x; }", { func: [
+testParser("function (x, y) { return x; }", { functionLiteral: [
     ["x", "y"],
     [{ returnStatement: { variable: "x" } }]
   ] }, parser.expr);
@@ -151,7 +151,7 @@ testParser("function (a, b) { return 5; }(2, 3)['foo'](4, 5)[bar].baz", {
       { invocation: [
         { refinement: [
           { invocation: [
-            { func: [
+            { functionLiteral: [
               ["a", "b"],
               [{ returnStatement: { numberLiteral: 5 } }]
             ] },
