@@ -133,6 +133,11 @@ testParser("-2 + 3 == 1", { binaryOp: [
     { binaryOp: ["+", { unaryOp: ["-", { numberLiteral: 2 }] }, { numberLiteral: 3 }] },
     { numberLiteral: 1 },
   ] }, parser.expr);
+testParser("\"x\" + \"y\" == \"xy\"", { binaryOp: [
+  "==",
+    { binaryOp: ["+", { stringLiteral: "x" }, { stringLiteral: "y" }] },
+    { stringLiteral: "xy" },
+  ] }, parser.expr);
 testParser("--x", { preDecrement: { variable: "x" } }, parser.expr);
 testParser("++x", { preIncrement: { variable: "x" } }, parser.expr);
 testParser("x--", { postDecrement: { variable: "x" } }, parser.expr);
@@ -161,6 +166,10 @@ testParser("function (a, b) { return 5; }(2, 3)['foo'](4, 5)[bar].baz", {
     { stringLiteral: "baz" } ]
 }, parser.expr);
 testParser("new X()", { unaryOp: ["new", { invocation: [ { variable: "X" }, [] ] }] }, parser.expr);
+
+testParser('"\\"xy\\""', { stringLiteral: '"xy"' }, parser.stringLiteral);
+testParser('"aa\\nbb"', { stringLiteral: 'aa\nbb' }, parser.stringLiteral);
+
 
 // tests on real files
 testParserOnFile("../src/parser.js");

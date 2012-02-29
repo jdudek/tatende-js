@@ -251,14 +251,18 @@ var anyCharOf = function (allowed) {
 };
 
 // This parser accepts any char other than those from given list.
-var otherThanChar = function (aChar) {
+var otherThanChars = function (disallowed) {
   return function (input) {
-    if (input.length > 0 && input.charAt(0) !== aChar) {
+    if (disallowed.indexOf(input.charAt(0)) === -1) {
       return [[input.charAt(0), input.slice(1)]];
     } else {
       return [];
     }
   };
+};
+
+var otherThanChar = function (disallowedChar) {
+  return otherThanChars([disallowedChar]);
 };
 
 // For given string, returns a parser that will accept and return that string.
@@ -371,11 +375,17 @@ var numberLiteral = decorate(integer, function (i) {
 // to define locally some simpler parsers, not visible outside.
 
 var stringLiteral = function () {
-  // TODO escaping
-  // TODO is it lexeme parser?
+  var escapeSequence = choice([
+    decorate(string('\\\\'), function () { return '\\'; }),
+    decorate(string('\\\''), function () { return '\''; }),
+    decorate(string('\\\"'), function () { return '\"'; }),
+    decorate(string('\\n'), function () { return '\n'; }),
+    decorate(string('\\t'), function () { return '\t'; })
+  ]);
+
   var contents = function (limiter) {
     return decorate(
-      many(otherThanChar(limiter)),
+      many(choice([escapeSequence, otherThanChars([limiter, '\\', '\n'])])),
       function (xs) { return xs.join(""); }
     );
   };
@@ -384,7 +394,7 @@ var stringLiteral = function () {
   var inDoubleQuotes = between(character('"'), character('"'), contents('"'));
 
   return decorate(
-    choice([inSingleQuotes, inDoubleQuotes]),
+    lexeme(choice([inSingleQuotes, inDoubleQuotes])),
     function (string) { return { stringLiteral: string }; }
   );
 }();
@@ -734,3 +744,4 @@ exports.parse = function (input, parser) {
 exports.expr = expr;
 exports.keyword = keyword;
 exports.operator = operator;
+exports.stringLiteral = stringLiteral;
