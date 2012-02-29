@@ -29,7 +29,7 @@ var makeNodeConstructor = function (name, fields) {
       } else {
         return this[name];
       }
-    }
+    };
   });
   return constructor;
 };

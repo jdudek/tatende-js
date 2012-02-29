@@ -514,7 +514,7 @@ var expr = function (input) {
   // to parsed arguments.
   // In final result there won't by any functions, only {binaryOp} nodes.
   var binaryOp = function (op) {
-    return decorate(operator(op), function (op) {
+    return decorate(op, function (op) {
       return function (x, y) {
         return AST.BinaryOp(op, x, y);
       };
@@ -523,14 +523,7 @@ var expr = function (input) {
 
   // Similar to binaryOp, but creates unary functions.
   var unaryOp = function (op) {
-    return decorate(operator(op), function (op) {
-      return function (x) {
-        return AST.UnaryOp(op, x);
-      };
-    });
-  };
-  var unaryKeyword = function (op) {
-    return decorate(keyword(op), function (op) {
+    return decorate(op, function (op) {
       return function (x) {
         return AST.UnaryOp(op, x);
       };
@@ -544,20 +537,21 @@ var expr = function (input) {
 
   // Prefix operators have precedence over all binary operators.
   simple = prefixOp(simple, choice([
-    unaryOp("+"), unaryOp("-"), unaryOp("!"),
-    unaryKeyword("new"), unaryKeyword("delete"), unaryKeyword("typeof"),
+    unaryOp(operator("+")), unaryOp(operator("-")), unaryOp(operator("!")),
+    unaryOp(keyword("new")), unaryOp(keyword("delete")), unaryOp(keyword("typeof")),
     preDecrement, preIncrement
   ]));
 
   // Below we define binary operators in their order of precedence.
   // All of them are left-associative.
   var complex = [
-    choice(["*", "/", "%"].map(binaryOp)),
-    choice(["+", "-"].map(binaryOp)),
-    choice([">=", "<=", ">", "<"].map(binaryOp)),
-    choice(["===", "!==", "==", "!="].map(binaryOp)),
-    binaryOp("&&"),
-    binaryOp("||")
+    choice(["*", "/", "%"].map(operator).map(binaryOp)),
+    choice(["+", "-"].map(operator).map(binaryOp)),
+    choice([">=", "<=", ">", "<"].map(operator).map(binaryOp)),
+    choice(["instanceof"].map(keyword).map(binaryOp)),
+    choice(["===", "!==", "==", "!="].map(operator).map(binaryOp)),
+    choice(["&&"].map(operator).map(binaryOp)),
+    choice(["||"].map(operator).map(binaryOp))
   ].reduce(chainl1, simple);
 
   return complex(input);

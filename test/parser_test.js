@@ -138,6 +138,7 @@ testParser("\"x\" + \"y\" == \"xy\"", { binaryOp: [
     { binaryOp: ["+", { stringLiteral: "x" }, { stringLiteral: "y" }] },
     { stringLiteral: "xy" },
   ] }, parser.expr);
+testParser("x instanceof y", { binaryOp: ["instanceof", { variable: "x" }, { variable: "y" }] }, parser.expr);
 testParser("--x", { preDecrement: { variable: "x" } }, parser.expr);
 testParser("++x", { preIncrement: { variable: "x" } }, parser.expr);
 testParser("x--", { postDecrement: { variable: "x" } }, parser.expr);
@@ -173,3 +174,4 @@ testParser('"aa\\nbb"', { stringLiteral: 'aa\nbb' }, parser.stringLiteral);
 
 // tests on real files
 testParserOnFile("../src/parser.js");
+testParserOnFile("../src/ast.js");
