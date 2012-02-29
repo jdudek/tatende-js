@@ -81,9 +81,11 @@ var choice = function (parsers) {
 // Returns all successful results (i.e. concatenates results lists).
 // Please note it may take exponential time.
 var everyChoice = function (parsers) {
-  return parsers.reduce(function (results, parser) {
-    return results.concat(parser(input));
-  }, []);
+  return function (input) {
+    return parsers.reduce(function (results, parser) {
+      return results.concat(parser(input));
+    }, []);
+  };
 };
 
 // many1() accepts many (at least one) occurences of input acceptable by given
