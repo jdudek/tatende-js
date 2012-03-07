@@ -36,5 +36,6 @@ tests.push(testProgram("return 123;", "123"));
 tests.push(testProgram("return 100 + 23;", "123"));
 tests.push(testProgram("return 2 * 3;", "6"));
 tests.push(testProgram("return 2 * (2 + 2);", "8"));
+tests.push(testProgram("return 'xxx';", "xxx"));
 
 runTests();

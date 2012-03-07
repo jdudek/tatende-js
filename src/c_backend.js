@@ -7,9 +7,10 @@ exports.compile = function (ast) {
 var addTemplate = function (program) {
   return '' +
     '#include <stdio.h>\n' +
-    'int program () {\n' + program + '\n}\n' +
+    '#include "src/js.c"\n' +
+    'JSValue program () {\n' + program + '\n}\n' +
     'int main() {\n' +
-    '  printf("%d", program());\n' +
+    '  js_dump_value(program());\n' +
     '  return 0;\n' +
     '}\n';
 };
@@ -22,14 +23,19 @@ var statement = function (node) {
 }
 
 var expression = function (node) {
-  var parens = function (str) {
-    return '(' + str  + ')';
-  };
+  switch (node.constructor) {
+    case AST.NumberLiteral:
+      return "js_new_number(" + node.number().toString() + ")";
 
-  if (node instanceof AST.NumberLiteral) {
-    return node.number().toString();
-  } else if (node instanceof AST.BinaryOp) {
-    return parens(expression(node.leftExpr())) + node.operator() + parens(expression(node.rightExpr()));
+    case AST.StringLiteral:
+      return "js_new_string(\"" + node.string() + "\")";
+
+    case AST.BinaryOp:
+      var operatorFunctions = { "+": "js_add", "*": "js_mult" };
+      return operatorFunctions[node.operator()] + "(" +
+        expression(node.leftExpr()) + ", " + expression(node.rightExpr())  + ")"
+
+    default:
+      throw "Incorrect AST";
   }
-  throw "Incorrect AST";
 }
