@@ -22,8 +22,14 @@ var statement = function (node) {
 }
 
 var expression = function (node) {
+  var parens = function (str) {
+    return '(' + str  + ')';
+  };
+
   if (node instanceof AST.NumberLiteral) {
     return node.number().toString();
+  } else if (node instanceof AST.BinaryOp) {
+    return parens(expression(node.leftExpr())) + node.operator() + parens(expression(node.rightExpr()));
   }
   throw "Incorrect AST";
 }
