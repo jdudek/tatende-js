@@ -11,11 +11,12 @@ enum JSType {
     TypeObject
 };
 
-typedef struct {
+typedef struct TJSValue {
     enum JSType type;
     int number_value;
     char* string_value;
     Dict object_value;
+    struct TJSValue * (*function_value)();
 } JSValue;
 
 void js_dump_value(JSValue* v)
@@ -29,6 +30,9 @@ void js_dump_value(JSValue* v)
             break;
         case TypeObject:
             printf("[object]");
+            break;
+        case TypeFunction:
+            printf("[function]");
             break;
         case TypeUndefined:
             printf("[undefined]");
@@ -57,6 +61,13 @@ JSValue* js_new_object(Dict d) {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeObject;
     v->object_value = d;
+    return v;
+}
+
+JSValue* js_new_function(JSValue* (*function_ptr)()) {
+    JSValue* v = malloc(sizeof(JSValue));
+    v->type = TypeFunction;
+    v->function_value = function_ptr;
     return v;
 }
 
@@ -89,6 +100,15 @@ JSValue* js_to_string(JSValue* v) {
         return v;
     } else {
         fprintf(stderr, "Cannot convert to string");
+        exit(1);
+    }
+}
+
+JSValue* js_call_function(JSValue* v) {
+    if (v->type == TypeFunction) {
+        return (v->function_value)();
+    } else {
+        fprintf(stderr, "Cannot call, value is not a function");
         exit(1);
     }
 }
