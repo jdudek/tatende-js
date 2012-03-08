@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include "dict.c"
 
 enum JSType {
     TypeUndefined,
@@ -14,6 +15,7 @@ typedef struct {
     enum JSType type;
     int number_value;
     char* string_value;
+    Dict object_value;
 } JSValue;
 
 void js_dump_value(JSValue* v)
@@ -24,6 +26,9 @@ void js_dump_value(JSValue* v)
             break;
         case TypeString:
             printf("%s", v->string_value);
+            break;
+        case TypeObject:
+            printf("[object]");
             break;
         default:
             printf("cannot dump value");
@@ -45,6 +50,13 @@ JSValue* js_new_string(char* s) {
     return v;
 }
 
+JSValue* js_new_object(Dict d) {
+    JSValue* v = malloc(sizeof(JSValue));
+    v->type = TypeObject;
+    v->object_value = d;
+    return v;
+}
+
 JSValue* js_add(JSValue* v1, JSValue* v2) {
     if (v1->type == TypeNumber && v2->type == TypeNumber) {
         return js_new_number(v1->number_value + v2->number_value);
@@ -55,10 +67,19 @@ JSValue* js_add(JSValue* v1, JSValue* v2) {
         return js_new_string(new_string);
     } else {
         fprintf(stderr, "Cannot add");
-        exit(0);
+        exit(1);
     }
 }
 
 JSValue* js_mult(JSValue* v1, JSValue* v2) {
     return js_new_number(v1->number_value * v2->number_value);
+}
+
+JSValue* js_to_string(JSValue* v) {
+    if (v->type == TypeString) {
+        return v;
+    } else {
+        fprintf(stderr, "Cannot convert to string");
+        exit(1);
+    }
 }

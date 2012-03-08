@@ -30,6 +30,14 @@ var expression = function (node) {
     case AST.StringLiteral:
       return "js_new_string(\"" + node.string() + "\")";
 
+    case AST.ObjectLiteral:
+      return objectLiteral(node);
+
+    case AST.Refinement:
+      return "(JSValue*) dict_find(" +
+        expression(node.expression()) + "->object_value, " +
+        "js_to_string(" + expression(node.key()) + ")->string_value)";
+
     case AST.BinaryOp:
       var operatorFunctions = { "+": "js_add", "*": "js_mult" };
       return operatorFunctions[node.operator()] + "(" +
@@ -38,4 +46,12 @@ var expression = function (node) {
     default:
       throw "Incorrect AST";
   }
+}
+
+var objectLiteral = function (node) {
+  return "js_new_object(" +
+    node.pairs().reduce(function (acc, property) {
+      return "dict_insert(" + acc + ", \"" + property[0] + "\", " + expression(property[1]) + ")";
+    }, "dict_create()") +
+  ")";
 }
