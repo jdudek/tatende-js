@@ -32,3 +32,12 @@ void* dict_find(Dict dict, char* key) {
         return dict_find(dict->next, key);
     }
 }
+
+void* dict_find_with_default(Dict dict, char* key, void* deflt) {
+    void* r = dict_find(dict, key);
+    if (r == NULL) {
+        return deflt;
+    } else {
+        return r;
+    }
+}

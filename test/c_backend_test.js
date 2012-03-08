@@ -41,5 +41,6 @@ tests.push(testProgram("return 'x' + 'y';", "xy"));
 tests.push(testProgram("return {};", "[object]"));
 tests.push(testProgram("return { x: 2 };", "[object]"));
 tests.push(testProgram("return { x: 2 }.x;", "2"));
+tests.push(testProgram("return { x: 2 }.y;", "[undefined]"));
 
 runTests();

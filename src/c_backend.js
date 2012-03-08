@@ -34,9 +34,9 @@ var expression = function (node) {
       return objectLiteral(node);
 
     case AST.Refinement:
-      return "(JSValue*) dict_find(" +
+      return "(JSValue*) dict_find_with_default(" +
         expression(node.expression()) + "->object_value, " +
-        "js_to_string(" + expression(node.key()) + ")->string_value)";
+        "js_to_string(" + expression(node.key()) + ")->string_value, js_new_undefined())";
 
     case AST.BinaryOp:
       var operatorFunctions = { "+": "js_add", "*": "js_mult" };

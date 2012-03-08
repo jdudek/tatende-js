@@ -30,6 +30,9 @@ void js_dump_value(JSValue* v)
         case TypeObject:
             printf("[object]");
             break;
+        case TypeUndefined:
+            printf("[undefined]");
+            break;
         default:
             printf("cannot dump value");
             break;
@@ -54,6 +57,12 @@ JSValue* js_new_object(Dict d) {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeObject;
     v->object_value = d;
+    return v;
+}
+
+JSValue* js_new_undefined() {
+    JSValue* v = malloc(sizeof(JSValue));
+    v->type = TypeUndefined;
     return v;
 }
 
