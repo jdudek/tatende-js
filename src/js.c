@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "dict.c"
+#include "list.c"
 
 enum JSType {
     TypeUndefined,
@@ -104,11 +105,25 @@ JSValue* js_to_string(JSValue* v) {
     }
 }
 
-JSValue* js_call_function(JSValue* v) {
+JSValue* js_call_function(JSValue* v, List args) {
     if (v->type == TypeFunction) {
-        return (v->function_value)();
+        return (v->function_value)(args);
     } else {
         fprintf(stderr, "Cannot call, value is not a function");
         exit(1);
     }
+}
+
+Dict js_build_args_dict(List argNames, List argValues) {
+    Dict dict = dict_create();
+    while (argNames != NULL) {
+        if (argValues != NULL) {
+            dict = dict_insert(dict, list_head(argNames), list_head(argValues));
+            argValues = list_tail(argValues);
+        } else {
+            dict = dict_insert(dict, list_head(argNames), js_new_undefined());
+        }
+        argNames = list_tail(argNames);
+    }
+    return dict;
 }

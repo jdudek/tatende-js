@@ -44,5 +44,7 @@ tests.push(testProgram("return { x: 2 }.x;", "2"));
 tests.push(testProgram("return { x: 2 }.y;", "[undefined]"));
 tests.push(testProgram("return function () { return 2; };", "[function]"));
 tests.push(testProgram("return function () { return 2; }();", "2"));
+tests.push(testProgram("return function (x) { return x; }(2);", "2"));
+tests.push(testProgram("return function (x, y) { return x; }(2);", "2"));
 
 runTests();

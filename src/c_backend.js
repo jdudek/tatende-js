@@ -3,7 +3,7 @@ var AST = require("ast");
 exports.compile = function (ast) {
   var functions = [];
 
-  var identifier = function () {
+  var unique = function () {
     var i = 1;
     return function () {
       return ++i;
@@ -31,13 +31,16 @@ exports.compile = function (ast) {
       case AST.FunctionLiteral:
         return functionLiteral(node, functions);
 
+      case AST.Variable:
+        return "dict_find(binding, \"" + node.identifier() + "\")";
+
       case AST.Refinement:
         return "(JSValue*) dict_find_with_default(" +
           expression(node.expression()) + "->object_value, " +
           "js_to_string(" + expression(node.key()) + ")->string_value, js_new_undefined())";
 
       case AST.Invocation:
-        return "js_call_function(" + expression(node.expression()) + ")";
+        return invocation(node);
 
       case AST.BinaryOp:
         var operatorFunctions = { "+": "js_add", "*": "js_mult" };
@@ -57,16 +60,32 @@ exports.compile = function (ast) {
     ")";
   };
 
+  // Utility function to create C list from array of strings
+  var toCList = function (array) {
+    return array.reduceRight(function (acc, item) {
+      return "list_insert(" + acc + ", " + item + ")";
+    }, "list_create()");
+  };
+
   var functionLiteral = function (node) {
-    var name = "fun_" + identifier();
+    var name = "fun_" + unique();
     var body = node.statements().map(statement).join("\n");
+    var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
+
     var cFunction =
-      "JSValue* " + name + "() {\n" +
+      "JSValue* " + name + "(List argValues) {\n" +
+        "List argNames = " + argNames + ";\n" +
+        "Dict binding = js_build_args_dict(argNames, argValues);\n" +
         body +
         "return js_new_undefined();\n" +
       "}\n";
     functions.push(cFunction);
     return "js_new_function(&" + name + ")";
+  };
+
+  var invocation = function (node) {
+    var argValues = toCList(node.args().map(expression));
+    return "js_call_function(" + expression(node.expression()) + ", " + argValues + ")";
   };
 
   var addTemplate = function (program) {
