@@ -8,7 +8,7 @@ var addTemplate = function (program) {
   return '' +
     '#include <stdio.h>\n' +
     '#include "src/js.c"\n' +
-    'JSValue program () {\n' + program + '\n}\n' +
+    'JSValue* program () {\n' + program + '\n}\n' +
     'int main() {\n' +
     '  js_dump_value(program());\n' +
     '  return 0;\n' +
