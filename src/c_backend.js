@@ -3,6 +3,13 @@ var AST = require("ast");
 exports.compile = function (ast) {
   var functions = [];
 
+  var identifier = function () {
+    var i = 1;
+    return function () {
+      return ++i;
+    }
+  }();
+
   var statement = function (node) {
     if (node instanceof AST.ReturnStatement) {
       return "return " + expression(node.expression()) + ";";
@@ -51,7 +58,7 @@ exports.compile = function (ast) {
   };
 
   var functionLiteral = function (node) {
-    var name = "fun_" + functions.length;
+    var name = "fun_" + identifier();
     var body = node.statements().map(statement).join("\n");
     var cFunction =
       "JSValue* " + name + "() {\n" +
@@ -67,12 +74,12 @@ exports.compile = function (ast) {
       '#include <stdio.h>\n' +
       '#include "src/js.c"\n' +
       functions.join("\n") + "\n" +
-      'JSValue* program () {\n' + program + '\n}\n' +
       'int main() {\n' +
-      '  js_dump_value(program());\n' +
+      '  js_dump_value(' + program + ');\n' +
       '  return 0;\n' +
       '}\n';
   };
 
-  return addTemplate(ast.map(statement).join("\n"));
+  var program = AST.Invocation(AST.FunctionLiteral([], ast), []);
+  return addTemplate(expression(program));
 };
