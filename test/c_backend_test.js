@@ -43,8 +43,16 @@ tests.push(testProgram("return { x: 2 };", "[object]"));
 tests.push(testProgram("return { x: 2 }.x;", "2"));
 tests.push(testProgram("return { x: 2 }.y;", "[undefined]"));
 tests.push(testProgram("return function () { return 2; };", "[function]"));
+
+// Test: function invocation
 tests.push(testProgram("return function () { return 2; }();", "2"));
 tests.push(testProgram("return function (x) { return x; }(2);", "2"));
 tests.push(testProgram("return function (x, y) { return x; }(2);", "2"));
+
+// Test: access variables from outer scope
+tests.push(testProgram("return function (x) { return function () { return x; }(); }(2);", "2"));
+
+// Test: call returned closure
+tests.push(testProgram("return function (x) { return function () { return x; }; }(2)();", "2"));
 
 runTests();

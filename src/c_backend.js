@@ -73,14 +73,14 @@ exports.compile = function (ast) {
     var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
 
     var cFunction =
-      "JSValue* " + name + "(List argValues) {\n" +
+      "JSValue* " + name + "(List argValues, Dict binding) {\n" +
         "List argNames = " + argNames + ";\n" +
-        "Dict binding = js_build_args_dict(argNames, argValues);\n" +
+        "binding = js_append_args_to_binding(argNames, argValues, binding);\n" +
         body +
         "return js_new_undefined();\n" +
       "}\n";
     functions.push(cFunction);
-    return "js_new_function(&" + name + ")";
+    return "js_new_function(&" + name + ", binding)";
   };
 
   var invocation = function (node) {
@@ -94,6 +94,7 @@ exports.compile = function (ast) {
       '#include "src/js.c"\n' +
       functions.join("\n") + "\n" +
       'int main() {\n' +
+      '  Dict binding = NULL;\n' +
       '  js_dump_value(' + program + ');\n' +
       '  return 0;\n' +
       '}\n';

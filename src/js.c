@@ -12,12 +12,17 @@ enum JSType {
     TypeObject
 };
 
+typedef struct {
+    struct TJSValue* (*function)();
+    Dict binding;
+} JSClosure;
+
 typedef struct TJSValue {
     enum JSType type;
     int number_value;
     char* string_value;
     Dict object_value;
-    struct TJSValue * (*function_value)();
+    JSClosure function_value;
 } JSValue;
 
 void js_dump_value(JSValue* v)
@@ -65,10 +70,13 @@ JSValue* js_new_object(Dict d) {
     return v;
 }
 
-JSValue* js_new_function(JSValue* (*function_ptr)()) {
+JSValue* js_new_function(JSValue* (*function_ptr)(), Dict binding) {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeFunction;
-    v->function_value = function_ptr;
+    JSClosure closure;
+    closure.function = function_ptr;
+    closure.binding = binding;
+    v->function_value = closure;
     return v;
 }
 
@@ -107,15 +115,14 @@ JSValue* js_to_string(JSValue* v) {
 
 JSValue* js_call_function(JSValue* v, List args) {
     if (v->type == TypeFunction) {
-        return (v->function_value)(args);
+        return (v->function_value.function)(args, v->function_value.binding);
     } else {
         fprintf(stderr, "Cannot call, value is not a function");
         exit(1);
     }
 }
 
-Dict js_build_args_dict(List argNames, List argValues) {
-    Dict dict = dict_create();
+Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {
     while (argNames != NULL) {
         if (argValues != NULL) {
             dict = dict_insert(dict, list_head(argNames), list_head(argValues));
