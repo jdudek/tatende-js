@@ -9,7 +9,7 @@ var makeNodeConstructor = function (name, fields) {
     // In such cases we call new manually. instanceof operator works properly
     // if objects are created with new.
     if (! (this instanceof constructor)) {
-      // This is a nast hack to call new with variable number of arguments.
+      // This is a nasty hack to call new with variable number of arguments.
       // First argument of bind() is an object that will be value of this,
       // which we don't care about, hence null.
       return new (constructor.bind.apply(constructor, [null].concat(args)));
@@ -33,6 +33,9 @@ var makeNodeConstructor = function (name, fields) {
   });
   return constructor;
 };
+
+// Below we define all possible classes of nodes in abstract syntax trees.
+// They're divided in two categories: expressions and statements.
 
 exports.NumberLiteral = makeNodeConstructor("numberLiteral", ["number"]);
 exports.StringLiteral = makeNodeConstructor("stringLiteral", ["string"]);
