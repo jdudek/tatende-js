@@ -10,11 +10,27 @@ exports.compile = function (ast) {
     }
   }();
 
+  var quotes = function (s) {
+    return '"' + s + '"';
+  }
+
   var statement = function (node) {
-    if (node instanceof AST.ReturnStatement) {
-      return "return " + expression(node.expression()) + ";";
+    switch (node.constructor) {
+      case AST.VarStatement:
+        if (node.expression()) {
+          return "binding = dict_insert(binding, " +
+            quotes(node.identifier()) + ", " + expression(node.expression()) + ");";
+        } else {
+          return "binding = dict_insert(binding, " +
+            quotes(node.identifier()) + ", js_new_undefined());";
+        }
+
+      case AST.ReturnStatement:
+        return "return " + expression(node.expression()) + ";";
+
+      default:
+        throw "Incorrect AST";
     }
-    throw "Incorrect AST";
   };
 
   var expression = function (node) {
