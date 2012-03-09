@@ -46,6 +46,7 @@ tests.push(testProgram("return function () { return 2; };", "[function]"));
 
 tests.push(testProgram("var x; return 2;", "2"));
 tests.push(testProgram("var x = 2; return x;", "2"));
+tests.push(testProgram("var x = 5; x = 2; return x;", "2"));
 
 // Test: function invocation
 tests.push(testProgram("return function () { return 2; }();", "2"));

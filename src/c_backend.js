@@ -25,6 +25,14 @@ exports.compile = function (ast) {
             quotes(node.identifier()) + ", js_new_undefined());";
         }
 
+      case AST.AssignStatement:
+        if (node.leftExpr() instanceof AST.Variable) {
+          return "binding = dict_insert(binding, " +
+            quotes(node.leftExpr().identifier()) + ", " + expression(node.rightExpr()) + ");";
+        } else {
+          throw "Invalid left-hand side in assignment";
+        }
+
       case AST.ReturnStatement:
         return "return " + expression(node.expression()) + ";";
 
