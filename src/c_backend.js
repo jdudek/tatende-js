@@ -36,6 +36,9 @@ exports.compile = function (ast) {
       case AST.ReturnStatement:
         return "return " + expression(node.expression()) + ";";
 
+      case AST.ExpressionStatement:
+        return expression(node.expression()) + ";";
+
       default:
         throw "Incorrect AST";
     }
