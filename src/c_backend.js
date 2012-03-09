@@ -19,15 +19,15 @@ exports.compile = function (ast) {
       case AST.VarStatement:
         if (node.expression()) {
           return "binding = dict_insert(binding, " +
-            quotes(node.identifier()) + ", " + expression(node.expression()) + ");";
+            quotes(node.identifier()) + ", js_create_variable(" + expression(node.expression()) + "));";
         } else {
           return "binding = dict_insert(binding, " +
-            quotes(node.identifier()) + ", js_new_undefined());";
+            quotes(node.identifier()) + ", js_create_variable(js_new_undefined()));";
         }
 
       case AST.AssignStatement:
         if (node.leftExpr() instanceof AST.Variable) {
-          return "binding = dict_insert(binding, " +
+          return "js_assign_variable(binding, " +
             quotes(node.leftExpr().identifier()) + ", " + expression(node.rightExpr()) + ");";
         } else {
           throw "Invalid left-hand side in assignment";
@@ -59,7 +59,7 @@ exports.compile = function (ast) {
         return functionLiteral(node, functions);
 
       case AST.Variable:
-        return "dict_find(binding, \"" + node.identifier() + "\")";
+        return "js_get_variable_rvalue(binding, " + quotes(node.identifier()) + ")";
 
       case AST.Refinement:
         return "(JSValue*) dict_find_with_default(" +

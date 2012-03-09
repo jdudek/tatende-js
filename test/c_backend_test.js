@@ -62,4 +62,11 @@ tests.push(testProgram("return function (x) { return function () { return x; }()
 // Test: call returned closure
 tests.push(testProgram("return function (x) { return function () { return x; }; }(2)();", "2"));
 
+// Test: closure modifies variable from outer scope
+tests.push(testProgram("var x = 3; function () { x = 2; }(); return x;", "2"));
+
+// Test: closure modifies aliased variable
+tests.push(testProgram("var x = 3; function (x) { x = 2; }(5); return x;", "3"));
+
+
 runTests();

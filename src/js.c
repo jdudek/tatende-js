@@ -25,6 +25,8 @@ typedef struct TJSValue {
     JSClosure function_value;
 } JSValue;
 
+typedef JSValue** JSVariable;
+
 void js_dump_value(JSValue* v)
 {
     switch (v->type) {
@@ -122,13 +124,44 @@ JSValue* js_call_function(JSValue* v, List args) {
     }
 }
 
+JSVariable js_create_variable(JSValue* value) {
+    JSVariable var = malloc(sizeof(JSValue*));
+    *var = value;
+    return var;
+}
+
+static
+JSVariable find_variable(Dict binding, char* name) {
+    JSVariable variable = dict_find(binding, name);
+    if (variable != NULL) {
+        return variable;
+    } else {
+        fprintf(stderr, "ReferenceError: %s is not defined.\n", name);
+        exit(0);
+    }
+}
+
+void js_assign_variable(Dict binding, char* name, JSValue* value) {
+    JSVariable variable = find_variable(binding, name);
+    *variable = value;
+}
+
+JSVariable js_get_variable_lvalue(Dict binding, char* name) {
+    return find_variable(binding, name);
+}
+
+JSValue* js_get_variable_rvalue(Dict binding, char* name) {
+    JSVariable variable = find_variable(binding, name);
+    return *variable;
+}
+
 Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {
     while (argNames != NULL) {
         if (argValues != NULL) {
-            dict = dict_insert(dict, list_head(argNames), list_head(argValues));
+            dict = dict_insert(dict, list_head(argNames), js_create_variable(list_head(argValues)));
             argValues = list_tail(argValues);
         } else {
-            dict = dict_insert(dict, list_head(argNames), js_new_undefined());
+            dict = dict_insert(dict, list_head(argNames), js_create_variable(js_new_undefined()));
         }
         argNames = list_tail(argNames);
     }
