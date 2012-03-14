@@ -109,6 +109,7 @@ testParser("true", { booleanLiteral: true }, parser.expr);
 testParser("false", { booleanLiteral: false }, parser.expr);
 testParser("{}", { objectLiteral: [] }, parser.expr);
 testParser("{x: 2}", { objectLiteral: [["x", { numberLiteral: 2 }]] }, parser.expr);
+testParser('{"x": 2}', { objectLiteral: [["x", { numberLiteral: 2 }]] }, parser.expr);
 testParser("{x: 2, y: 3}", { objectLiteral: [
     ["x", { numberLiteral: 2 }],
     ["y", { numberLiteral: 3 }]

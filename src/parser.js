@@ -376,7 +376,7 @@ var numberLiteral = decorate(integer, function (i) {
 // This parser is wrapped in a function, executed immediately, because we want
 // to define locally some simpler parsers, not visible outside.
 
-var stringLiteral = function () {
+var quotedString = function () {
   var escapeSequence = choice([
     decorate(string('\\\\'), function () { return '\\'; }),
     decorate(string('\\\''), function () { return '\''; }),
@@ -395,11 +395,12 @@ var stringLiteral = function () {
   var inSingleQuotes = between(character("'"), character("'"), contents("'"));
   var inDoubleQuotes = between(character('"'), character('"'), contents('"'));
 
-  return decorate(
-    lexeme(choice([inSingleQuotes, inDoubleQuotes])),
-    function (string) { return AST.StringLiteral(string); }
-  );
+  return lexeme(choice([inSingleQuotes, inDoubleQuotes]));
 }();
+
+var stringLiteral = decorate(quotedString, function (string) {
+  return AST.StringLiteral(string);
+});
 
 var booleanLiteral = function () {
   var trueLiteral = decorate(keyword("true"), function () {
@@ -419,7 +420,7 @@ var booleanLiteral = function () {
 
 var objectLiteral = function (input) {
   var pair = sequence(
-    [identifier, symbol(":"), expr],
+    [choice([identifier, quotedString]), symbol(":"), expr],
     function (id, s_, expr) { return [id, expr]; }
   );
 
