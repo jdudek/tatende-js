@@ -52,6 +52,13 @@ exports.compile = function (ast) {
       case AST.StringLiteral:
         return "js_new_string(\"" + node.string() + "\")";
 
+      case AST.BooleanLiteral:
+        if (node.value()) {
+          return "js_new_boolean(1)";
+        } else {
+          return "js_new_boolean(0)";
+        }
+
       case AST.ObjectLiteral:
         return objectLiteral(node);
 

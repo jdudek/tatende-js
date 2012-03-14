@@ -21,6 +21,7 @@ typedef struct TJSValue {
     enum JSType type;
     int number_value;
     char* string_value;
+    char boolean_value;
     Dict object_value;
     JSClosure function_value;
 } JSValue;
@@ -35,6 +36,13 @@ void js_dump_value(JSValue* v)
             break;
         case TypeString:
             printf("%s", v->string_value);
+            break;
+        case TypeBoolean:
+            if (v->boolean_value) {
+                printf("true");
+            } else {
+                printf("false");
+            }
             break;
         case TypeObject:
             printf("[object]");
@@ -62,6 +70,13 @@ JSValue* js_new_string(char* s) {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeString;
     v->string_value = s;
+    return v;
+}
+
+JSValue* js_new_boolean(char i) {
+    JSValue* v = malloc(sizeof(JSValue));
+    v->type = TypeBoolean;
+    v->boolean_value = i;
     return v;
 }
 
