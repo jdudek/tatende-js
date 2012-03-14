@@ -189,3 +189,4 @@ testParser('"aa\\nbb"', { stringLiteral: 'aa\nbb' }, parser.stringLiteral);
 // tests on real files
 testParserOnFile("../src/parser.js");
 testParserOnFile("../src/ast.js");
+testParserOnFile("../src/c_backend.js");

@@ -7,12 +7,12 @@ exports.compile = function (ast) {
     var i = 1;
     return function () {
       return ++i;
-    }
+    };
   }();
 
   var quotes = function (s) {
     return '"' + s + '"';
-  }
+  };
 
   var statement = function (node) {
     switch (node.constructor) {
@@ -72,7 +72,7 @@ exports.compile = function (ast) {
       case AST.BinaryOp:
         var operatorFunctions = { "+": "js_add", "*": "js_mult" };
         return operatorFunctions[node.operator()] + "(" +
-          expression(node.leftExpr()) + ", " + expression(node.rightExpr())  + ")"
+          expression(node.leftExpr()) + ", " + expression(node.rightExpr())  + ")";
 
       default:
         throw "Incorrect AST";
