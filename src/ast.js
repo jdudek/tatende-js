@@ -63,3 +63,8 @@ exports.IfStatement = makeNodeConstructor("ifStatement", ["condition", "whenTrut
 exports.TryStatement = makeNodeConstructor("tryStatement", ["tryStatements", "identifier", "catchStatements"]);
 exports.WhileStatement = makeNodeConstructor("whileStatement", ["condition", "statements"]);
 exports.ForStatement = makeNodeConstructor("forStatement", ["initial", "condition", "finalize", "statements"]);
+exports.SwitchStatement = makeNodeConstructor("switchStatement", ["expression", "clauses"]);
+
+// We also need a third, very small category for clauses in switch statements.
+exports.CaseClause = makeNodeConstructor("caseClause", ["expression", "statements"]);
+exports.DefaultClause = makeNodeConstructor("defaultClause", ["statements"]);

@@ -66,6 +66,19 @@ testParser("for (;;) { f(x); }", [
     [{ expressionStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
   ]}
 ]);
+testParser("switch (1) { }", [
+  { switchStatement: [ { numberLiteral: 1 }, [] ]}
+]);
+testParser("switch (1) { case 1: return 1; case 2: default: return 2; }", [
+  { switchStatement: [
+    { numberLiteral: 1 },
+    [
+      { caseClause: [{ numberLiteral: 1 }, [{ returnStatement: { numberLiteral: 1 } }]] },
+      { caseClause: [{ numberLiteral: 2 }, []] },
+      { defaultClause: [{ returnStatement: { numberLiteral: 2 } }] }
+    ]
+  ]}
+]);
 
 // tests for lexer
 testParser("var x ; ", [{ varStatement: [ "x" ] }]);

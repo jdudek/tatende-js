@@ -672,6 +672,36 @@ var forStatement = function (input) {
   return p(input);
 };
 
+// switch statement has the following form: switch (expression) { clauses }
+// clauses start with either "case expression:" or "default:" followed by any
+// number of statements.
+var switchStatement = function (input) {
+  var caseClause = sequence(
+    [keyword("case"), expr, symbol(":"), many(statement)],
+    function (k_, e, s_, ss) {
+      return AST.CaseClause(e, ss);
+    }
+  );
+
+  var defaultClause = sequence(
+    [keyword("default"), symbol(":"), many(statement)],
+    function (k_, s_, ss) {
+      return AST.DefaultClause(ss);
+    }
+  );
+
+  var clause = choice([defaultClause, caseClause]);
+
+  var p = sequence(
+    [keyword("switch"), parens(expr), braces(many(clause))],
+    function (k_, e, cs) {
+      return AST.SwitchStatement(e, cs);
+    }
+  );
+
+  return p(input);
+};
+
 throwStatement = sequence(
   [keyword("throw"), expr],
   function (t_, expr) {
@@ -700,6 +730,7 @@ var statement = choice([
     tryStatement,
     whileStatement,
     forStatement,
+    switchStatement,
 
     // But we want to allow programs with unnecessary semicolons, so we add
     // "empty" statement that parses to null.
