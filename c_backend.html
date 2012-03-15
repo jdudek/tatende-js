@@ -1,0 +1,138 @@
+<!DOCTYPE html>  <html> <head>   <title>c_backend.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="ast.html">                 ast.js               </a>                                           <a class="source" href="c_backend.html">                 c_backend.js               </a>                                           <a class="source" href="parser.html">                 parser.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               c_backend.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">AST</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;ast&quot;</span><span class="p">);</span>
+
+<span class="nx">exports</span><span class="p">.</span><span class="nx">compile</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">ast</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">functions</span> <span class="o">=</span> <span class="p">[];</span>
+
+  <span class="kd">var</span> <span class="nx">unique</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="k">return</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="o">++</span><span class="nx">i</span><span class="p">;</span>
+    <span class="p">};</span>
+  <span class="p">}();</span>
+
+  <span class="kd">var</span> <span class="nx">quotes</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">s</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s1">&#39;&quot;&#39;</span> <span class="o">+</span> <span class="nx">s</span> <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">;</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">statement</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">constructor</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">VarStatement</span><span class="o">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="s2">&quot;binding = dict_insert(binding, &quot;</span> <span class="o">+</span>
+            <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, js_create_variable(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;));&quot;</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="s2">&quot;binding = dict_insert(binding, &quot;</span> <span class="o">+</span>
+            <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, js_create_variable(js_new_undefined()));&quot;</span><span class="p">;</span>
+        <span class="p">}</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">AssignStatement</span><span class="o">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">()</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Variable</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="s2">&quot;js_assign_variable(binding, &quot;</span> <span class="o">+</span>
+            <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">().</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">rightExpr</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;);&quot;</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+          <span class="k">throw</span> <span class="s2">&quot;Invalid left-hand side in assignment&quot;</span><span class="p">;</span>
+        <span class="p">}</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ReturnStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="s2">&quot;return &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;;&quot;</span><span class="p">;</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ExpressionStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;;&quot;</span><span class="p">;</span>
+
+      <span class="k">default</span><span class="o">:</span>
+        <span class="k">throw</span> <span class="s2">&quot;Incorrect AST&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">expression</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">constructor</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">NumberLiteral</span><span class="o">:</span>
+        <span class="k">return</span> <span class="s2">&quot;js_new_number(&quot;</span> <span class="o">+</span> <span class="nx">node</span><span class="p">.</span><span class="nx">number</span><span class="p">().</span><span class="nx">toString</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="o">:</span>
+        <span class="k">return</span> <span class="s2">&quot;js_new_string(\&quot;&quot;</span> <span class="o">+</span> <span class="nx">node</span><span class="p">.</span><span class="nx">string</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;\&quot;)&quot;</span><span class="p">;</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">BooleanLiteral</span><span class="o">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">value</span><span class="p">())</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="s2">&quot;js_new_boolean(1)&quot;</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="s2">&quot;js_new_boolean(0)&quot;</span><span class="p">;</span>
+        <span class="p">}</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ObjectLiteral</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">objectLiteral</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">FunctionLiteral</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">functionLiteral</span><span class="p">(</span><span class="nx">node</span><span class="p">,</span> <span class="nx">functions</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Variable</span><span class="o">:</span>
+        <span class="k">return</span> <span class="s2">&quot;js_get_variable_rvalue(binding, &quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Refinement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="s2">&quot;(JSValue*) dict_find_with_default(&quot;</span> <span class="o">+</span>
+          <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;-&gt;object_value, &quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;js_to_string(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">key</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)-&gt;string_value, js_new_undefined())&quot;</span><span class="p">;</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Invocation</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">invocation</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">BinaryOp</span><span class="o">:</span>
+        <span class="kd">var</span> <span class="nx">operatorFunctions</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;+&quot;</span><span class="o">:</span> <span class="s2">&quot;js_add&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="o">:</span> <span class="s2">&quot;js_mult&quot;</span> <span class="p">};</span>
+        <span class="k">return</span> <span class="nx">operatorFunctions</span><span class="p">[</span><span class="nx">node</span><span class="p">.</span><span class="nx">operator</span><span class="p">()]</span> <span class="o">+</span> <span class="s2">&quot;(&quot;</span> <span class="o">+</span>
+          <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">rightExpr</span><span class="p">())</span>  <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+
+      <span class="k">default</span><span class="o">:</span>
+        <span class="k">throw</span> <span class="s2">&quot;Incorrect AST&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">objectLiteral</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s2">&quot;js_new_object(&quot;</span> <span class="o">+</span>
+      <span class="nx">node</span><span class="p">.</span><span class="nx">pairs</span><span class="p">().</span><span class="nx">reduce</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">acc</span><span class="p">,</span> <span class="nx">property</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s2">&quot;dict_insert(&quot;</span> <span class="o">+</span> <span class="nx">acc</span> <span class="o">+</span> <span class="s2">&quot;, \&quot;&quot;</span> <span class="o">+</span> <span class="nx">property</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;\&quot;, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">property</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+      <span class="p">},</span> <span class="s2">&quot;dict_create()&quot;</span><span class="p">)</span> <span class="o">+</span>
+    <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+  <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Utility function to create C list from array of strings</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">toCList</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">array</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">array</span><span class="p">.</span><span class="nx">reduceRight</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">acc</span><span class="p">,</span> <span class="nx">item</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s2">&quot;list_insert(&quot;</span> <span class="o">+</span> <span class="nx">acc</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="nx">item</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+    <span class="p">},</span> <span class="s2">&quot;list_create()&quot;</span><span class="p">);</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">functionLiteral</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">name</span> <span class="o">=</span> <span class="s2">&quot;fun_&quot;</span> <span class="o">+</span> <span class="nx">unique</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">body</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">argNames</span> <span class="o">=</span> <span class="nx">toCList</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">a</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="s1">&#39;&quot;&#39;</span> <span class="o">+</span> <span class="nx">a</span> <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">;</span> <span class="p">}));</span>
+
+    <span class="kd">var</span> <span class="nx">cFunction</span> <span class="o">=</span>
+      <span class="s2">&quot;JSValue* &quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;(List argValues, Dict binding) {\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;List argNames = &quot;</span> <span class="o">+</span> <span class="nx">argNames</span> <span class="o">+</span> <span class="s2">&quot;;\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;binding = js_append_args_to_binding(argNames, argValues, binding);\n&quot;</span> <span class="o">+</span>
+        <span class="nx">body</span> <span class="o">+</span>
+        <span class="s2">&quot;return js_new_undefined();\n&quot;</span> <span class="o">+</span>
+      <span class="s2">&quot;}\n&quot;</span><span class="p">;</span>
+    <span class="nx">functions</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">cFunction</span><span class="p">);</span>
+    <span class="k">return</span> <span class="s2">&quot;js_new_function(&amp;&quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;, binding)&quot;</span><span class="p">;</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">invocation</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">argValues</span> <span class="o">=</span> <span class="nx">toCList</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">expression</span><span class="p">));</span>
+    <span class="k">return</span> <span class="s2">&quot;js_call_function(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="nx">argValues</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">addTemplate</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">program</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;#include &lt;stdio.h&gt;\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;#include &quot;src/js.c&quot;\n&#39;</span> <span class="o">+</span>
+      <span class="nx">functions</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\n&quot;</span> <span class="o">+</span>
+      <span class="s1">&#39;int main() {\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  Dict binding = NULL;\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  js_dump_value(&#39;</span> <span class="o">+</span> <span class="nx">program</span> <span class="o">+</span> <span class="s1">&#39;);\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  return 0;\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;}\n&#39;</span><span class="p">;</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">program</span> <span class="o">=</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Invocation</span><span class="p">(</span><span class="nx">AST</span><span class="p">.</span><span class="nx">FunctionLiteral</span><span class="p">([],</span> <span class="nx">ast</span><span class="p">),</span> <span class="p">[]);</span>
+  <span class="k">return</span> <span class="nx">addTemplate</span><span class="p">(</span><span class="nx">expression</span><span class="p">(</span><span class="nx">program</span><span class="p">));</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
