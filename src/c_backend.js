@@ -16,14 +16,11 @@ exports.compile = function (ast) {
 
   var statement = function (node) {
     switch (node.constructor) {
+      // When we reach this place, we've already splitted var statements with assignment
+      // into var statement and assignment statement.
       case AST.VarStatement:
-        if (node.expression()) {
-          return statement(AST.VarStatement(node.identifier())) +
-            statement(AST.AssignStatement(AST.Variable(node.identifier()), node.expression()));
-        } else {
-          return "binding = dict_insert(binding, " +
-            quotes(node.identifier()) + ", js_create_variable(js_new_undefined()));";
-        }
+        return "binding = dict_insert(binding, " +
+          quotes(node.identifier()) + ", js_create_variable(js_new_undefined()));";
 
       case AST.AssignStatement:
         if (node.leftExpr() instanceof AST.Variable) {
@@ -106,7 +103,7 @@ exports.compile = function (ast) {
 
   var functionLiteral = function (node) {
     var name = "fun_" + unique();
-    var body = node.statements().map(statement).join("\n");
+    var body = reorderVarStatements(node.statements()).map(statement).join("\n");
     var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
 
     var cFunction =
@@ -118,6 +115,39 @@ exports.compile = function (ast) {
       "}\n";
     functions.push(cFunction);
     return "js_new_function(&" + name + ", binding)";
+  };
+
+  // Traverse list of nodes and move all var statements to the top.
+  // When var statement also assigns value, create new assign statement,
+  // but still move variable declaration to the top.
+  var reorderVarStatements = function (nodes) {
+    collectVarStatements = function (nodes) {
+      if (nodes.length == 0) {
+        return [];
+      }
+      if (nodes[0] instanceof AST.VarStatement) {
+        return [nodes[0]].concat(collectVarStatements(nodes.slice(1)));
+      } else {
+        return collectVarStatements(nodes.slice(1));
+      }
+    };
+    var removeVarStatements = function (nodes) {
+      if (nodes.length == 0) {
+        return [];
+      }
+      if (nodes[0] instanceof AST.VarStatement) {
+        if (nodes[0].expression()) {
+          return [AST.AssignStatement(AST.Variable(nodes[0].identifier()), nodes[0].expression())].
+            concat(removeVarStatements(nodes.slice(1)));
+        } else {
+          return removeVarStatements(nodes.slice(1));
+        }
+      } else {
+        return [nodes[0]].concat(removeVarStatements(nodes.slice(1)));
+      }
+    };
+
+    return collectVarStatements(nodes).concat(removeVarStatements(nodes));
   };
 
   var invocation = function (node) {
