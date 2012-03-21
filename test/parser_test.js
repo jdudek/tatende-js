@@ -23,11 +23,47 @@ testParser("if (x) { return 5; }", [
     []
   ]}
 ]);
+testParser("if (x) return 5;", [
+  { ifStatement: [
+    { variable: "x"},
+    [{ returnStatement: { numberLiteral: 5 } }],
+    []
+  ]}
+]);
 testParser("if (x) { return 5; } else { return 10; }", [
   { ifStatement: [
     { variable: "x"},
     [{ returnStatement: { numberLiteral: 5 } }],
     [{ returnStatement: { numberLiteral: 10 } }]
+  ]}
+]);
+testParser("if (x) return 5; else return 10;", [
+  { ifStatement: [
+    { variable: "x"},
+    [{ returnStatement: { numberLiteral: 5 } }],
+    [{ returnStatement: { numberLiteral: 10 } }]
+  ]}
+]);
+testParser("if (x) { return 5; } else if (y) { return 10; } else { return 15; }", [
+  { ifStatement: [
+    { variable: "x"},
+    [{ returnStatement: { numberLiteral: 5 } }],
+    [{ ifStatement: [
+      { variable: "y" },
+      [{ returnStatement: { numberLiteral: 10 } }],
+      [{ returnStatement: { numberLiteral: 15 } }]
+    ]}]
+  ]}
+]);
+testParser("if (x) return 5; else if (y) return 10; else return 15;", [
+  { ifStatement: [
+    { variable: "x"},
+    [{ returnStatement: { numberLiteral: 5 } }],
+    [{ ifStatement: [
+      { variable: "y" },
+      [{ returnStatement: { numberLiteral: 10 } }],
+      [{ returnStatement: { numberLiteral: 15 } }]
+    ]}]
   ]}
 ]);
 testParser("try { return 5; } catch (e) { return e; }", [

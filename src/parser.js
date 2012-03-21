@@ -589,26 +589,30 @@ var returnStatement = sequence(
   }
 );
 
-var ifStatementWithoutElse = function (input) {
-  return sequence(
-    [keyword("if"), parens(expr), braces(many(statement))],
+var ifStatement = function (input) {
+  // if allows one statement without braces or mulitple statements enclosed
+  // in braces. In case of one statement we convert it to one-element array.
+  var block = choice([
+    braces(many(statement)),
+    decorate(statement, function (s) { return [s]; })
+  ]);
+
+  var ifStatementWithoutElse = sequence(
+    [keyword("if"), parens(expr), block],
     function (k_, expr, statements) {
       return AST.IfStatement(expr, statements, []);
     }
-  )(input);
-};
+  );
 
-var ifStatementWithElse = function (input) {
-  return sequence(
-    [keyword("if"), parens(expr), braces(many(statement)),
-      keyword("else"), braces(many(statement))],
+  var ifStatementWithElse = sequence(
+    [keyword("if"), parens(expr), block, keyword("else"), block],
     function (k_, expr, statements1, k2_, statements2) {
       return AST.IfStatement(expr, statements1, statements2);
     }
-  )(input);
-};
+  );
 
-var ifStatement = choice([ifStatementWithElse, ifStatementWithoutElse]);
+  return choice([ifStatementWithElse, ifStatementWithoutElse])(input);
+};
 
 var tryStatement = function (input) {
   return sequence(
