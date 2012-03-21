@@ -56,6 +56,9 @@ tests.push(testProgram("var x = 5; x = 2; return x;", "2"));
 // Test: expression statement
 tests.push(testProgram("var x = 2; 5; return x;", "2"));
 
+// Test: empty statement
+tests.push(testProgram("var x = 2; ; return x;", "2"));
+
 // Test: function invocation
 tests.push(testProgram("return function () { return 2; }();", "2"));
 tests.push(testProgram("return function (x) { return x; }(2);", "2"));

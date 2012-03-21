@@ -15,6 +15,10 @@ exports.compile = function (ast) {
   };
 
   var statement = function (node) {
+    if (node === null) {
+      return "";
+    }
+
     switch (node.constructor) {
       // When we reach this place, we've already splitted var statements with assignment
       // into var statement and assignment statement.
