@@ -29,7 +29,16 @@ exports.compile = function (ast) {
       case AST.AssignStatement:
         if (node.leftExpr() instanceof AST.Variable) {
           return "js_assign_variable(binding, " +
-            quotes(node.leftExpr().identifier()) + ", " + expression(node.rightExpr()) + ");";
+            quotes(node.leftExpr().identifier()) + ", " +
+            expression(node.rightExpr()) +
+          ");";
+        } else if (node.leftExpr() instanceof AST.Refinement) {
+          return "{ "+
+            "JSValue* object = " + expression(node.leftExpr().expression()) + "; " +
+            "object->object_value = dict_insert(object->object_value, " +
+              "js_to_string(" + expression(node.leftExpr().key()) + ")->string_value, " +
+              expression(node.rightExpr()) + "); " +
+            "}";
         } else {
           throw "Invalid left-hand side in assignment";
         }

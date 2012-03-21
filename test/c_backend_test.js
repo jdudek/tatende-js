@@ -55,6 +55,7 @@ tests.push(testProgram("return 2 > 3;", "false"));
 tests.push(testProgram("var x; return 2;", "2"));
 tests.push(testProgram("var x = 2; return x;", "2"));
 tests.push(testProgram("var x = 5; x = 2; return x;", "2"));
+tests.push(testProgram("var x = {}; x.y = 2; return x.y;", "2"));
 
 // Test: expression statement
 tests.push(testProgram("var x = 2; 5; return x;", "2"));
