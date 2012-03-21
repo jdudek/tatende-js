@@ -73,6 +73,6 @@ tests.push(testProgram("var x = 3; function () { x = 2; }(); return x;", "2"));
 tests.push(testProgram("var x = 3; function (x) { x = 2; }(5); return x;", "3"));
 
 // Test: Factorial
-tests.push(testProgram("var fac; fac = function (n) { if (n > 0) { return n * fac(n-1); } else { return 1; } }; return fac(5);", "120"));
+tests.push(testProgram("var fac = function (n) { if (n > 0) { return n * fac(n-1); } else { return 1; } }; return fac(5);", "120"));
 
 runTests();

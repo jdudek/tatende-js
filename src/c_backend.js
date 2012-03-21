@@ -18,8 +18,8 @@ exports.compile = function (ast) {
     switch (node.constructor) {
       case AST.VarStatement:
         if (node.expression()) {
-          return "binding = dict_insert(binding, " +
-            quotes(node.identifier()) + ", js_create_variable(" + expression(node.expression()) + "));";
+          return statement(AST.VarStatement(node.identifier())) +
+            statement(AST.AssignStatement(AST.Variable(node.identifier()), node.expression()));
         } else {
           return "binding = dict_insert(binding, " +
             quotes(node.identifier()) + ", js_create_variable(js_new_undefined()));";
