@@ -103,6 +103,24 @@ JSValue* js_new_undefined() {
     return v;
 }
 
+JSValue* js_to_string(JSValue* v) {
+    if (v->type == TypeString) {
+        return v;
+    } else {
+        fprintf(stderr, "Cannot convert to string");
+        exit(1);
+    }
+}
+
+JSValue* js_to_number(JSValue* v) {
+    if (v->type == TypeNumber) {
+        return v;
+    } else {
+        fprintf(stderr, "Cannot convert to number");
+        exit(1);
+    }
+}
+
 JSValue* js_add(JSValue* v1, JSValue* v2) {
     if (v1->type == TypeNumber && v2->type == TypeNumber) {
         return js_new_number(v1->number_value + v2->number_value);
@@ -117,16 +135,41 @@ JSValue* js_add(JSValue* v1, JSValue* v2) {
     }
 }
 
+JSValue* js_sub(JSValue* v1, JSValue* v2) {
+    if (v1->type == TypeNumber && v2->type == TypeNumber) {
+        return js_new_number(v1->number_value - v2->number_value);
+    } else {
+        fprintf(stderr, "Cannot subtract");
+        exit(1);
+    }
+}
+
 JSValue* js_mult(JSValue* v1, JSValue* v2) {
     return js_new_number(v1->number_value * v2->number_value);
 }
 
-JSValue* js_to_string(JSValue* v) {
-    if (v->type == TypeString) {
-        return v;
-    } else {
-        fprintf(stderr, "Cannot convert to string");
-        exit(1);
+JSValue* js_lt(JSValue* v1, JSValue* v2) {
+    return js_new_boolean(js_to_number(v1)->number_value < js_to_number(v2)->number_value);
+}
+
+JSValue* js_gt(JSValue* v1, JSValue* v2) {
+    return js_new_boolean(js_to_number(v1)->number_value > js_to_number(v2)->number_value);
+}
+
+int js_is_truthy(JSValue* v) {
+    switch (v->type) {
+        case TypeNumber:
+            return v->number_value != 0;
+        case TypeString:
+            return strlen(v->string_value) > 0;
+        case TypeBoolean:
+            return v->boolean_value;
+        case TypeObject:
+            return v->object_value != NULL;
+        case TypeFunction:
+            return 1;
+        case TypeUndefined:
+            return 0;
     }
 }
 

@@ -45,6 +45,8 @@ tests.push(testProgram("return { x: 2 }.y;", "[undefined]"));
 tests.push(testProgram("return function () { return 2; };", "[function]"));
 tests.push(testProgram("return true;", "true"));
 tests.push(testProgram("return false;", "false"));
+tests.push(testProgram("return 2 < 3;", "true"));
+tests.push(testProgram("return 2 > 3;", "false"));
 
 tests.push(testProgram("var x; return 2;", "2"));
 tests.push(testProgram("var x = 2; return x;", "2"));
@@ -70,5 +72,7 @@ tests.push(testProgram("var x = 3; function () { x = 2; }(); return x;", "2"));
 // Test: closure modifies aliased variable
 tests.push(testProgram("var x = 3; function (x) { x = 2; }(5); return x;", "3"));
 
+// Test: Factorial
+tests.push(testProgram("var fac; fac = function (n) { if (n > 0) { return n * fac(n-1); } else { return 1; } }; return fac(5);", "120"));
 
 runTests();

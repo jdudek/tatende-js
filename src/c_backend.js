@@ -39,6 +39,11 @@ exports.compile = function (ast) {
       case AST.ExpressionStatement:
         return expression(node.expression()) + ";";
 
+      case AST.IfStatement:
+        return "if (js_is_truthy(" + expression(node.condition()) + "))" +
+          "{ " + node.whenTruthy().map(statement) + " } " +
+          "else { " + node.whenFalsy().map(statement) + " }";
+
       default:
         throw "Incorrect AST";
     }
@@ -77,9 +82,7 @@ exports.compile = function (ast) {
         return invocation(node);
 
       case AST.BinaryOp:
-        var operatorFunctions = { "+": "js_add", "*": "js_mult" };
-        return operatorFunctions[node.operator()] + "(" +
-          expression(node.leftExpr()) + ", " + expression(node.rightExpr())  + ")";
+        return binaryOp(node);
 
       default:
         throw "Incorrect AST";
@@ -120,6 +123,18 @@ exports.compile = function (ast) {
   var invocation = function (node) {
     var argValues = toCList(node.args().map(expression));
     return "js_call_function(" + expression(node.expression()) + ", " + argValues + ")";
+  };
+
+  var binaryOp = function (node) {
+    var operatorFunctions = {
+      "+": "js_add", "-": "js_sub", "*": "js_mult",
+      "<": "js_lt", ">": "js_gt"
+    };
+    if (typeof operatorFunctions[node.operator()] === "undefined") {
+      throw "Unsupported operator: " + node.operator();
+    }
+    return operatorFunctions[node.operator()] + "(" +
+      expression(node.leftExpr()) + ", " + expression(node.rightExpr())  + ")";
   };
 
   var addTemplate = function (program) {
