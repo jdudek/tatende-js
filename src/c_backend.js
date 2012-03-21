@@ -144,6 +144,15 @@ exports.compile = function (ast) {
           result = extractVarStatements(nodes);
           result[0] = [node].concat(result[0]);
         }
+      } else if (node instanceof AST.IfStatement) {
+        var result1 = extractVarStatements(node.whenTruthy());
+        var result2 = extractVarStatements(node.whenFalsy());
+
+        node = AST.IfStatement(node.condition(), result1[1], result2[1]);
+
+        result = extractVarStatements(nodes);
+        result[0] = result1[0].concat(result2[0]).concat(result[0]);
+        result[1] = [node].concat(result[1]);
       } else {
         result = extractVarStatements(nodes);
         result[1] = [node].concat(result[1]);

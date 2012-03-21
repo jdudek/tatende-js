@@ -76,6 +76,8 @@ tests.push(testProgram("var x = 3; function (x) { x = 2; }(5); return x;", "3"))
 // Test: scope contains variables declared later
 tests.push(testProgram("function () { x = 2; }(); var x; return x;", "2"));
 tests.push(testProgram("function () { x = 2; }(); var x = 1; return x;", "1"));
+tests.push(testProgram("function () { x = 2; }(); if (true) { var x; } return x;", "2"));
+tests.push(testProgram("function () { x = 2; }(); if (true) {} else { var x; } return x;", "2"));
 
 // Test: Factorial
 tests.push(testProgram("var fac = function (n) { if (n > 0) { return n * fac(n-1); } else { return 1; } }; return fac(5);", "120"));
