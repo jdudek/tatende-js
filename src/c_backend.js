@@ -124,49 +124,36 @@ exports.compile = function (ast) {
   // Traverse list of nodes and move all var statements to the top.
   // When var statement also assigns value, create new assign statement,
   // but still move variable declaration to the top.
+  // Please note this function will modify the tree in-place.
   var reorderVarStatements = function (nodes) {
-    // extractVarStatements returns a pair of two lists: var statements first, then
-    // any other statements.
-    var extractVarStatements = function (nodes) {
-      var result = [[], []];
+    var identifiers = [];
 
-      if (nodes.length == 0) {
-        return result;
-      }
-
-      var node = nodes[0];
-      nodes = nodes.slice(1);
-
-      if (node instanceof AST.VarStatement) {
-        if (node.expression()) {
-          var varStmt = AST.VarStatement(node.identifier());
-          var assignStmt = AST.AssignStatement(AST.Variable(node.identifier()), node.expression());
-          result = extractVarStatements(nodes);
-          result[0] = [varStmt].concat(result[0]);
-          result[1] = [assignStmt].concat(result[1]);
-        } else {
-          result = extractVarStatements(nodes);
-          result[0] = [node].concat(result[0]);
+    var visit = function (nodes) {
+      for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        if (node instanceof AST.VarStatement) {
+          identifiers.push(node.identifier());
+          if (node.expression()) {
+            nodes[i] = AST.AssignStatement(AST.Variable(node.identifier()), node.expression());
+          } else {
+            nodes[i] = null;
+          }
         }
-      } else if (node instanceof AST.IfStatement) {
-        var result1 = extractVarStatements(node.whenTruthy());
-        var result2 = extractVarStatements(node.whenFalsy());
-
-        node = AST.IfStatement(node.condition(), result1[1], result2[1]);
-
-        result = extractVarStatements(nodes);
-        result[0] = result1[0].concat(result2[0]).concat(result[0]);
-        result[1] = [node].concat(result[1]);
-      } else {
-        result = extractVarStatements(nodes);
-        result[1] = [node].concat(result[1]);
+        if (node instanceof AST.IfStatement) {
+          visit(node.whenTruthy());
+          visit(node.whenFalsy());
+        }
       }
-      return result;
+    }
+    visit(nodes);
+
+    // A utility function that modifies array and puts items before existing array items.
+    var prepend = function (array, items) {
+      Array.prototype.splice.apply(array, [0, 0].concat(items));
     };
 
-    // It suffices to concat two result lists.
-    var result = extractVarStatements(nodes);
-    return result[0].concat(result[1]);
+    prepend(nodes, identifiers.map(AST.VarStatement));
+    return nodes;
   };
 
   var invocation = function (node) {
