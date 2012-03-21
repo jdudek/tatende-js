@@ -121,33 +121,39 @@ exports.compile = function (ast) {
   // When var statement also assigns value, create new assign statement,
   // but still move variable declaration to the top.
   var reorderVarStatements = function (nodes) {
-    collectVarStatements = function (nodes) {
+    // extractVarStatements returns a pair of two lists: var statements first, then
+    // any other statements.
+    var extractVarStatements = function (nodes) {
+      var result = [[], []];
+
       if (nodes.length == 0) {
-        return [];
+        return result;
       }
-      if (nodes[0] instanceof AST.VarStatement) {
-        return [nodes[0]].concat(collectVarStatements(nodes.slice(1)));
-      } else {
-        return collectVarStatements(nodes.slice(1));
-      }
-    };
-    var removeVarStatements = function (nodes) {
-      if (nodes.length == 0) {
-        return [];
-      }
-      if (nodes[0] instanceof AST.VarStatement) {
-        if (nodes[0].expression()) {
-          return [AST.AssignStatement(AST.Variable(nodes[0].identifier()), nodes[0].expression())].
-            concat(removeVarStatements(nodes.slice(1)));
+
+      var node = nodes[0];
+      nodes = nodes.slice(1);
+
+      if (node instanceof AST.VarStatement) {
+        if (node.expression()) {
+          var varStmt = AST.VarStatement(node.identifier());
+          var assignStmt = AST.AssignStatement(AST.Variable(node.identifier()), node.expression());
+          result = extractVarStatements(nodes);
+          result[0] = [varStmt].concat(result[0]);
+          result[1] = [assignStmt].concat(result[1]);
         } else {
-          return removeVarStatements(nodes.slice(1));
+          result = extractVarStatements(nodes);
+          result[0] = [node].concat(result[0]);
         }
       } else {
-        return [nodes[0]].concat(removeVarStatements(nodes.slice(1)));
+        result = extractVarStatements(nodes);
+        result[1] = [node].concat(result[1]);
       }
+      return result;
     };
 
-    return collectVarStatements(nodes).concat(removeVarStatements(nodes));
+    // It suffices to concat two result lists.
+    var result = extractVarStatements(nodes);
+    return result[0].concat(result[1]);
   };
 
   var invocation = function (node) {
