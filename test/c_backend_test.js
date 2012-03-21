@@ -24,8 +24,9 @@ var testProgram = function (program, expectedOutput) {
     assert.ok(!! ast)
     var compiled = backend.compile(ast);
     fs.writeFileSync("program.c", compiled);
-    childProcess.exec("gcc program.c && ./a.out", function (error, stdout) {
+    childProcess.exec("gcc program.c && ./a.out", function (error, stdout, stderr) {
       assert.ok(! error);
+      assert.strictEqual(stderr, "");
       assert.strictEqual(stdout, expectedOutput);
       callback();
     });
