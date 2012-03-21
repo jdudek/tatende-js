@@ -6,6 +6,6 @@ test:
 	@NODE_PATH=src/ node test/c_backend_test.js
 
 docs:
-	docco src/parser.js
+	docco src/parser.js src/ast.js src/c_backend.js
 
 .PHONY: test docs
