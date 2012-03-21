@@ -68,6 +68,9 @@ exports.compile = function (ast) {
       case AST.ObjectLiteral:
         return objectLiteral(node);
 
+      case AST.ArrayLiteral:
+        return arrayLiteral(node);
+
       case AST.FunctionLiteral:
         return functionLiteral(node, functions);
 
@@ -94,6 +97,14 @@ exports.compile = function (ast) {
     return "js_new_object(" +
       node.pairs().reduce(function (acc, property) {
         return "dict_insert(" + acc + ", \"" + property[0] + "\", " + expression(property[1]) + ")";
+      }, "dict_create()") +
+    ")";
+  };
+
+  var arrayLiteral = function (node) {
+    return "js_new_object(" +
+      node.items().reduce(function (acc, item, i) {
+        return "dict_insert(" + acc + ", " + quotes(i) + ", " + expression(item) + ")";
       }, "dict_create()") +
     ")";
   };

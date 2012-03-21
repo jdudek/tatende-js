@@ -106,6 +106,14 @@ JSValue* js_new_undefined() {
 JSValue* js_to_string(JSValue* v) {
     if (v->type == TypeString) {
         return v;
+    } else if (v->type == TypeNumber) {
+        char len = 1;
+        int a = v->number_value;
+        if (a < 0) { a = -a; len++; }
+        do { len++; a = a / 10; } while (a > 0);
+        char* s = malloc(sizeof(char) * len);
+        snprintf(s, len, "%d", v->number_value);
+        return js_new_string(s);
     } else {
         fprintf(stderr, "Cannot convert to string");
         exit(1);
