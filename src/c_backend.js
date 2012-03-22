@@ -164,7 +164,7 @@ exports.compile = function (ast) {
           visit(node.whenFalsy());
         }
       }
-    }
+    };
     visit(nodes);
 
     // A utility function that modifies array and puts items before existing array items.
