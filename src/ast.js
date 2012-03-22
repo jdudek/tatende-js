@@ -43,6 +43,7 @@ exports.BooleanLiteral = makeNodeConstructor("booleanLiteral", ["value"]);
 exports.ObjectLiteral = makeNodeConstructor("objectLiteral", ["pairs"]);
 exports.ArrayLiteral = makeNodeConstructor("arrayLiteral", ["items"]);
 exports.FunctionLiteral = makeNodeConstructor("functionLiteral", ["args", "statements"]);
+exports.ThisVariable = makeNodeConstructor("thisVariable", ["keyword"]);
 exports.Variable = makeNodeConstructor("variable", ["identifier"]);
 exports.Invocation = makeNodeConstructor("invocation", ["expression", "args"]);
 exports.Refinement = makeNodeConstructor("refinement", ["expression", "key"]);

@@ -443,9 +443,9 @@ var arrayLiteral = function (input) {
   return p(input);
 };
 
-var variable = decorate(identifier, function (i) {
-  return AST.Variable(i);
-});
+var thisVariable = decorate(keyword("this"), AST.ThisVariable);
+
+var variable = decorate(identifier, AST.Variable);
 
 var functionLiteral = function (input) {
   var args = parens(sepBy(symbol(","), identifier));
@@ -506,6 +506,7 @@ var expr = function (input) {
     objectLiteral,
     arrayLiteral,
     functionLiteral,
+    thisVariable,
     variable,
     parens(expr)
   ]);
