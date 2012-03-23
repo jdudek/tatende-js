@@ -111,4 +111,7 @@ tests.push(testProgram("var X = function () {}; var x = new X(); return X.protot
 tests.push(testProgram("return global;", "[object]"));
 tests.push(testProgram("global.x = 2; return global.x;", "2"));
 
+// Test: global object is default value for "this"
+tests.push(testProgram("global.x = 2; var f = function () { return this; }; return f().x;", "2"));
+
 runTests();

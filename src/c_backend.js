@@ -189,7 +189,7 @@ exports.compile = function (ast) {
       var key = node.expression().key();
       return "js_call_method(global, " + expression(object) + ", " + expression(key) + ", " + argValues + ")";
     } else {
-      return "js_call_function(global, " + expression(node.expression()) + ", NULL, " + argValues + ")";
+      return "js_call_function(global, " + expression(node.expression()) + ", global, " + argValues + ")";
     }
   };
 
