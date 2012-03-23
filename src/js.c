@@ -30,7 +30,9 @@ typedef struct TJSValue {
 typedef JSValue** JSVariable;
 
 JSValue* js_new_bare_function(JSValue* (*function_ptr)(), Dict binding);
-JSValue* js_is_prototype_of(JSValue* this, List argValues, Dict binding);
+
+static JSValue* get_object_property(JSValue* object, char* key);
+static void set_object_property(JSValue* object, char* key, JSValue* value);
 
 void js_dump_value(JSValue* v)
 {
@@ -92,12 +94,10 @@ JSValue* js_new_bare_object() {
     return v;
 }
 
-JSValue* js_new_object(Dict d) {
+JSValue* js_new_object(JSValue* global, Dict d) {
     JSValue* v = js_new_bare_object();
     v->object_value = d;
-    v->prototype = js_new_bare_object();
-    v->prototype->object_value = dict_insert(v->prototype->object_value, "isPrototypeOf",
-        js_new_bare_function(&js_is_prototype_of, NULL));
+    v->prototype = get_object_property(get_object_property(global, "Object"), "prototype");
     return v;
 }
 
@@ -111,14 +111,14 @@ JSValue* js_new_bare_function(JSValue* (*function_ptr)(), Dict binding) {
     return v;
 }
 
-JSValue* js_new_function(JSValue* (*function_ptr)(), Dict binding) {
+JSValue* js_new_function(JSValue* global, JSValue* (*function_ptr)(), Dict binding) {
     JSValue* v = js_new_bare_function(function_ptr, binding);
 
     // function is also an object, initialize properties dictionary
     v->object_value = dict_create();
 
     // every function has a prototype object for instances
-    v->object_value = dict_insert(v->object_value, "prototype", js_new_object(dict_create()));
+    v->object_value = dict_insert(v->object_value, "prototype", js_new_object(global, dict_create()));
 
     return v;
 }
@@ -207,9 +207,9 @@ int js_is_truthy(JSValue* v) {
     }
 }
 
-JSValue* js_call_function(JSValue* v, JSValue* this, List args) {
+JSValue* js_call_function(JSValue* global, JSValue* v, JSValue* this, List args) {
     if (v->type == TypeFunction) {
-        return (v->function_value.function)(this, args, v->function_value.binding);
+        return (v->function_value.function)(global, this, args, v->function_value.binding);
     } else {
         fprintf(stderr, "Cannot call, value is not a function");
         exit(1);
@@ -247,10 +247,10 @@ JSValue* js_get_variable_rvalue(Dict binding, char* name) {
     return *variable;
 }
 
-JSValue* js_get_object_property(JSValue* object, JSValue* key) {
+static JSValue* get_object_property(JSValue* object, char* key) {
     while (object != NULL) {
         JSValue* value = (JSValue*) dict_find_with_default(
-            object->object_value, js_to_string(key)->string_value, js_new_undefined());
+            object->object_value, key, js_new_undefined());
         if (value->type != TypeUndefined) {
             return value;
         } else {
@@ -260,17 +260,25 @@ JSValue* js_get_object_property(JSValue* object, JSValue* key) {
     return js_new_undefined();
 }
 
-JSValue* js_call_method(JSValue* object, JSValue* key, List args) {
-    return js_call_function(js_get_object_property(object, key), object, args);
+static void set_object_property(JSValue* object, char* key, JSValue* value) {
+    object->object_value = dict_insert(object->object_value, key, value);
 }
 
-JSValue* js_invoke_constructor(JSValue* function, List args) {
+JSValue* js_get_object_property(JSValue* object, JSValue* key) {
+    return get_object_property(object, js_to_string(key)->string_value);
+}
+
+JSValue* js_call_method(JSValue* global, JSValue* object, JSValue* key, List args) {
+    return js_call_function(global, js_get_object_property(object, key), object, args);
+}
+
+JSValue* js_invoke_constructor(JSValue* global, JSValue* function, List args) {
     if (function->type != TypeFunction) {
         fprintf(stderr, "TypeError: expression is not a function\n");
         exit(0);
     }
-    JSValue* this = js_new_object(dict_create());
-    JSValue* ret = js_call_function(function, this, args);
+    JSValue* this = js_new_object(global, dict_create());
+    JSValue* ret = js_call_function(global, function, this, args);
     if (ret->type == TypeObject) {
         return ret;
     } else {
@@ -279,7 +287,11 @@ JSValue* js_invoke_constructor(JSValue* function, List args) {
     }
 }
 
-JSValue* js_is_prototype_of(JSValue* this, List argValues, Dict binding) {
+JSValue* js_object_constructor(JSValue* global, JSValue* this, List argValues, Dict binding) {
+    return js_new_object(global, NULL);
+}
+
+JSValue* js_is_prototype_of(JSValue* global, JSValue* this, List argValues, Dict binding) {
     JSValue* maybeChild = (JSValue*) list_head(argValues);
 
     while (maybeChild != NULL) {
@@ -302,4 +314,14 @@ Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {
         argNames = list_tail(argNames);
     }
     return dict;
+}
+
+void js_create_native_objects(JSValue* global) {
+    JSValue* object_prototype = js_new_bare_object();
+    set_object_property(object_prototype, "isPrototypeOf", js_new_bare_function(&js_is_prototype_of, NULL));
+
+    JSValue* object_constructor = js_new_bare_function(&js_object_constructor, NULL);
+    object_constructor->object_value = dict_create();
+    set_object_property(object_constructor, "prototype", object_prototype);
+    set_object_property(global, "Object", object_constructor);
 }

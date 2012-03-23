@@ -109,7 +109,7 @@ exports.compile = function (ast) {
   };
 
   var objectLiteral = function (node) {
-    return "js_new_object(" +
+    return "js_new_object(global, " +
       node.pairs().reduce(function (acc, property) {
         return "dict_insert(" + acc + ", \"" + property[0] + "\", " + expression(property[1]) + ")";
       }, "dict_create()") +
@@ -117,7 +117,7 @@ exports.compile = function (ast) {
   };
 
   var arrayLiteral = function (node) {
-    return "js_new_object(" +
+    return "js_new_object(global, " +
       node.items().reduce(function (acc, item, i) {
         return "dict_insert(" + acc + ", " + quotes(i) + ", " + expression(item) + ")";
       }, "dict_create()") +
@@ -137,14 +137,14 @@ exports.compile = function (ast) {
     var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
 
     var cFunction =
-      "JSValue* " + name + "(JSValue* this, List argValues, Dict binding) {\n" +
+      "JSValue* " + name + "(JSValue* global, JSValue* this, List argValues, Dict binding) {\n" +
         "List argNames = " + argNames + ";\n" +
         "binding = js_append_args_to_binding(argNames, argValues, binding);\n" +
         body +
         "return js_new_undefined();\n" +
       "}\n";
     functions.push(cFunction);
-    return "js_new_function(&" + name + ", binding)";
+    return "js_new_function(global, &" + name + ", binding)";
   };
 
   // Traverse list of nodes and move all var statements to the top.
@@ -187,9 +187,9 @@ exports.compile = function (ast) {
     if (node.expression() instanceof AST.Refinement) {
       var object = node.expression().expression();
       var key = node.expression().key();
-      return "js_call_method(" + expression(object) + ", " + expression(key) + ", " + argValues + ")";
+      return "js_call_method(global, " + expression(object) + ", " + expression(key) + ", " + argValues + ")";
     } else {
-      return "js_call_function(" + expression(node.expression()) + ", NULL, " + argValues + ")";
+      return "js_call_function(global, " + expression(node.expression()) + ", NULL, " + argValues + ")";
     }
   };
 
@@ -217,7 +217,7 @@ exports.compile = function (ast) {
         fun = node.expression();
         argValues = "NULL";
       }
-      return "js_invoke_constructor(" + expression(fun) + "," + argValues + ")";
+      return "js_invoke_constructor(global, " + expression(fun) + "," + argValues + ")";
     } else {
       throw "Unsupported operator: " + node.operator();
     }
@@ -229,7 +229,9 @@ exports.compile = function (ast) {
       '#include "src/js.c"\n' +
       functions.join("\n") + "\n" +
       'int main() {\n' +
-      '  Dict binding = NULL;\n' +
+      '  JSValue* global = js_new_bare_object();\n' +
+      '  js_create_native_objects(global);\n' +
+      '  Dict binding = dict_insert(dict_create(), "global", js_create_variable(global));\n' +
       '  js_dump_value(' + program + ');\n' +
       '  return 0;\n' +
       '}\n';

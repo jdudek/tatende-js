@@ -107,4 +107,8 @@ tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X
 // Test: Object prototype method isPrototypeOf
 tests.push(testProgram("var X = function () {}; var x = new X(); return X.prototype.isPrototypeOf(x);", "true"));
 
+// Test: global object
+tests.push(testProgram("return global;", "[object]"));
+tests.push(testProgram("global.x = 2; return global.x;", "2"));
+
 runTests();
