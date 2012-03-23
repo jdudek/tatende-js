@@ -100,6 +100,9 @@ exports.compile = function (ast) {
       case AST.BinaryOp:
         return binaryOp(node);
 
+      case AST.UnaryOp:
+        return unaryOp(node);
+
       default:
         throw "Incorrect AST";
     }
@@ -200,6 +203,24 @@ exports.compile = function (ast) {
     }
     return operatorFunctions[node.operator()] + "(" +
       expression(node.leftExpr()) + ", " + expression(node.rightExpr())  + ")";
+  };
+
+  var unaryOp = function (node) {
+    if (node.operator() === "new") {
+      var fun;
+      var argValues;
+
+      if (node.expression() instanceof AST.Invocation) {
+        fun = node.expression().expression();
+        argValues = toCList(node.expression().args().map(expression));
+      } else {
+        fun = node.expression();
+        argValues = "NULL";
+      }
+      return "js_invoke_constructor(" + expression(fun) + "," + argValues + ")";
+    } else {
+      throw "Unsupported operator: " + node.operator();
+    }
   };
 
   var addTemplate = function (program) {

@@ -92,4 +92,10 @@ tests.push(testProgram("var fac = function (n) { if (n > 0) { return n * fac(n-1
 // Test: function uses "this"
 tests.push(testProgram("var x = { a: 2, f: function () { return this.a; } }; return x.f();", "2"));
 
+// Test: constructor
+tests.push(testProgram("var X = function () {}; var x = new X(); return x;", "[object]"));
+tests.push(testProgram("var X = function () {}; var x = new X; return x;", "[object]"));
+tests.push(testProgram("var X = function () { this.y = 2; }; var x = new X(); return x.y;", "2"));
+tests.push(testProgram("var X = function () { return { y: 2 }; }; var x = new X(); return x.y;", "2"));
+
 runTests();

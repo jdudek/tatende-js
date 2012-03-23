@@ -230,6 +230,20 @@ JSValue* js_call_method(JSValue* object, JSValue* key, List args) {
     return js_call_function(js_get_object_property(object, key), object, args);
 }
 
+JSValue* js_invoke_constructor(JSValue* function, List args) {
+    if (function->type != TypeFunction) {
+        fprintf(stderr, "TypeError: expression is not a function\n");
+        exit(0);
+    }
+    JSValue* this = js_new_object(dict_create());
+    JSValue* ret = js_call_function(function, this, args);
+    if (ret->type == TypeObject) {
+        return ret;
+    } else {
+        return this;
+    }
+}
+
 Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {
     while (argNames != NULL) {
         if (argValues != NULL) {
