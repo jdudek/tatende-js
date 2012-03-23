@@ -89,4 +89,7 @@ tests.push(testProgram("function () { x = 2; }(); if (true) {} else { var x; } r
 // Test: Factorial
 tests.push(testProgram("var fac = function (n) { if (n > 0) { return n * fac(n-1); } else { return 1; } }; return fac(5);", "120"));
 
+// Test: function uses "this"
+tests.push(testProgram("var x = { a: 2, f: function () { return this.a; } }; return x.f();", "2"));
+
 runTests();

@@ -181,9 +181,9 @@ int js_is_truthy(JSValue* v) {
     }
 }
 
-JSValue* js_call_function(JSValue* v, List args) {
+JSValue* js_call_function(JSValue* v, JSValue* this, List args) {
     if (v->type == TypeFunction) {
-        return (v->function_value.function)(args, v->function_value.binding);
+        return (v->function_value.function)(this, args, v->function_value.binding);
     } else {
         fprintf(stderr, "Cannot call, value is not a function");
         exit(1);
@@ -219,6 +219,15 @@ JSVariable js_get_variable_lvalue(Dict binding, char* name) {
 JSValue* js_get_variable_rvalue(Dict binding, char* name) {
     JSVariable variable = find_variable(binding, name);
     return *variable;
+}
+
+JSValue* js_get_object_property(JSValue* object, JSValue* key) {
+    return (JSValue*) dict_find_with_default(
+        object->object_value, js_to_string(key)->string_value, js_new_undefined());
+}
+
+JSValue* js_call_method(JSValue* object, JSValue* key, List args) {
+    return js_call_function(js_get_object_property(object, key), object, args);
 }
 
 Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {

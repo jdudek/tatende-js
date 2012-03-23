@@ -86,10 +86,13 @@ exports.compile = function (ast) {
       case AST.Variable:
         return "js_get_variable_rvalue(binding, " + quotes(node.identifier()) + ")";
 
+      case AST.ThisVariable:
+        return "this";
+
       case AST.Refinement:
-        return "(JSValue*) dict_find_with_default(" +
-          expression(node.expression()) + "->object_value, " +
-          "js_to_string(" + expression(node.key()) + ")->string_value, js_new_undefined())";
+        return "js_get_object_property(" +
+          expression(node.expression()) + ", " +
+          expression(node.key()) + ")";
 
       case AST.Invocation:
         return invocation(node);
@@ -131,7 +134,7 @@ exports.compile = function (ast) {
     var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
 
     var cFunction =
-      "JSValue* " + name + "(List argValues, Dict binding) {\n" +
+      "JSValue* " + name + "(JSValue* this, List argValues, Dict binding) {\n" +
         "List argNames = " + argNames + ";\n" +
         "binding = js_append_args_to_binding(argNames, argValues, binding);\n" +
         body +
@@ -178,7 +181,13 @@ exports.compile = function (ast) {
 
   var invocation = function (node) {
     var argValues = toCList(node.args().map(expression));
-    return "js_call_function(" + expression(node.expression()) + ", " + argValues + ")";
+    if (node.expression() instanceof AST.Refinement) {
+      var object = node.expression().expression();
+      var key = node.expression().key();
+      return "js_call_method(" + expression(object) + ", " + expression(key) + ", " + argValues + ")";
+    } else {
+      return "js_call_function(" + expression(node.expression()) + ", NULL, " + argValues + ")";
+    }
   };
 
   var binaryOp = function (node) {
