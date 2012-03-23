@@ -94,6 +94,9 @@ JSValue* js_new_function(JSValue* (*function_ptr)(), Dict binding) {
     closure.function = function_ptr;
     closure.binding = binding;
     v->function_value = closure;
+
+    // function is also an object, initialize properties dictionary
+    v->object_value = dict_create();
     return v;
 }
 
