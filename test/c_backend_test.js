@@ -97,6 +97,7 @@ tests.push(testProgram("var X = function () {}; var x = new X(); return x;", "[o
 tests.push(testProgram("var X = function () {}; var x = new X; return x;", "[object]"));
 tests.push(testProgram("var X = function () { this.y = 2; }; var x = new X(); return x.y;", "2"));
 tests.push(testProgram("var X = function () { return { y: 2 }; }; var x = new X(); return x.y;", "2"));
+tests.push(testProgram("var ns = {}; ns.X = function () { this.y = 2; }; var x = new ns.X(); return x.y;", "2"));
 
 // Test: function properties
 tests.push(testProgram("var f = function () {}; f.x = 2; return f.x;", "2"));
