@@ -101,4 +101,7 @@ tests.push(testProgram("var X = function () { return { y: 2 }; }; var x = new X(
 // Test: function properties
 tests.push(testProgram("var f = function () {}; f.x = 2; return f.x;", "2"));
 
+// Test: prototypes
+tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X(); return x.y;", "2"));
+
 runTests();

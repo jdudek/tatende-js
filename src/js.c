@@ -24,6 +24,7 @@ typedef struct TJSValue {
     char boolean_value;
     Dict object_value;
     JSClosure function_value;
+    struct TJSValue* prototype;
 } JSValue;
 
 typedef JSValue** JSVariable;
@@ -84,6 +85,7 @@ JSValue* js_new_object(Dict d) {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeObject;
     v->object_value = d;
+    v->prototype = NULL;
     return v;
 }
 
@@ -97,6 +99,10 @@ JSValue* js_new_function(JSValue* (*function_ptr)(), Dict binding) {
 
     // function is also an object, initialize properties dictionary
     v->object_value = dict_create();
+
+    // every function has a prototype object for instances
+    v->object_value = dict_insert(v->object_value, "prototype", js_new_object(dict_create()));
+
     return v;
 }
 
@@ -225,8 +231,16 @@ JSValue* js_get_variable_rvalue(Dict binding, char* name) {
 }
 
 JSValue* js_get_object_property(JSValue* object, JSValue* key) {
-    return (JSValue*) dict_find_with_default(
-        object->object_value, js_to_string(key)->string_value, js_new_undefined());
+    while (object != NULL) {
+        JSValue* value = (JSValue*) dict_find_with_default(
+            object->object_value, js_to_string(key)->string_value, js_new_undefined());
+        if (value->type != TypeUndefined) {
+            return value;
+        } else {
+            object = object->prototype;
+        }
+    }
+    return js_new_undefined();
 }
 
 JSValue* js_call_method(JSValue* object, JSValue* key, List args) {
@@ -243,6 +257,7 @@ JSValue* js_invoke_constructor(JSValue* function, List args) {
     if (ret->type == TypeObject) {
         return ret;
     } else {
+        this->prototype = dict_find(function->object_value, "prototype");
         return this;
     }
 }
