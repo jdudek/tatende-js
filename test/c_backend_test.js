@@ -104,4 +104,7 @@ tests.push(testProgram("var f = function () {}; f.x = 2; return f.x;", "2"));
 // Test: prototypes
 tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X(); return x.y;", "2"));
 
+// Test: Object prototype method isPrototypeOf
+tests.push(testProgram("var X = function () {}; var x = new X(); return X.prototype.isPrototypeOf(x);", "true"));
+
 runTests();

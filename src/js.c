@@ -29,6 +29,9 @@ typedef struct TJSValue {
 
 typedef JSValue** JSVariable;
 
+JSValue* js_new_bare_function(JSValue* (*function_ptr)(), Dict binding);
+JSValue* js_is_prototype_of(JSValue* this, List argValues, Dict binding);
+
 void js_dump_value(JSValue* v)
 {
     switch (v->type) {
@@ -81,21 +84,35 @@ JSValue* js_new_boolean(char i) {
     return v;
 }
 
-JSValue* js_new_object(Dict d) {
+JSValue* js_new_bare_object() {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeObject;
-    v->object_value = d;
+    v->object_value = NULL;
     v->prototype = NULL;
     return v;
 }
 
-JSValue* js_new_function(JSValue* (*function_ptr)(), Dict binding) {
+JSValue* js_new_object(Dict d) {
+    JSValue* v = js_new_bare_object();
+    v->object_value = d;
+    v->prototype = js_new_bare_object();
+    v->prototype->object_value = dict_insert(v->prototype->object_value, "isPrototypeOf",
+        js_new_bare_function(&js_is_prototype_of, NULL));
+    return v;
+}
+
+JSValue* js_new_bare_function(JSValue* (*function_ptr)(), Dict binding) {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeFunction;
     JSClosure closure;
     closure.function = function_ptr;
     closure.binding = binding;
     v->function_value = closure;
+    return v;
+}
+
+JSValue* js_new_function(JSValue* (*function_ptr)(), Dict binding) {
+    JSValue* v = js_new_bare_function(function_ptr, binding);
 
     // function is also an object, initialize properties dictionary
     v->object_value = dict_create();
@@ -260,6 +277,18 @@ JSValue* js_invoke_constructor(JSValue* function, List args) {
         this->prototype = dict_find(function->object_value, "prototype");
         return this;
     }
+}
+
+JSValue* js_is_prototype_of(JSValue* this, List argValues, Dict binding) {
+    JSValue* maybeChild = (JSValue*) list_head(argValues);
+
+    while (maybeChild != NULL) {
+        if (maybeChild->prototype == this) {
+            return js_new_boolean(1);
+        }
+        maybeChild = maybeChild->prototype;
+    }
+    return js_new_boolean(0);
 }
 
 Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {
