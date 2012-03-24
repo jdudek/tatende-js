@@ -231,7 +231,7 @@ exports.compile = function (ast) {
       'int main() {\n' +
       '  JSValue* global = js_new_bare_object();\n' +
       '  js_create_native_objects(global);\n' +
-      '  Dict binding = dict_insert(dict_create(), "global", js_create_variable(global));\n' +
+      '  Dict binding = dict_create();\n' +
       '  js_dump_value(' + program + ');\n' +
       '  return 0;\n' +
       '}\n';

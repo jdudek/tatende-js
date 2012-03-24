@@ -323,4 +323,5 @@ void js_create_native_objects(JSValue* global) {
     object_constructor->object_value = dict_create();
     set_object_property(object_constructor, "prototype", object_prototype);
     set_object_property(global, "Object", object_constructor);
+    set_object_property(global, "global", global);
 }
