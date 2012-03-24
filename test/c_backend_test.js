@@ -121,4 +121,9 @@ tests.push(testProgram("return new Object();", "[object]"));
 tests.push(testProgram("x = 2; return x;", "2"));
 tests.push(testProgram("x = 2; return global.x;", "2"));
 
+// Test: Number constructor
+tests.push(testProgram("return new Number(2);", "[object]"));
+tests.push(testProgram("return (new Number(2)).valueOf();", "2"));
+tests.push(testProgram("return (new Number(2)).toString();", "2"));
+
 runTests();

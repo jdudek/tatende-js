@@ -277,17 +277,30 @@ JSValue* js_invoke_constructor(JSValue* global, JSValue* function, List args) {
         exit(0);
     }
     JSValue* this = js_new_object(global, dict_create());
+    this->prototype = dict_find(function->object_value, "prototype");
     JSValue* ret = js_call_function(global, function, this, args);
     if (ret->type == TypeObject) {
         return ret;
     } else {
-        this->prototype = dict_find(function->object_value, "prototype");
         return this;
     }
 }
 
 JSValue* js_object_constructor(JSValue* global, JSValue* this, List argValues, Dict binding) {
     return js_new_object(global, NULL);
+}
+
+JSValue* js_number_constructor(JSValue* global, JSValue* this, List argValues, Dict binding) {
+    this->number_value = ((JSValue*) list_head(argValues))->number_value;
+    return this;
+}
+
+JSValue* js_number_value_of(JSValue* global, JSValue* this, List argValues, Dict binding) {
+    return js_new_number(this->number_value);
+}
+
+JSValue* js_number_to_string(JSValue* global, JSValue* this, List argValues, Dict binding) {
+    return js_to_string(js_new_number(this->number_value));
 }
 
 JSValue* js_is_prototype_of(JSValue* global, JSValue* this, List argValues, Dict binding) {
@@ -316,6 +329,8 @@ Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {
 }
 
 void js_create_native_objects(JSValue* global) {
+    set_object_property(global, "global", global);
+
     JSValue* object_prototype = js_new_bare_object();
     set_object_property(object_prototype, "isPrototypeOf", js_new_bare_function(&js_is_prototype_of, NULL));
 
@@ -323,5 +338,10 @@ void js_create_native_objects(JSValue* global) {
     object_constructor->object_value = dict_create();
     set_object_property(object_constructor, "prototype", object_prototype);
     set_object_property(global, "Object", object_constructor);
-    set_object_property(global, "global", global);
+
+    JSValue* number_constructor = js_new_function(global, &js_number_constructor, NULL);
+    JSValue* number_prototype = get_object_property(number_constructor, "prototype");
+    set_object_property(global, "Number", number_constructor);
+    set_object_property(number_prototype, "valueOf", js_new_function(global, &js_number_value_of, NULL));
+    set_object_property(number_prototype, "toString", js_new_function(global, &js_number_to_string, NULL));
 }
