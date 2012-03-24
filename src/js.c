@@ -222,24 +222,13 @@ JSVariable js_create_variable(JSValue* value) {
     return var;
 }
 
-static
-JSVariable find_variable(Dict binding, char* name) {
+void js_assign_variable(JSValue* global, Dict binding, char* name, JSValue* value) {
     JSVariable variable = dict_find(binding, name);
     if (variable != NULL) {
-        return variable;
+        *variable = value;
     } else {
-        fprintf(stderr, "ReferenceError: %s is not defined.\n", name);
-        exit(0);
+        set_object_property(global, name, value);
     }
-}
-
-void js_assign_variable(Dict binding, char* name, JSValue* value) {
-    JSVariable variable = find_variable(binding, name);
-    *variable = value;
-}
-
-JSVariable js_get_variable_lvalue(Dict binding, char* name) {
-    return find_variable(binding, name);
 }
 
 JSValue* js_get_variable_rvalue(JSValue* global, Dict binding, char* name) {

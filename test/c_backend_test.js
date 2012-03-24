@@ -118,5 +118,7 @@ tests.push(testProgram("global.x = 2; var f = function () { return this; }; retu
 // Test: use global object property when variable does not exist
 tests.push(testProgram("global.x = 2; return x;", "2"));
 tests.push(testProgram("return new Object();", "[object]"));
+tests.push(testProgram("x = 2; return x;", "2"));
+tests.push(testProgram("x = 2; return global.x;", "2"));
 
 runTests();

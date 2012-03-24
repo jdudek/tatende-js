@@ -28,7 +28,7 @@ exports.compile = function (ast) {
 
       case AST.AssignStatement:
         if (node.leftExpr() instanceof AST.Variable) {
-          return "js_assign_variable(binding, " +
+          return "js_assign_variable(global, binding, " +
             quotes(node.leftExpr().identifier()) + ", " +
             expression(node.rightExpr()) +
           ");";
