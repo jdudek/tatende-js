@@ -242,9 +242,19 @@ JSVariable js_get_variable_lvalue(Dict binding, char* name) {
     return find_variable(binding, name);
 }
 
-JSValue* js_get_variable_rvalue(Dict binding, char* name) {
-    JSVariable variable = find_variable(binding, name);
-    return *variable;
+JSValue* js_get_variable_rvalue(JSValue* global, Dict binding, char* name) {
+    JSVariable variable = dict_find(binding, name);
+    if (variable != NULL) {
+        return *variable;
+    } else {
+        JSValue* global_value = dict_find(global->object_value, name);
+        if (global_value) {
+            return global_value;
+        } else {
+            fprintf(stderr, "ReferenceError: %s is not defined.\n", name);
+            exit(0);
+        }
+    }
 }
 
 static JSValue* get_object_property(JSValue* object, char* key) {

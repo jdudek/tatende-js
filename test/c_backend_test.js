@@ -115,4 +115,8 @@ tests.push(testProgram("global.x = 2; return global.x;", "2"));
 // Test: global object is default value for "this"
 tests.push(testProgram("global.x = 2; var f = function () { return this; }; return f().x;", "2"));
 
+// Test: use global object property when variable does not exist
+tests.push(testProgram("global.x = 2; return x;", "2"));
+tests.push(testProgram("return new Object();", "[object]"));
+
 runTests();

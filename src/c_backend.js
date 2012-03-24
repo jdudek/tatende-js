@@ -84,7 +84,7 @@ exports.compile = function (ast) {
         return functionLiteral(node, functions);
 
       case AST.Variable:
-        return "js_get_variable_rvalue(binding, " + quotes(node.identifier()) + ")";
+        return "js_get_variable_rvalue(global, binding, " + quotes(node.identifier()) + ")";
 
       case AST.ThisVariable:
         return "this";
