@@ -30,6 +30,8 @@ typedef struct TJSValue {
 typedef JSValue** JSVariable;
 
 JSValue* js_new_bare_function(JSValue* (*function_ptr)(), Dict binding);
+void js_throw(JSValue* global, JSValue* exception);
+JSValue* js_call_method(JSValue* global, JSValue* object, JSValue* key, List args);
 JSValue* js_invoke_constructor(JSValue* global, JSValue* function, List args);
 static JSValue* get_object_property(JSValue* object, char* key);
 static void set_object_property(JSValue* object, char* key, JSValue* value);
@@ -129,7 +131,7 @@ JSValue* js_new_undefined() {
     return v;
 }
 
-JSValue* js_to_string(JSValue* v) {
+JSValue* js_to_string(JSValue* global, JSValue* v) {
     if (v->type == TypeString) {
         return v;
     } else if (v->type == TypeNumber) {
@@ -140,6 +142,12 @@ JSValue* js_to_string(JSValue* v) {
         char* s = malloc(sizeof(char) * len);
         snprintf(s, len, "%d", v->number_value);
         return js_new_string(s);
+    } else if (v->type == TypeObject) {
+        if (get_object_property(v, "toString")->type == TypeFunction) {
+            return js_call_method(global, v, js_new_string("toString"), list_create());
+        } else {
+            return js_new_string("[object]");
+        }
     } else {
         fprintf(stderr, "Cannot convert to string");
         exit(1);
@@ -223,8 +231,10 @@ JSValue* js_call_function(JSValue* global, JSValue* v, JSValue* this, List args)
     if (v->type == TypeFunction) {
         return (v->function_value.function)(global, this, args, v->function_value.binding);
     } else {
-        fprintf(stderr, "Cannot call, value is not a function");
-        exit(1);
+        JSValue* message = js_add(js_new_string("[type]"), js_new_string(" is not a function."));
+        JSValue* exception = js_invoke_constructor(global, get_object_property(global, "TypeError"),
+            list_insert(list_create(), message));
+        js_throw(global, exception);
     }
 }
 
@@ -252,10 +262,17 @@ JSValue* js_get_variable_rvalue(JSValue* global, Dict binding, char* name) {
         if (global_value) {
             return global_value;
         } else {
-            fprintf(stderr, "ReferenceError: %s is not defined.\n", name);
-            exit(0);
+            JSValue* message = js_add(js_new_string(name), js_new_string(" is not defined."));
+            JSValue* exception = js_invoke_constructor(global, get_object_property(global, "ReferenceError"),
+                list_insert(list_create(), message));
+            js_throw(global, exception);
         }
     }
+}
+
+void js_throw(JSValue* global, JSValue* exception) {
+    fprintf(stderr, "%s\n", js_to_string(global, exception)->string_value);
+    exit(1);
 }
 
 static JSValue* get_object_property(JSValue* object, char* key) {
@@ -275,19 +292,15 @@ static void set_object_property(JSValue* object, char* key, JSValue* value) {
     object->object_value = dict_insert(object->object_value, key, value);
 }
 
-JSValue* js_get_object_property(JSValue* object, JSValue* key) {
-    return get_object_property(object, js_to_string(key)->string_value);
+JSValue* js_get_object_property(JSValue* global, JSValue* object, JSValue* key) {
+    return get_object_property(object, js_to_string(global, key)->string_value);
 }
 
 JSValue* js_call_method(JSValue* global, JSValue* object, JSValue* key, List args) {
-    return js_call_function(global, js_get_object_property(object, key), object, args);
+    return js_call_function(global, js_get_object_property(global, object, key), object, args);
 }
 
 JSValue* js_invoke_constructor(JSValue* global, JSValue* function, List args) {
-    if (function->type != TypeFunction) {
-        fprintf(stderr, "TypeError: expression is not a function\n");
-        exit(0);
-    }
     JSValue* this = js_new_object(global, dict_create());
     this->prototype = dict_find(function->object_value, "prototype");
     JSValue* ret = js_call_function(global, function, this, args);
@@ -312,7 +325,7 @@ JSValue* js_number_value_of(JSValue* global, JSValue* this, List argValues, Dict
 }
 
 JSValue* js_number_to_string(JSValue* global, JSValue* this, List argValues, Dict binding) {
-    return js_to_string(js_new_number(this->number_value));
+    return js_to_string(global, js_new_number(this->number_value));
 }
 
 JSValue* js_is_prototype_of(JSValue* global, JSValue* this, List argValues, Dict binding) {

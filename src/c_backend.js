@@ -36,7 +36,7 @@ exports.compile = function (ast) {
           return "{ "+
             "JSValue* object = " + expression(node.leftExpr().expression()) + "; " +
             "object->object_value = dict_insert(object->object_value, " +
-              "js_to_string(" + expression(node.leftExpr().key()) + ")->string_value, " +
+              "js_to_string(global, " + expression(node.leftExpr().key()) + ")->string_value, " +
               expression(node.rightExpr()) + "); " +
             "}";
         } else {
@@ -90,7 +90,7 @@ exports.compile = function (ast) {
         return "this";
 
       case AST.Refinement:
-        return "js_get_object_property(" +
+        return "js_get_object_property(global, " +
           expression(node.expression()) + ", " +
           expression(node.key()) + ")";
 
