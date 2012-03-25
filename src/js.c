@@ -30,7 +30,7 @@ typedef struct TJSValue {
 typedef JSValue** JSVariable;
 
 JSValue* js_new_bare_function(JSValue* (*function_ptr)(), Dict binding);
-
+JSValue* js_invoke_constructor(JSValue* global, JSValue* function, List args);
 static JSValue* get_object_property(JSValue* object, char* key);
 static void set_object_property(JSValue* object, char* key, JSValue* value);
 
@@ -151,6 +151,18 @@ JSValue* js_to_number(JSValue* v) {
         return v;
     } else {
         fprintf(stderr, "Cannot convert to number");
+        exit(1);
+    }
+}
+
+JSValue* js_to_object(JSValue* global, JSValue* v) {
+    if (v->type == TypeObject || v->type == TypeFunction) {
+        return v;
+    } else if (v->type == TypeNumber) {
+        return js_invoke_constructor(global, get_object_property(global, "Number"),
+            list_insert(list_create(), v));
+    } else {
+        fprintf(stderr, "Cannot convert to object");
         exit(1);
     }
 }

@@ -126,4 +126,7 @@ tests.push(testProgram("return new Number(2);", "[object]"));
 tests.push(testProgram("return (new Number(2)).valueOf();", "2"));
 tests.push(testProgram("return (new Number(2)).toString();", "2"));
 
+// Test: automatic conversion of primitive types to objects
+tests.push(testProgram("return (2).toString();", "2"));
+
 runTests();

@@ -187,7 +187,8 @@ exports.compile = function (ast) {
     if (node.expression() instanceof AST.Refinement) {
       var object = node.expression().expression();
       var key = node.expression().key();
-      return "js_call_method(global, " + expression(object) + ", " + expression(key) + ", " + argValues + ")";
+      return "js_call_method(global, js_to_object(global, " + expression(object) + "), " +
+        expression(key) + ", " + argValues + ")";
     } else {
       return "js_call_function(global, " + expression(node.expression()) + ", global, " + argValues + ")";
     }
