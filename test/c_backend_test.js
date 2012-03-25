@@ -22,7 +22,9 @@ var testProgram = function (program, expectedOutput) {
   return function (callback) {
     var ast = parser.parse(program).success;
     assert.ok(!! ast)
-    var compiled = backend.compile(ast);
+    var runtime = parser.parse(fs.readFileSync(__dirname + "/../src/runtime.js", "utf8")).success;
+    assert.ok(!! runtime)
+    var compiled = backend.compile(runtime.concat(ast));
     fs.writeFileSync("program.c", compiled);
     childProcess.exec("gcc program.c && ./a.out", function (error, stdout, stderr) {
       assert.strictEqual(stderr, "");
@@ -128,5 +130,12 @@ tests.push(testProgram("return (new Number(2)).toString();", "2"));
 
 // Test: automatic conversion of primitive types to objects
 tests.push(testProgram("return (2).toString();", "2"));
+
+// Test: Error objects
+tests.push(testProgram("var e = new Error('msg'); return e.name;", "Error"));
+tests.push(testProgram("var e = new Error('msg'); return e.message;", "msg"));
+tests.push(testProgram("var e = new Error('msg'); return e.toString();", "Error: msg"));
+tests.push(testProgram("var e = new ReferenceError('msg'); return e.toString();", "ReferenceError: msg"));
+tests.push(testProgram("var e = new TypeError('msg'); return e.toString();", "TypeError: msg"));
 
 runTests();
