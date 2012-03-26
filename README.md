@@ -10,6 +10,10 @@ You can read [annotated source](http://jdudek.github.com/tatende-js/).
 
 ## Running tests
 
+You'll need ECMAScript test suite which is available from Mercurial repository.
+
+    $ hg clone http://hg.ecmascript.org/tests/test262/
+    $ export ECMA_TESTS_PATH="`pwd`/test262/test/suite"
     $ make test
 
 ## FAQ
