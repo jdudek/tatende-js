@@ -207,21 +207,30 @@ exports.compile = function (ast) {
   };
 
   var unaryOp = function (node) {
-    if (node.operator() === "new") {
-      var fun;
-      var argValues;
+    switch (node.operator()) {
+      case "new":
+        return newExpression(node.expression());
 
-      if (node.expression() instanceof AST.Invocation) {
-        fun = node.expression().expression();
-        argValues = toCList(node.expression().args().map(expression));
-      } else {
-        fun = node.expression();
-        argValues = "NULL";
-      }
-      return "js_invoke_constructor(global, " + expression(fun) + "," + argValues + ")";
-    } else {
-      throw "Unsupported operator: " + node.operator();
+      case "typeof":
+        return "js_typeof(" + expression(node.expression()) + ")";
+
+      default:
+        throw "Unsupported operator: " + node.operator();
     }
+  };
+
+  var newExpression = function (node) {
+    var fun;
+    var argValues;
+
+    if (node instanceof AST.Invocation) {
+      fun = node.expression();
+      argValues = toCList(node.args().map(expression));
+    } else {
+      fun = node;
+      argValues = "NULL";
+    }
+    return "js_invoke_constructor(global, " + expression(fun) + "," + argValues + ")";
   };
 
   var addTemplate = function (program) {

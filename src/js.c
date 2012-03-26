@@ -175,6 +175,23 @@ JSValue* js_to_object(JSValue* global, JSValue* v) {
     }
 }
 
+JSValue* js_typeof(JSValue* v) {
+    switch (v->type) {
+        case TypeNumber:
+            return js_new_string("number");
+        case TypeString:
+            return js_new_string("string");
+        case TypeBoolean:
+            return js_new_string("boolean");
+        case TypeObject:
+            return js_new_string("object");
+        case TypeFunction:
+            return js_new_string("function");
+        case TypeUndefined:
+            return js_new_string("undefined");
+    }
+}
+
 JSValue* js_add(JSValue* v1, JSValue* v2) {
     if (v1->type == TypeNumber && v2->type == TypeNumber) {
         return js_new_number(v1->number_value + v2->number_value);
@@ -231,7 +248,7 @@ JSValue* js_call_function(JSValue* global, JSValue* v, JSValue* this, List args)
     if (v->type == TypeFunction) {
         return (v->function_value.function)(global, this, args, v->function_value.binding);
     } else {
-        JSValue* message = js_add(js_new_string("[type]"), js_new_string(" is not a function."));
+        JSValue* message = js_add(js_typeof(v), js_new_string(" is not a function."));
         JSValue* exception = js_invoke_constructor(global, get_object_property(global, "TypeError"),
             list_insert(list_create(), message));
         js_throw(global, exception);

@@ -138,4 +138,12 @@ tests.push(testProgram("var e = new Error('msg'); return e.toString();", "Error:
 tests.push(testProgram("var e = new ReferenceError('msg'); return e.toString();", "ReferenceError: msg"));
 tests.push(testProgram("var e = new TypeError('msg'); return e.toString();", "TypeError: msg"));
 
+// Test: typeof operator
+tests.push(testProgram("return typeof global.xxx;", "undefined"));
+tests.push(testProgram("return typeof 123;", "number"));
+tests.push(testProgram("return typeof true;", "boolean"));
+tests.push(testProgram("return typeof 'aa';", "string"));
+tests.push(testProgram("return typeof function () {};", "function"));
+tests.push(testProgram("return typeof {};", "object"));
+
 runTests();
