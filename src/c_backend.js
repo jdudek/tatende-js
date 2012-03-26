@@ -51,8 +51,12 @@ exports.compile = function (ast) {
 
       case AST.IfStatement:
         return "if (js_is_truthy(" + expression(node.condition()) + "))" +
-          "{ " + node.whenTruthy().map(statement) + " } " +
-          "else { " + node.whenFalsy().map(statement) + " }";
+          "{ " + node.whenTruthy().map(statement).join("") + " } " +
+          "else { " + node.whenFalsy().map(statement).join("") + " }";
+
+      case AST.WhileStatement:
+        return "while (js_is_truthy(" + expression(node.condition()) + "))" +
+          "{ " + node.statements().map(statement).join("") + " }; ";
 
       default:
         throw "Incorrect AST";

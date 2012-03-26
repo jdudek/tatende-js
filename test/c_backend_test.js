@@ -156,6 +156,9 @@ tests.push(testProgram("return (new Number(1)) instanceof Error;", "false"));
 tests.push(testProgram("return [1,2,3] instanceof Array;", "true"));
 tests.push(testProgram("return [1,2,3].length;", "3"));
 
+// Test: forEach method on Array objects
+tests.push(testProgram("var sum = 0; [1,2,3].forEach(function (i) { sum = sum + i; }); return sum;", "6"));
+
 // Test: arguments object
 tests.push(testProgram("var f = function () { return arguments[0]; }; return f(13);", "13"));
 tests.push(testProgram("var f = function () { return arguments[1]; }; return f(13);", "[undefined]"));

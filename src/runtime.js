@@ -1,3 +1,11 @@
+Array.prototype.forEach = function (callback) {
+  var i = 0;
+  while (i < this.length) {
+    callback(this[i]);
+    i = i + 1;
+  }
+};
+
 global.Error = function (message) { this.message = message; };
 Error.prototype.name = "Error";
 Error.prototype.message = "";
