@@ -59,6 +59,12 @@ tests.push(testProgram("var x = 2; return x;", "2"));
 tests.push(testProgram("var x = 5; x = 2; return x;", "2"));
 tests.push(testProgram("var x = {}; x.y = 2; return x.y;", "2"));
 
+// Test: equality operators
+tests.push(testProgram("return 2 == 2;", "true"));
+tests.push(testProgram("return 2 === 2;", "true"));
+tests.push(testProgram("return 2 != 3;", "true"));
+tests.push(testProgram("return 2 !== 3;", "true"));
+
 // Test: expression statement
 tests.push(testProgram("var x = 2; 5; return x;", "2"));
 

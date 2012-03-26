@@ -234,6 +234,39 @@ JSValue* js_mult(JSValue* v1, JSValue* v2) {
     return js_new_number(v1->number_value * v2->number_value);
 }
 
+JSValue* js_strict_eq(JSValue* v1, JSValue* v2) {
+    if (v1->type != v2->type) {
+        return js_new_boolean(0);
+    }
+    switch (v1->type) {
+        case TypeNumber:
+            return js_new_boolean(v1->number_value == v2->number_value);
+        case TypeString:
+            return js_new_boolean(strcmp(v1->string_value, v2->string_value) == 0);
+        case TypeBoolean:
+            return js_new_boolean(v1->boolean_value == v2->boolean_value);
+        case TypeObject:
+            return js_new_boolean(v1->object_value == v2->object_value);
+        case TypeFunction:
+            return js_new_boolean(v1->function_value.function == v2->function_value.function
+                && v1->function_value.binding == v2->function_value.binding);
+        case TypeUndefined:
+            return js_new_boolean(1);
+    }
+}
+
+JSValue* js_strict_neq(JSValue* v1, JSValue* v2) {
+    return js_new_boolean(! js_strict_eq(v1, v2)->boolean_value);
+}
+
+JSValue* js_eq(JSValue* v1, JSValue* v2) {
+    return js_strict_eq(v1, v2);
+}
+
+JSValue* js_neq(JSValue* v1, JSValue* v2) {
+    return js_strict_neq(v1, v2);
+}
+
 JSValue* js_lt(JSValue* v1, JSValue* v2) {
     return js_new_boolean(js_to_number(v1)->number_value < js_to_number(v2)->number_value);
 }

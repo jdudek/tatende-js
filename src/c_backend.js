@@ -204,6 +204,8 @@ exports.compile = function (ast) {
     var operatorFunctions = {
       "+": "js_add", "-": "js_sub", "*": "js_mult",
       "<": "js_lt", ">": "js_gt",
+      "==": "js_eq", "!=": "js_neq",
+      "===": "js_strict_eq", "!==": "js_strict_neq",
       "instanceof": "js_instanceof"
     };
     if (typeof operatorFunctions[node.operator()] === "undefined") {
