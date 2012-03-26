@@ -67,6 +67,10 @@ tests.push(testProgram("return 2 === 2;", "true"));
 tests.push(testProgram("return 2 != 3;", "true"));
 tests.push(testProgram("return 2 !== 3;", "true"));
 
+// Test: boolean operators
+tests.push(testProgram("return !true;", "false"));
+tests.push(testProgram("return !false;", "true"));
+
 // Test: expression statement
 tests.push(testProgram("var x = 2; 5; return x;", "2"));
 

@@ -235,6 +235,9 @@ exports.compile = function (ast) {
       case "typeof":
         return "js_typeof(" + expression(node.expression()) + ")";
 
+      case "!":
+        return "js_new_boolean(! js_to_boolean(" + expression(node.expression()) + ")->boolean_value)";
+
       default:
         throw "Unsupported operator: " + node.operator();
     }

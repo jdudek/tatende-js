@@ -164,6 +164,23 @@ JSValue* js_to_number(JSValue* v) {
     }
 }
 
+JSValue* js_to_boolean(JSValue* v) {
+    switch (v->type) {
+        case TypeNumber:
+            return js_new_boolean(v->number_value != 0);
+        case TypeString:
+            return js_new_boolean(strlen(v->string_value) > 0);
+        case TypeBoolean:
+            return v;
+        case TypeObject:
+            return js_new_boolean(1);
+        case TypeFunction:
+            return js_new_boolean(1);
+        case TypeUndefined:
+            return js_new_boolean(0);
+    }
+}
+
 JSValue* js_to_object(JSValue* global, JSValue* v) {
     if (v->type == TypeObject || v->type == TypeFunction) {
         return v;
