@@ -122,10 +122,10 @@ testParser(" var x ; ", [{ varStatement: [ "x" ] }]);
 testParser("var   x   ;  ", [{ varStatement: [ "x" ] }]);
 testParser("var\tx;", [{ varStatement: [ "x" ] }]);
 testParser("var\nx\n;\n", [{ varStatement: [ "x" ] }]);
-// testParser("var /*c*/ x;", [{ varStatement: [ "x" ] }]);
-// testParser("var /*c*/x; /*c*/", [{ varStatement: [ "x" ] }]);
+testParser("var /*c*/ x;", [{ varStatement: [ "x" ] }]);
+testParser("var /*c*/x; /*c*/", [{ varStatement: [ "x" ] }]);
 testParser("//c\n var x;", [{ varStatement: [ "x" ] }]);
-// testParser("//c\nvar x; /*c*/", [{ varStatement: [ "x" ] }]);
+testParser("//c\nvar x; /*c*/", [{ varStatement: [ "x" ] }]);
 
 // tests for keyword parser
 assert.deepEqual({ success: "true" }, parser.parse("true", parser.keyword("true")));

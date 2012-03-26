@@ -289,8 +289,14 @@ var whiteSpace = choice([character(" "), character("\t"), character("\n")]);
 // And parsers for comments.
 
 var delimitedComment = sequence(
-  // TODO this is broken due to not backtracking choice()
-  [string("/*"), many(anyChar), string("*/")],
+  [
+    string("/*"),
+    many(choice([
+      otherThanChar("*"),
+      notFollowedBy(character("/"), character("*"))
+    ])),
+    string("*/")
+  ],
   function () { return "comment"; }
 );
 
