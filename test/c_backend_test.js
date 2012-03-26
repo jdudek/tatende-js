@@ -156,4 +156,9 @@ tests.push(testProgram("return (new Number(1)) instanceof Error;", "false"));
 tests.push(testProgram("return [1,2,3] instanceof Array;", "true"));
 tests.push(testProgram("return [1,2,3].length;", "3"));
 
+// Test: arguments object
+tests.push(testProgram("var f = function () { return arguments[0]; }; return f(13);", "13"));
+tests.push(testProgram("var f = function () { return arguments[1]; }; return f(13);", "[undefined]"));
+tests.push(testProgram("var f = function () { return arguments.length; }; return f(1, 2, 3);", "3"));
+
 runTests();

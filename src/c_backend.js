@@ -131,10 +131,16 @@ exports.compile = function (ast) {
     var name = "fun_" + unique();
     var body = reorderVarStatements(node.statements()).map(statement).join("\n");
     var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
+    var buildArgumentsObject = "binding = dict_insert(binding, \"arguments\", js_create_variable(" +
+      "js_invoke_constructor(global, "+
+        "js_get_object_property(global, global, js_new_string(\"Array\")), "+
+        "argValues)"+
+      "));";
 
     var cFunction =
       "JSValue* " + name + "(JSValue* global, JSValue* this, List argValues, Dict binding) {\n" +
         "List argNames = " + argNames + ";\n" +
+        buildArgumentsObject + "\n" +
         "binding = js_append_args_to_binding(argNames, argValues, binding);\n" +
         body +
         "return js_new_undefined();\n" +
