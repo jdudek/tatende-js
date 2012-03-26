@@ -40,6 +40,7 @@ tests.push(testProgram("return 100 + 23;", "123"));
 tests.push(testProgram("return 2 * 3;", "6"));
 tests.push(testProgram("return 2 * (2 + 2);", "8"));
 tests.push(testProgram("return 'xxx';", "xxx"));
+tests.push(testProgram("return \"x\\\"x\\\"x\";", "x\"x\"x"));
 tests.push(testProgram("return 'x' + 'y';", "xy"));
 tests.push(testProgram("return {};", "[object]"));
 tests.push(testProgram("return { x: 2 };", "[object]"));

@@ -63,13 +63,22 @@ exports.compile = function (ast) {
     }
   };
 
+  var escapeCString = function (str) {
+    var replace = function (str, p, r) {
+      return str.split(p).join(r);
+    };
+    str = replace(str, "\\", "\\\\");
+    str = replace(str, "\"", "\\\"");
+    return str;
+  };
+
   var expression = function (node) {
     switch (node.constructor) {
       case AST.NumberLiteral:
         return "js_new_number(" + node.number().toString() + ")";
 
       case AST.StringLiteral:
-        return "js_new_string(\"" + node.string() + "\")";
+        return "js_new_string(" + quotes(escapeCString(node.string())) + ")";
 
       case AST.BooleanLiteral:
         if (node.value()) {
