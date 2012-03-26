@@ -384,6 +384,11 @@ JSValue* js_is_prototype_of(JSValue* global, JSValue* this, List argValues, Dict
     return js_new_boolean(0);
 }
 
+JSValue* js_console_log(JSValue* global, JSValue* this, List argValues, Dict binding) {
+    printf("%s\n", js_to_string(global, list_head(argValues))->string_value);
+    return js_new_undefined();
+}
+
 Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {
     while (argNames != NULL) {
         if (argValues != NULL) {
@@ -416,4 +421,8 @@ void js_create_native_objects(JSValue* global) {
     set_object_property(global, "Number", number_constructor);
     set_object_property(number_prototype, "valueOf", js_new_function(global, &js_number_value_of, NULL));
     set_object_property(number_prototype, "toString", js_new_function(global, &js_number_to_string, NULL));
+
+    JSValue* console = js_new_object(global, NULL);
+    set_object_property(console, "log", js_new_function(global, &js_console_log, NULL));
+    set_object_property(global, "console", console);
 }
