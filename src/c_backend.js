@@ -117,11 +117,7 @@ exports.compile = function (ast) {
   };
 
   var arrayLiteral = function (node) {
-    return "js_new_object(global, " +
-      node.items().reduce(function (acc, item, i) {
-        return "dict_insert(" + acc + ", " + quotes(i) + ", " + expression(item) + ")";
-      }, "dict_create()") +
-    ")";
+    return expression(AST.UnaryOp("new", AST.Invocation(AST.Variable("Array"), node.items())));
   };
 
   // Utility function to create C list from array of strings

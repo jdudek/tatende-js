@@ -348,6 +348,17 @@ JSValue* js_object_constructor(JSValue* global, JSValue* this, List argValues, D
     return js_new_object(global, NULL);
 }
 
+JSValue* js_array_constructor(JSValue* global, JSValue* this, List argValues, Dict binding) {
+    int i = 0;
+    while (argValues != NULL) {
+        set_object_property(this, js_to_string(global, js_new_number(i))->string_value, list_head(argValues));
+        argValues = list_tail(argValues);
+        i++;
+    }
+    set_object_property(this, "length", js_new_number(i));
+    return this;
+}
+
 JSValue* js_number_constructor(JSValue* global, JSValue* this, List argValues, Dict binding) {
     this->number_value = ((JSValue*) list_head(argValues))->number_value;
     return this;
@@ -396,6 +407,9 @@ void js_create_native_objects(JSValue* global) {
     object_constructor->object_value = dict_create();
     set_object_property(object_constructor, "prototype", object_prototype);
     set_object_property(global, "Object", object_constructor);
+
+    JSValue* array_constructor = js_new_function(global, &js_array_constructor, NULL);
+    set_object_property(global, "Array", array_constructor);
 
     JSValue* number_constructor = js_new_function(global, &js_number_constructor, NULL);
     JSValue* number_prototype = get_object_property(number_constructor, "prototype");

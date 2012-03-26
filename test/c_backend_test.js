@@ -152,4 +152,8 @@ tests.push(testProgram("return (new Number(1)) instanceof Number;", "true"));
 tests.push(testProgram("return (new Number(1)) instanceof Object;", "true"));
 tests.push(testProgram("return (new Number(1)) instanceof Error;", "false"));
 
+// Test: arrays
+tests.push(testProgram("return [1,2,3] instanceof Array;", "true"));
+tests.push(testProgram("return [1,2,3].length;", "3"));
+
 runTests();
