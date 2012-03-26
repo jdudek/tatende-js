@@ -319,11 +319,14 @@ var lexeme = function (parser) {
 // its end. In other words, every parser defined below will accept and skip
 // trailing whitespace and comments.
 
-// An identifier starts with a letter, followed by letters, digits
-// or underscores (_).
+// An identifier may contain letters, digits, $ and _ characters,
+// but cannot start with a digit.
 var identifier = sequence(
   // TODO reject keywords
-  [letter, many(choice([letter, digit, character("_")]))],
+  [
+    choice([letter, character("_"), character("$")]),
+    many(choice([letter, digit, character("_"), character("$")]))
+  ],
   function (x, xs) { return x + xs.join(""); }
 );
 identifier = lexeme(identifier);

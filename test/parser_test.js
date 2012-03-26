@@ -139,6 +139,8 @@ assert.deepEqual({ failure: [] }, parser.parse("==", parser.operator("=")));
 testParser("5", { numberLiteral: 5 }, parser.expr);
 testParser("(5)", { numberLiteral: 5 }, parser.expr);
 testParser("x", { variable: "x" }, parser.expr);
+testParser("_x$", { variable: "_x$" }, parser.expr);
+testParser("$x", { variable: "$x" }, parser.expr);
 testParser("'abc'", { stringLiteral: "abc" }, parser.expr);
 testParser('"abc"', { stringLiteral: "abc" }, parser.expr);
 testParser("true", { booleanLiteral: true }, parser.expr);
