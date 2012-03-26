@@ -145,6 +145,8 @@ testParser("'abc'", { stringLiteral: "abc" }, parser.expr);
 testParser('"abc"', { stringLiteral: "abc" }, parser.expr);
 testParser("true", { booleanLiteral: true }, parser.expr);
 testParser("false", { booleanLiteral: false }, parser.expr);
+testParser("undefined", { undefinedLiteral: "undefined" }, parser.expr);
+testParser("null", { nullLiteral: "null" }, parser.expr);
 testParser("this", { thisVariable: "this" }, parser.expr);
 testParser("{}", { objectLiteral: [] }, parser.expr);
 testParser("{x: 2}", { objectLiteral: [["x", { numberLiteral: 2 }]] }, parser.expr);

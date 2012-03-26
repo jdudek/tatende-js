@@ -51,6 +51,7 @@ tests.push(testProgram("return [1,2,3][3];", "[undefined]"));
 tests.push(testProgram("return function () { return 2; };", "[function]"));
 tests.push(testProgram("return true;", "true"));
 tests.push(testProgram("return false;", "false"));
+tests.push(testProgram("return undefined;", "[undefined]"));
 tests.push(testProgram("return 2 < 3;", "true"));
 tests.push(testProgram("return 2 > 3;", "false"));
 

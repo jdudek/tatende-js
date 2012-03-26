@@ -452,6 +452,8 @@ var arrayLiteral = function (input) {
   return p(input);
 };
 
+var undefinedLiteral = decorate(keyword("undefined"), AST.UndefinedLiteral);
+var nullLiteral = decorate(keyword("null"), AST.NullLiteral);
 var thisVariable = decorate(keyword("this"), AST.ThisVariable);
 
 var variable = decorate(identifier, AST.Variable);
@@ -515,6 +517,8 @@ var expr = function (input) {
     objectLiteral,
     arrayLiteral,
     functionLiteral,
+    undefinedLiteral,
+    nullLiteral,
     thisVariable,
     variable,
     parens(expr)

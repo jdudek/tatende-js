@@ -87,6 +87,9 @@ exports.compile = function (ast) {
       case AST.FunctionLiteral:
         return functionLiteral(node, functions);
 
+      case AST.UndefinedLiteral:
+        return "js_new_undefined()";
+
       case AST.Variable:
         return "js_get_variable_rvalue(global, binding, " + quotes(node.identifier()) + ")";
 
