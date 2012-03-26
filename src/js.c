@@ -100,6 +100,7 @@ JSValue* js_new_object(JSValue* global, Dict d) {
     JSValue* v = js_new_bare_object();
     v->object_value = d;
     v->prototype = get_object_property(get_object_property(global, "Object"), "prototype");
+    set_object_property(v, "constructor", get_object_property(global, "Object"));
     return v;
 }
 
@@ -190,6 +191,20 @@ JSValue* js_typeof(JSValue* v) {
         case TypeUndefined:
             return js_new_string("undefined");
     }
+}
+
+JSValue* js_instanceof(JSValue* object, JSValue* constructor) {
+    if (object->type != TypeObject) {
+        return js_new_boolean(0);
+    }
+    while (object != NULL) {
+        if (get_object_property(object, "constructor") == constructor) {
+            return js_new_boolean(1);
+        } else {
+            object = object->prototype;
+        }
+    }
+    return js_new_boolean(0);
 }
 
 JSValue* js_add(JSValue* v1, JSValue* v2) {
@@ -320,6 +335,7 @@ JSValue* js_call_method(JSValue* global, JSValue* object, JSValue* key, List arg
 JSValue* js_invoke_constructor(JSValue* global, JSValue* function, List args) {
     JSValue* this = js_new_object(global, dict_create());
     this->prototype = dict_find(function->object_value, "prototype");
+    set_object_property(this, "constructor", function);
     JSValue* ret = js_call_function(global, function, this, args);
     if (ret->type == TypeObject) {
         return ret;

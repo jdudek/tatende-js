@@ -197,7 +197,8 @@ exports.compile = function (ast) {
   var binaryOp = function (node) {
     var operatorFunctions = {
       "+": "js_add", "-": "js_sub", "*": "js_mult",
-      "<": "js_lt", ">": "js_gt"
+      "<": "js_lt", ">": "js_gt",
+      "instanceof": "js_instanceof"
     };
     if (typeof operatorFunctions[node.operator()] === "undefined") {
       throw "Unsupported operator: " + node.operator();

@@ -146,4 +146,10 @@ tests.push(testProgram("return typeof 'aa';", "string"));
 tests.push(testProgram("return typeof function () {};", "function"));
 tests.push(testProgram("return typeof {};", "object"));
 
+// Test: instanceof operator
+tests.push(testProgram("return {} instanceof Object;", "true"));
+tests.push(testProgram("return (new Number(1)) instanceof Number;", "true"));
+tests.push(testProgram("return (new Number(1)) instanceof Object;", "true"));
+tests.push(testProgram("return (new Number(1)) instanceof Error;", "false"));
+
 runTests();
