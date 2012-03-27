@@ -4,8 +4,17 @@ if (typeof process.env.ECMA_TESTS_PATH === "undefined") {
 }
 
 var testFiles = [
+  // 8.3 The Boolean type
+
   "/ch08/8.3/S8.3_A1_T1.js",
-  // "/ch11/11.4/11.4.9/S11.4.9_A1.js", // Unicode-fu
+  "/ch08/8.3/S8.3_A1_T2.js",
+  // "/ch08/8.3/S8.3_A2.1.js", @negative
+  // "/ch08/8.3/S8.3_A2.2.js", @negative
+  "/ch08/8.3/S8.3_A3.js",
+
+  // 11.4.9 Logical NOT Operator ( ! )
+
+  // "/ch11/11.4/11.4.9/S11.4.9_A1.js", // eval
   "/ch11/11.4/11.4.9/S11.4.9_A2.1_T1.js",
   // "/ch11/11.4/11.4.9/S11.4.9_A2.1_T2.js", // try {}
   // "/ch11/11.4/11.4.9/S11.4.9_A2.2_T1.js", // lacks semicolons
