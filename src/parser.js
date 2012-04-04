@@ -628,14 +628,37 @@ var ifStatement = function (input) {
   return choice([ifStatementWithElse, ifStatementWithoutElse])(input);
 };
 
+// In try statements we can omit either catch or finally, but not both.
+// catch is always followed by an identifier in parentheses.
 var tryStatement = function (input) {
-  return sequence(
-    [keyword("try"), braces(many(statement)),
-      keyword("catch"), parens(identifier), braces(many(statement))],
-    function (try_, tryStatements, catch_, id, catchStatements) {
-      return AST.TryStatement(tryStatements, id, catchStatements);
+  var block = braces(many(statement));
+  var tryFinally = sequence([
+      keyword("try"), block,
+      keyword("finally"), block
+    ],
+    function (try_, tryBlock, finally_, finallyBlock) {
+      return AST.TryStatement(tryBlock, null, [], finallyBlock);
     }
-  )(input);
+  );
+  var tryCatch = sequence([
+      keyword("try"), block,
+      keyword("catch"), parens(identifier), block
+    ],
+    function (try_, tryBlock, catch_, id, catchBlock) {
+      return AST.TryStatement(tryBlock, id, catchBlock, []);
+    }
+  );
+  var tryCatchFinally = sequence([
+      keyword("try"), block,
+      keyword("catch"), parens(identifier), block,
+      keyword("finally"), block
+    ],
+    function (try_, tryBlock, catch_, id, catchBlock, finally_, finallyBlock) {
+      return AST.TryStatement(tryBlock, id, catchBlock, finallyBlock);
+    }
+  );
+  var p = choice([tryFinally, tryCatchFinally, tryCatch]);
+  return p(input);
 };
 
 var whileStatement = function (input) {

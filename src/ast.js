@@ -63,7 +63,8 @@ exports.ThrowStatement = makeNodeConstructor("throwStatement", ["expression"]);
 exports.ExpressionStatement = makeNodeConstructor("expressionStatement", ["expression"]);
 exports.DoWhileStatement = makeNodeConstructor("doWhileStatement", ["condition", "statements"]);
 exports.IfStatement = makeNodeConstructor("ifStatement", ["condition", "whenTruthy", "whenFalsy"]);
-exports.TryStatement = makeNodeConstructor("tryStatement", ["tryStatements", "identifier", "catchStatements"]);
+exports.TryStatement = makeNodeConstructor("tryStatement",
+    ["tryStatements", "identifier", "catchStatements", "finallyStatements"]);
 exports.WhileStatement = makeNodeConstructor("whileStatement", ["condition", "statements"]);
 exports.ForStatement = makeNodeConstructor("forStatement", ["initial", "condition", "finalize", "statements"]);
 exports.SwitchStatement = makeNodeConstructor("switchStatement", ["expression", "clauses"]);

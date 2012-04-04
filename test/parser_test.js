@@ -70,7 +70,24 @@ testParser("try { return 5; } catch (e) { return e; }", [
   { tryStatement: [
     [{ returnStatement: { numberLiteral: 5 } }],
     "e",
-    [{ returnStatement: { variable: "e" } }]
+    [{ returnStatement: { variable: "e" } }],
+    []
+  ]}
+]);
+testParser("try { return 5; } finally { return 3; }", [
+  { tryStatement: [
+    [{ returnStatement: { numberLiteral: 5 } }],
+    null,
+    [],
+    [{ returnStatement: { numberLiteral: 3 } }]
+  ]}
+]);
+testParser("try { return 5; } catch (e) { return e; } finally { return 3; }", [
+  { tryStatement: [
+    [{ returnStatement: { numberLiteral: 5 } }],
+    "e",
+    [{ returnStatement: { variable: "e" } }],
+    [{ returnStatement: { numberLiteral: 3 } }]
   ]}
 ]);
 testParser("throw x;", [{ throwStatement: { variable: "x" } }]);
