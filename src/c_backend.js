@@ -28,7 +28,7 @@ exports.compile = function (ast) {
 
       case AST.AssignStatement:
         if (node.leftExpr() instanceof AST.Variable) {
-          return "js_assign_variable(global, binding, " +
+          return "js_assign_variable(env, binding, " +
             quotes(node.leftExpr().identifier()) + ", " +
             expression(node.rightExpr()) +
           ");";
@@ -36,7 +36,7 @@ exports.compile = function (ast) {
           return "{ "+
             "JSValue* object = " + expression(node.leftExpr().expression()) + "; " +
             "object->object_value = dict_insert(object->object_value, " +
-              "js_to_string(global, " + expression(node.leftExpr().key()) + ")->string_value, " +
+              "js_to_string(env, " + expression(node.leftExpr().key()) + ")->string_value, " +
               expression(node.rightExpr()) + "); " +
             "}";
         } else {
@@ -100,13 +100,13 @@ exports.compile = function (ast) {
         return "js_new_undefined()";
 
       case AST.Variable:
-        return "js_get_variable_rvalue(global, binding, " + quotes(node.identifier()) + ")";
+        return "js_get_variable_rvalue(env, binding, " + quotes(node.identifier()) + ")";
 
       case AST.ThisVariable:
         return "this";
 
       case AST.Refinement:
-        return "js_get_object_property(global, " +
+        return "js_get_object_property(env, " +
           expression(node.expression()) + ", " +
           expression(node.key()) + ")";
 
@@ -125,7 +125,7 @@ exports.compile = function (ast) {
   };
 
   var objectLiteral = function (node) {
-    return "js_new_object(global, " +
+    return "js_new_object(env, " +
       node.pairs().reduce(function (acc, property) {
         return "dict_insert(" + acc + ", \"" + property[0] + "\", " + expression(property[1]) + ")";
       }, "dict_create()") +
@@ -148,13 +148,13 @@ exports.compile = function (ast) {
     var body = reorderVarStatements(node.statements()).map(statement).join("\n");
     var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
     var buildArgumentsObject = "binding = dict_insert(binding, \"arguments\", js_create_variable(" +
-      "js_invoke_constructor(global, "+
-        "js_get_object_property(global, global, js_new_string(\"Array\")), "+
+      "js_invoke_constructor(env, "+
+        "js_get_object_property(env, env->global, js_new_string(\"Array\")), "+
         "argValues)"+
       "));";
 
     var cFunction =
-      "JSValue* " + name + "(JSValue* global, JSValue* this, List argValues, Dict binding) {\n" +
+      "JSValue* " + name + "(JSEnv* env, JSValue* this, List argValues, Dict binding) {\n" +
         "List argNames = " + argNames + ";\n" +
         buildArgumentsObject + "\n" +
         "binding = js_append_args_to_binding(argNames, argValues, binding);\n" +
@@ -162,7 +162,7 @@ exports.compile = function (ast) {
         "return js_new_undefined();\n" +
       "}\n";
     functions.push(cFunction);
-    return "js_new_function(global, &" + name + ", binding)";
+    return "js_new_function(env, &" + name + ", binding)";
   };
 
   // Traverse list of nodes and move all var statements to the top.
@@ -205,10 +205,10 @@ exports.compile = function (ast) {
     if (node.expression() instanceof AST.Refinement) {
       var object = node.expression().expression();
       var key = node.expression().key();
-      return "js_call_method(global, js_to_object(global, " + expression(object) + "), " +
+      return "js_call_method(env, js_to_object(env, " + expression(object) + "), " +
         expression(key) + ", " + argValues + ")";
     } else {
-      return "js_call_function(global, " + expression(node.expression()) + ", global, " + argValues + ")";
+      return "js_call_function(env, " + expression(node.expression()) + ", env->global, " + argValues + ")";
     }
   };
 
@@ -254,7 +254,7 @@ exports.compile = function (ast) {
       fun = node;
       argValues = "NULL";
     }
-    return "js_invoke_constructor(global, " + expression(fun) + "," + argValues + ")";
+    return "js_invoke_constructor(env, " + expression(fun) + "," + argValues + ")";
   };
 
   var addTemplate = function (program) {
@@ -263,8 +263,9 @@ exports.compile = function (ast) {
       '#include "src/js.c"\n' +
       functions.join("\n") + "\n" +
       'int main() {\n' +
-      '  JSValue* global = js_new_bare_object();\n' +
-      '  js_create_native_objects(global);\n' +
+      '  JSEnv* env = malloc(sizeof(JSEnv));\n' +
+      '  env->global = js_new_bare_object();\n' +
+      '  js_create_native_objects(env);\n' +
       '  Dict binding = dict_create();\n' +
       '  js_dump_value(' + program + ');\n' +
       '  return 0;\n' +
