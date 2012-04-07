@@ -566,7 +566,8 @@ var expr = function (input) {
     choice(["instanceof"].map(keyword).map(binaryOp)),
     choice(["===", "!==", "==", "!="].map(operator).map(binaryOp)),
     choice(["&&"].map(operator).map(binaryOp)),
-    choice(["||"].map(operator).map(binaryOp))
+    choice(["||"].map(operator).map(binaryOp)),
+    choice(["="].map(operator).map(binaryOp))
   ].reduce(chainl1, simple);
 
   return complex(input);
@@ -588,13 +589,6 @@ var varStatementWithAssignment = sequence(
 
 var varStatement = choice([
   varStatementWithAssignment, varStatementWithoutAssignment]);
-
-var assignStatement = sequence(
-  [expr, operator("="), expr],
-  function (lexpr, op_, rexpr) {
-    return AST.AssignStatement(lexpr, rexpr);
-  }
-);
 
 var returnStatement = sequence(
   [keyword("return"), expr],
@@ -761,7 +755,6 @@ var semicolon = lexeme(character(";"));
 
 var statement = choice([
     skipTrailing(semicolon, varStatement),
-    skipTrailing(semicolon, assignStatement),
     skipTrailing(semicolon, returnStatement),
     skipTrailing(semicolon, throwStatement),
     skipTrailing(semicolon, exprStatement),

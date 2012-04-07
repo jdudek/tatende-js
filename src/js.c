@@ -340,13 +340,14 @@ JSVariable js_create_variable(JSValue* value) {
     return var;
 }
 
-void js_assign_variable(JSEnv* env, Dict binding, char* name, JSValue* value) {
+JSValue* js_assign_variable(JSEnv* env, Dict binding, char* name, JSValue* value) {
     JSVariable variable = dict_find(binding, name);
     if (variable != NULL) {
         *variable = value;
     } else {
         set_object_property(env->global, name, value);
     }
+    return value;
 }
 
 JSValue* js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
@@ -416,6 +417,11 @@ static void set_object_property(JSValue* object, char* key, JSValue* value) {
 
 JSValue* js_get_object_property(JSEnv* env, JSValue* object, JSValue* key) {
     return get_object_property(object, js_to_string(env, key)->string_value);
+}
+
+JSValue* js_set_object_property(JSEnv* env, JSValue* object, JSValue* key, JSValue* value) {
+    set_object_property(js_to_object(env, object), js_to_string(env, key)->string_value, value);
+    return value;
 }
 
 JSValue* js_call_method(JSEnv* env, JSValue* object, JSValue* key, List args) {

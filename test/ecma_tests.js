@@ -24,6 +24,16 @@ var testFiles = [
   // "/ch11/11.4/11.4.9/S11.4.9_A3_T4.js", // void operator
   // "/ch11/11.4/11.4.9/S11.4.9_A3_T5.js", // lacks semicolons
 
+  // 11.13.1 Simple Assignment ( = )
+  // "/ch11/11.13/11.13.1/S11.13.1_A1.js", // eval
+  // "/ch11/11.13/11.13.1/S11.13.1_A2.1_T1.js", // float numbers
+  // "/ch11/11.13/11.13.1/S11.13.1_A2.1_T2.js",
+  // "/ch11/11.13/11.13.1/S11.13.1_A2.1_T3.js", // @negative
+  "/ch11/11.13/11.13.1/S11.13.1_A3.1.js",
+  "/ch11/11.13/11.13.1/S11.13.1_A3.2.js",
+  // "/ch11/11.13/11.13.1/S11.13.1_A4_T1.js", // multiple assignment
+  // "/ch11/11.13/11.13.1/S11.13.1_A4_T2.js",
+
   // 12.14 The try statements
   "/ch12/12.14/S12.14_A1.js",
   "/ch12/12.14/S12.14_A2.js",

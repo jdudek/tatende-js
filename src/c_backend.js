@@ -26,23 +26,6 @@ exports.compile = function (ast) {
         return "binding = dict_insert(binding, " +
           quotes(node.identifier()) + ", js_create_variable(js_new_undefined()));";
 
-      case AST.AssignStatement:
-        if (node.leftExpr() instanceof AST.Variable) {
-          return "js_assign_variable(env, binding, " +
-            quotes(node.leftExpr().identifier()) + ", " +
-            expression(node.rightExpr()) +
-          ");";
-        } else if (node.leftExpr() instanceof AST.Refinement) {
-          return "{ "+
-            "JSValue* object = " + expression(node.leftExpr().expression()) + "; " +
-            "object->object_value = dict_insert(object->object_value, " +
-              "js_to_string(env, " + expression(node.leftExpr().key()) + ")->string_value, " +
-              expression(node.rightExpr()) + "); " +
-            "}";
-        } else {
-          throw "Invalid left-hand side in assignment";
-        }
-
       case AST.ReturnStatement:
         return "return " + expression(node.expression()) + ";";
 
@@ -225,7 +208,8 @@ exports.compile = function (ast) {
         if (node instanceof AST.VarStatement) {
           identifiers.push(node.identifier());
           if (node.expression()) {
-            nodes[i] = AST.AssignStatement(AST.Variable(node.identifier()), node.expression());
+            nodes[i] = AST.ExpressionStatement(
+              AST.BinaryOp("=", AST.Variable(node.identifier()), node.expression()));
           } else {
             nodes[i] = null;
           }
@@ -272,6 +256,19 @@ exports.compile = function (ast) {
       "===": "js_strict_eq", "!==": "js_strict_neq",
       "instanceof": "js_instanceof"
     };
+    if (node.operator() === "=") {
+      if (node.leftExpr() instanceof AST.Variable) {
+        return "js_assign_variable(env, binding, " +
+          quotes(node.leftExpr().identifier()) + ", " +
+          expression(node.rightExpr()) +
+        ")";
+      } else if (node.leftExpr() instanceof AST.Refinement) {
+        return "js_set_object_property(env, " + expression(node.leftExpr().expression()) + ", " +
+          expression(node.leftExpr().key()) + ", " + expression(node.rightExpr()) + ")";
+      } else {
+        throw "Invalid left-hand side in assignment";
+      }
+    }
     if (typeof operatorFunctions[node.operator()] === "undefined") {
       throw "Unsupported operator: " + node.operator();
     }

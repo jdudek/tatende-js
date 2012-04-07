@@ -14,7 +14,6 @@ var testParserOnFile = function (filename) {
 testParser("var x;", [{ varStatement: [ "x" ] }]);
 testParser("var x = 5;", [{ varStatement: [ "x", { numberLiteral: 5 } ] }]);
 testParser("var x_12 = 5;", [{ varStatement: [ "x_12", { numberLiteral: 5 } ] }]);
-testParser("y = 5;", [{ assignStatement: [ { variable: "y" }, { numberLiteral: 5 } ] }]);
 testParser("return 5;", [{ returnStatement: { numberLiteral: 5 } }]);
 testParser("if (x) { return 5; }", [
   { ifStatement: [

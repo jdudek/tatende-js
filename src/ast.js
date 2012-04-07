@@ -57,7 +57,6 @@ exports.PostDecrement = makeNodeConstructor("postDecrement", ["expression"]);
 exports.PostIncrement = makeNodeConstructor("postIncrement", ["expression"]);
 
 exports.VarStatement = makeNodeConstructor("varStatement", ["identifier", "expression"]);
-exports.AssignStatement = makeNodeConstructor("assignStatement", ["leftExpr", "rightExpr"]);
 exports.ReturnStatement = makeNodeConstructor("returnStatement", ["expression"]);
 exports.ThrowStatement = makeNodeConstructor("throwStatement", ["expression"]);
 exports.ExpressionStatement = makeNodeConstructor("expressionStatement", ["expression"]);
