@@ -58,9 +58,56 @@ exports.compile = function (ast) {
         return "while (js_is_truthy(" + expression(node.condition()) + "))" +
           "{ " + node.statements().map(statement).join("") + " }; ";
 
+      case AST.TryStatement:
+        return tryStatement(node);
+
+      case AST.ThrowStatement:
+        return "{ JSException* exc = js_last_exception(env); exc->value = " +
+          expression(node.expression()) + "; longjmp(exc->jmp, 1); }";
+
       default:
         throw "Incorrect AST";
     }
+  };
+
+  var tryStatement = function (node) {
+    var toCFunction = function (name, statements) {
+      return "JSValue* " + name + "(JSEnv* env, JSValue* this, Dict binding) {\n" +
+        statements.map(statement).join("\n") +
+        "return NULL;\n" +
+        "}";
+    };
+
+    var tryFunc = "try_" + unique();
+    functions.push(toCFunction(tryFunc, node.tryStatements()));
+
+    var catchFunc = "catch_" + unique();
+    var catchStatements = node.catchStatements();
+    var catchIdentifier = node.identifier();
+    if (catchIdentifier === null) {
+      catchStatements = [AST.ThrowStatement(AST.Variable("e"))];
+      catchIdentifier = "e";
+    }
+    functions.push(toCFunction(catchFunc, catchStatements));
+
+    var finallyFunc = "finally_" + unique();
+    functions.push(toCFunction(finallyFunc, node.finallyStatements()));
+
+    return "{\n" +
+      "JSException* exc = js_push_new_exception(env);\n" +
+      "if (!setjmp(exc->jmp)) { " +
+        "JSValue* ret = " + tryFunc + "(env, this, binding);\n" +
+        "js_pop_exception(env);\n" +
+        finallyFunc + "(env, this, binding);\n" +
+        "if (ret) return ret;\n" +
+      "} else {\n" +
+        "JSVariable exc_variable = js_create_variable((JSValue *) exc->value);\n" +
+        "js_pop_exception(env);\n" +
+        "JSValue* ret = " + catchFunc + "(env, this, dict_insert(binding, " +
+          quotes(catchIdentifier) + ", exc_variable));\n" +
+        finallyFunc + "(env, this, binding);\n" +
+        "if (ret) return ret;\n" +
+      "}\n}\n";
   };
 
   var escapeCString = function (str) {
@@ -187,6 +234,11 @@ exports.compile = function (ast) {
           visit(node.whenTruthy());
           visit(node.whenFalsy());
         }
+        if (node instanceof AST.TryStatement) {
+          visit(node.tryStatements());
+          visit(node.catchStatements());
+          visit(node.finallyStatements());
+        }
       }
     };
     visit(nodes);
@@ -264,6 +316,7 @@ exports.compile = function (ast) {
       functions.join("\n") + "\n" +
       'int main() {\n' +
       '  JSEnv* env = malloc(sizeof(JSEnv));\n' +
+      '  env->exceptions_count = 0;\n' +
       '  env->global = js_new_bare_object();\n' +
       '  js_create_native_objects(env);\n' +
       '  Dict binding = dict_create();\n' +

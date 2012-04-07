@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <setjmp.h>
 #include "dict.c"
 #include "list.c"
 
@@ -29,8 +30,17 @@ typedef struct TJSValue {
 
 typedef JSValue** JSVariable;
 
+#define JS_EXCEPTION_STACK_SIZE 1024
+
+typedef struct {
+    jmp_buf jmp;
+    JSValue* value;
+} JSException;
+
 typedef struct {
     JSValue* global;
+    JSException exceptions[JS_EXCEPTION_STACK_SIZE];
+    unsigned int exceptions_count;
 } JSEnv;
 
 JSValue* js_new_bare_function(JSValue* (*function_ptr)(), Dict binding);
@@ -359,6 +369,32 @@ JSValue* js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
 void js_throw(JSEnv* env, JSValue* exception) {
     fprintf(stderr, "%s\n", js_to_string(env, exception)->string_value);
     exit(1);
+}
+
+JSException* js_push_new_exception(JSEnv *env) {
+    if (env->exceptions_count >= JS_EXCEPTION_STACK_SIZE) {
+        fprintf(stderr, "Exception stack overflow.\n");
+        exit(1);
+    }
+    env->exceptions_count++;
+    return &env->exceptions[env->exceptions_count - 1];
+}
+
+JSException* js_pop_exception(JSEnv *env) {
+    if (env->exceptions_count == 0) {
+        fprintf(stderr, "Cannot pop exception from empty stack.\n");
+        exit(1);
+    }
+    env->exceptions_count--;
+    return &env->exceptions[env->exceptions_count];
+}
+
+JSException* js_last_exception(JSEnv *env) {
+    if (env->exceptions_count == 0) {
+        fprintf(stderr, "Cannot return exception from empty stack.\n");
+        exit(1);
+    }
+    return &env->exceptions[env->exceptions_count - 1];
 }
 
 static JSValue* get_object_property(JSValue* object, char* key) {
