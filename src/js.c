@@ -367,11 +367,6 @@ JSValue* js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
     }
 }
 
-void js_throw(JSEnv* env, JSValue* exception) {
-    fprintf(stderr, "%s\n", js_to_string(env, exception)->string_value);
-    exit(1);
-}
-
 JSException* js_push_new_exception(JSEnv *env) {
     if (env->exceptions_count >= JS_EXCEPTION_STACK_SIZE) {
         fprintf(stderr, "Exception stack overflow.\n");
@@ -396,6 +391,12 @@ JSException* js_last_exception(JSEnv *env) {
         exit(1);
     }
     return &env->exceptions[env->exceptions_count - 1];
+}
+
+void js_throw(JSEnv* env, JSValue* value) {
+    JSException* exc = js_last_exception(env);
+    exc->value = value;
+    longjmp(exc->jmp, 1);
 }
 
 static JSValue* get_object_property(JSValue* object, char* key) {

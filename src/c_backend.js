@@ -45,8 +45,7 @@ exports.compile = function (ast) {
         return tryStatement(node);
 
       case AST.ThrowStatement:
-        return "{ JSException* exc = js_last_exception(env); exc->value = " +
-          expression(node.expression()) + "; longjmp(exc->jmp, 1); }";
+        return "js_throw(env, " + expression(node.expression()) + ");";
 
       default:
         throw "Incorrect AST";
