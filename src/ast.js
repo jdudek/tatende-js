@@ -57,7 +57,7 @@ exports.PostDecrement = makeNodeConstructor("postDecrement", ["expression"]);
 exports.PostIncrement = makeNodeConstructor("postIncrement", ["expression"]);
 exports.Comma = makeNodeConstructor("comma", ["expressions"]);
 
-exports.VarStatement = makeNodeConstructor("varStatement", ["identifier", "expression"]);
+exports.VarStatement = makeNodeConstructor("varStatement", ["declarations"]);
 exports.ReturnStatement = makeNodeConstructor("returnStatement", ["expression"]);
 exports.ThrowStatement = makeNodeConstructor("throwStatement", ["expression"]);
 exports.ExpressionStatement = makeNodeConstructor("expressionStatement", ["expression"]);
@@ -69,6 +69,10 @@ exports.WhileStatement = makeNodeConstructor("whileStatement", ["condition", "st
 exports.ForStatement = makeNodeConstructor("forStatement", ["initial", "condition", "finalize", "statements"]);
 exports.SwitchStatement = makeNodeConstructor("switchStatement", ["expression", "clauses"]);
 
-// We also need a third, very small category for clauses in switch statements.
+// Declarations are parts of var statements.
+exports.VarDeclaration = makeNodeConstructor("varDeclaration", ["identifier"]);
+exports.VarWithValueDeclaration = makeNodeConstructor("varWithValueDeclaration", ["identifier", "expression"]);
+
+// Clauses are parts of switch statements.
 exports.CaseClause = makeNodeConstructor("caseClause", ["expression", "statements"]);
 exports.DefaultClause = makeNodeConstructor("defaultClause", ["statements"]);

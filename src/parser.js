@@ -587,22 +587,23 @@ var exprAllowingCommas = decorate(
   }
 );
 
-var varStatementWithoutAssignment = sequence(
-  [keyword("var"), identifier],
-  function (k_, id) {
-    return AST.VarStatement(id);
-  }
-);
+var varStatement = function (input) {
+  var declaration = choice([
+    sequence([identifier, operator("="), expr], function (id, op, expr) {
+      return AST.VarWithValueDeclaration(id, expr);
+    }),
+    decorate(identifier, AST.VarDeclaration)
+  ]);
 
-var varStatementWithAssignment = sequence(
-  [keyword("var"), identifier, operator("="), expr],
-  function (k_, id, op_, expr) {
-    return AST.VarStatement(id, expr);
-  }
-);
+  var p = sequence(
+    [keyword("var"), sepBy1(symbol(","), declaration)],
+    function (k_, decls) {
+      return AST.VarStatement(decls);
+    }
+  );
 
-var varStatement = choice([
-  varStatementWithAssignment, varStatementWithoutAssignment]);
+  return p(input);
+};
 
 var returnStatement = sequence(
   [keyword("return"), expr],

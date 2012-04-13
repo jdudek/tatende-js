@@ -23,8 +23,10 @@ exports.compile = function (ast) {
       // When we reach this place, we've already splitted var statements with assignment
       // into var statement and assignment statement.
       case AST.VarStatement:
-        return "binding = dict_insert(binding, " +
-          quotes(node.identifier()) + ", js_create_variable(js_new_undefined()));";
+        return node.declarations().map(function (declaration) {
+          return "binding = dict_insert(binding, " +
+            quotes(declaration.identifier()) + ", js_create_variable(js_new_undefined()));";
+        }).join("\n");
 
       case AST.ReturnStatement:
         return "return " + expression(node.expression()) + ";";
@@ -207,11 +209,17 @@ exports.compile = function (ast) {
     var visit = function (nodes) {
       for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
+        var assignments = [];
         if (node instanceof AST.VarStatement) {
-          identifiers.push(node.identifier());
-          if (node.expression()) {
-            nodes[i] = AST.ExpressionStatement(
-              AST.BinaryOp("=", AST.Variable(node.identifier()), node.expression()));
+          node.declarations().forEach(function (declaration) {
+            identifiers.push(declaration.identifier());
+            if (declaration instanceof AST.VarWithValueDeclaration) {
+              assignments.push(
+                AST.BinaryOp("=", AST.Variable(declaration.identifier()), declaration.expression()));
+            }
+          });
+          if (assignments.length > 0) {
+            nodes[i] = AST.ExpressionStatement(AST.Comma(assignments));
           } else {
             nodes[i] = null;
           }
@@ -234,7 +242,7 @@ exports.compile = function (ast) {
       Array.prototype.splice.apply(array, [0, 0].concat(items));
     };
 
-    prepend(nodes, identifiers.map(AST.VarStatement));
+    prepend(nodes, AST.VarStatement(identifiers.map(AST.VarDeclaration)));
     return nodes;
   };
 

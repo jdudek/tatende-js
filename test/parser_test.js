@@ -11,9 +11,15 @@ var testParserOnFile = function (filename) {
   assert.ok(!! result.success);
 };
 
-testParser("var x;", [{ varStatement: [ "x" ] }]);
-testParser("var x = 5;", [{ varStatement: [ "x", { numberLiteral: 5 } ] }]);
-testParser("var x_12 = 5;", [{ varStatement: [ "x_12", { numberLiteral: 5 } ] }]);
+testParser("var x;", [{ varStatement: [{ varDeclaration: "x" }] }]);
+testParser("var x = 5;", [{ varStatement: [{ varWithValueDeclaration: ["x", { numberLiteral: 5 } ]} ]}]);
+testParser("var x_12 = 5;", [{ varStatement: [{ varWithValueDeclaration: ["x_12", { numberLiteral: 5 } ] }]}]);
+testParser("var x, y = 7;", [
+  { varStatement: [
+    { varDeclaration: "x" },
+    { varWithValueDeclaration: ["y", { numberLiteral: 7 }] }
+  ]}
+]);
 testParser("return 5;", [{ returnStatement: { numberLiteral: 5 } }]);
 testParser("if (x) { return 5; }", [
   { ifStatement: [
@@ -90,7 +96,7 @@ testParser("try { return 5; } catch (e) { return e; } finally { return 3; }", [
   ]}
 ]);
 testParser("throw x;", [{ throwStatement: { variable: "x" } }]);
-testParser("var x;;", [{ varStatement: [ "x" ] }, null]);
+testParser("x;;", [{ expressionStatement: { variable: "x" } }, null]);
 testParser("x;", [{ expressionStatement: { variable: "x" } }]);
 testParser("x, 1;", [{ expressionStatement: { comma: [{ variable: "x" }, { numberLiteral: 1 }] } }]);
 testParser("while (i < 5) { f(x); }", [
@@ -107,7 +113,7 @@ testParser("do { f(x); } while (i < 5);", [
 ]);
 testParser("for (var i = 0; i < 5; i) { f(x); }", [
   { forStatement: [
-    { varStatement: ["i", { numberLiteral: 0 }] },
+    { varStatement: [{ varWithValueDeclaration: ["i", { numberLiteral: 0 }] }] },
     { binaryOp: ["<", { variable: "i" }, { numberLiteral: 5 }] },
     { expressionStatement: { variable: "i" } },
     [{ expressionStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
@@ -134,15 +140,15 @@ testParser("switch (1) { case 1: return 1; case 2: default: return 2; }", [
 ]);
 
 // tests for lexer
-testParser("var x ; ", [{ varStatement: [ "x" ] }]);
-testParser(" var x ; ", [{ varStatement: [ "x" ] }]);
-testParser("var   x   ;  ", [{ varStatement: [ "x" ] }]);
-testParser("var\tx;", [{ varStatement: [ "x" ] }]);
-testParser("var\nx\n;\n", [{ varStatement: [ "x" ] }]);
-testParser("var /*c*/ x;", [{ varStatement: [ "x" ] }]);
-testParser("var /*c*/x; /*c*/", [{ varStatement: [ "x" ] }]);
-testParser("//c\n var x;", [{ varStatement: [ "x" ] }]);
-testParser("//c\nvar x; /*c*/", [{ varStatement: [ "x" ] }]);
+testParser("var x ; ", [{ varStatement: [{"varDeclaration":"x"}] }]);
+testParser(" var x ; ", [{ varStatement: [{"varDeclaration":"x"}] }]);
+testParser("var   x   ;  ", [{ varStatement: [{"varDeclaration":"x"}] }]);
+testParser("var\tx;", [{ varStatement: [{"varDeclaration":"x"}] }]);
+testParser("var\nx\n;\n", [{ varStatement: [{"varDeclaration":"x"}] }]);
+testParser("var /*c*/ x;", [{ varStatement: [{"varDeclaration":"x"}] }]);
+testParser("var /*c*/x; /*c*/", [{ varStatement: [{"varDeclaration":"x"}] }]);
+testParser("//c\n var x;", [{ varStatement: [{"varDeclaration":"x"}] }]);
+testParser("//c\nvar x; /*c*/", [{ varStatement: [{"varDeclaration":"x"}] }]);
 
 // tests for keyword parser
 assert.deepEqual({ success: "true" }, parser.parse("true", parser.keyword("true")));
