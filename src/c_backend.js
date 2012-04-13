@@ -148,6 +148,9 @@ exports.compile = function (ast) {
       case AST.UnaryOp:
         return unaryOp(node);
 
+      case AST.Comma:
+        return "(" + node.expressions().map(expression).join(", ") + ")";
+
       default:
         throw "Incorrect AST";
     }

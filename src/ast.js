@@ -55,6 +55,7 @@ exports.PreDecrement = makeNodeConstructor("preDecrement", ["expression"]);
 exports.PreIncrement = makeNodeConstructor("preIncrement", ["expression"]);
 exports.PostDecrement = makeNodeConstructor("postDecrement", ["expression"]);
 exports.PostIncrement = makeNodeConstructor("postIncrement", ["expression"]);
+exports.Comma = makeNodeConstructor("comma", ["expressions"]);
 
 exports.VarStatement = makeNodeConstructor("varStatement", ["identifier", "expression"]);
 exports.ReturnStatement = makeNodeConstructor("returnStatement", ["expression"]);

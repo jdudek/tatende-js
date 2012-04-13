@@ -521,7 +521,7 @@ var expr = function (input) {
     nullLiteral,
     thisVariable,
     variable,
-    parens(expr)
+    parens(exprAllowingCommas)
   ]);
 
   // This is special use of decorate(): instead of returning AST node, we
@@ -572,6 +572,20 @@ var expr = function (input) {
 
   return complex(input);
 };
+
+// A comma expression consists of expressions separated by commas.
+// However, we don't allow comma expressions in same places, like object
+// literals, unless they're wrapped in parentheses.
+var exprAllowingCommas = decorate(
+  sepBy1(symbol(","), expr),
+  function (expressions) {
+    if (expressions.length == 1) {
+      return expressions[0];
+    } else {
+      return AST.Comma(expressions);
+    }
+  }
+);
 
 var varStatementWithoutAssignment = sequence(
   [keyword("var"), identifier],
@@ -745,7 +759,7 @@ throwStatement = sequence(
   }
 );
 
-exprStatement = decorate(expr, function (e) {
+exprStatement = decorate(exprAllowingCommas, function (e) {
   return AST.ExpressionStatement(e);
 });
 

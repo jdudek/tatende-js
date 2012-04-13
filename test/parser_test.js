@@ -92,6 +92,7 @@ testParser("try { return 5; } catch (e) { return e; } finally { return 3; }", [
 testParser("throw x;", [{ throwStatement: { variable: "x" } }]);
 testParser("var x;;", [{ varStatement: [ "x" ] }, null]);
 testParser("x;", [{ expressionStatement: { variable: "x" } }]);
+testParser("x, 1;", [{ expressionStatement: { comma: [{ variable: "x" }, { numberLiteral: 1 }] } }]);
 testParser("while (i < 5) { f(x); }", [
   { whileStatement: [
     { binaryOp: ["<", { variable: "i" }, { numberLiteral: 5 }] },

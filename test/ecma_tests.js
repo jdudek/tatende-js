@@ -34,6 +34,14 @@ var testFiles = [
   // "/ch11/11.13/11.13.1/S11.13.1_A4_T1.js", // multiple assignment
   "/ch11/11.13/11.13.1/S11.13.1_A4_T2.js",
 
+  // 11.14 Comma Operator ( , )
+
+  // "/ch11/11.14/S11.14_A1.js", // eval
+  // "/ch11/11.14/S11.14_A2.1_T1.js", // float numbers
+  "/ch11/11.14/S11.14_A2.1_T2.js",
+  "/ch11/11.14/S11.14_A2.1_T3.js",
+  "/ch11/11.14/S11.14_A3.js",
+
   // 12.14 The try statements
   "/ch12/12.14/S12.14_A1.js",
   "/ch12/12.14/S12.14_A2.js",
