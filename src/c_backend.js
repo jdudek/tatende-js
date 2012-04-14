@@ -271,6 +271,7 @@ exports.compile = function (ast) {
       "&&": "js_logical_and", "||": "js_logical_or",
       "instanceof": "js_instanceof"
     };
+    var assignOperators = ["+=", "-="];
     if (node.operator() === "=") {
       if (node.leftExpr() instanceof AST.Variable) {
         return "js_assign_variable(env, binding, " +
@@ -283,6 +284,15 @@ exports.compile = function (ast) {
       } else {
         throw "Invalid left-hand side in assignment";
       }
+    }
+    if (assignOperators.indexOf(node.operator()) !== -1) {
+      return expression(
+        AST.BinaryOp("=", node.leftExpr(),
+          AST.BinaryOp(
+            node.operator().replace("=", ""),
+            node.leftExpr(), node.rightExpr()
+        ))
+      );
     }
     if (typeof operatorFunctions[node.operator()] === "undefined") {
       throw "Unsupported operator: " + node.operator();

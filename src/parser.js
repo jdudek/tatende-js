@@ -570,7 +570,8 @@ var expr = function (input) {
     choice(["|"].map(operator).map(binaryOp)),
     choice(["&&"].map(operator).map(binaryOp)),
     choice(["||"].map(operator).map(binaryOp)),
-    choice(["="].map(operator).map(binaryOp))
+    choice(["=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", ">>>=", "&=",
+      "^=", "|="].map(operator).map(binaryOp))
   ].reduce(chainl1, simple);
 
   return complex(input);
