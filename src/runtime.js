@@ -6,18 +6,25 @@ Array.prototype.forEach = function (callback) {
   }
 };
 Array.prototype.join = function (separator) {
+  var toString = function (v) {
+    if (typeof v === "undefined" || v === null) {
+      return "";
+    } else {
+      return v.toString();
+    }
+  };
   var out = "";
   var i = 0;
   if (typeof separator == "undefined") {
     separator = ",";
   }
   while (i + 1 < this.length) {
-    out = out + this[i].toString();
+    out = out + toString(this[i]);
     out = out + separator;
     i = i + 1;
   }
   if (i < this.length) {
-    out = out + this[i].toString();
+    out = out + toString(this[i]);
   }
   return out;
 };

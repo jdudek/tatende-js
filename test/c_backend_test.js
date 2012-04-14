@@ -177,6 +177,7 @@ tests.push(testProgram("var a = [1,2,3]; return a.toString();", "1,2,3"));
 // Test: Array.prototype.join
 tests.push(testProgram("var a = [1,2,3]; return a.join();", "1,2,3"));
 tests.push(testProgram("var a = [1,2,3]; return a.join('.');", "1.2.3"));
+tests.push(testProgram("var a = [undefined,2,null]; return a.join();", ",2,"));
 
 // Test: arguments object
 tests.push(testProgram("var f = function () { return arguments[0]; }; return f(13);", "13"));
