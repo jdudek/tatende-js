@@ -171,6 +171,13 @@ tests.push(testProgram("return [1,2,3].length;", "3"));
 // Test: forEach method on Array objects
 tests.push(testProgram("var sum = 0; [1,2,3].forEach(function (i) { sum = sum + i; }); return sum;", "6"));
 
+// Test: Array.prototype.toString
+tests.push(testProgram("var a = [1,2,3]; return a.toString();", "1,2,3"));
+
+// Test: Array.prototype.join
+tests.push(testProgram("var a = [1,2,3]; return a.join();", "1,2,3"));
+tests.push(testProgram("var a = [1,2,3]; return a.join('.');", "1.2.3"));
+
 // Test: arguments object
 tests.push(testProgram("var f = function () { return arguments[0]; }; return f(13);", "13"));
 tests.push(testProgram("var f = function () { return arguments[1]; }; return f(13);", "[undefined]"));

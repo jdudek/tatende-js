@@ -5,6 +5,29 @@ Array.prototype.forEach = function (callback) {
     i = i + 1;
   }
 };
+Array.prototype.join = function (separator) {
+  var out = "";
+  var i = 0;
+  if (typeof separator == "undefined") {
+    separator = ",";
+  }
+  while (i + 1 < this.length) {
+    out = out + this[i].toString();
+    out = out + separator;
+    i = i + 1;
+  }
+  if (i < this.length) {
+    out = out + this[i].toString();
+  }
+  return out;
+};
+Array.prototype.toString = function () {
+  if (typeof this.join === "function") {
+    return this.join(",");
+  } else {
+    return Object.prototype.toString.call(this);
+  }
+};
 
 global.Error = function (message) { this.message = message; };
 Error.prototype.name = "Error";
