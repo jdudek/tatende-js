@@ -3,6 +3,12 @@ if (typeof process.env.ECMA_TESTS_PATH === "undefined") {
   return;
 }
 
+var filter = "";
+
+if (typeof process.argv[2] !== "undefined") {
+  filter = process.argv[2];
+}
+
 var testFiles = [
   // 8.2 The Null Type
 
@@ -215,8 +221,12 @@ var testProgram = function (program) {
   };
 };
 
-testFiles.forEach(function (fileName) {
-  tests.push(testProgram(fs.readFileSync(process.env.ECMA_TESTS_PATH + fileName, "utf8")));
-});
+testFiles.
+  filter(function (fileName) {
+    return fileName.substring(0, filter.length) == filter;
+  }).
+  forEach(function (fileName) {
+    tests.push(testProgram(fs.readFileSync(process.env.ECMA_TESTS_PATH + fileName, "utf8")));
+  });
 
 runTests();
