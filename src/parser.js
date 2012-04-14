@@ -565,6 +565,9 @@ var expr = function (input) {
     choice([">=", "<=", ">", "<"].map(operator).map(binaryOp)),
     choice(["instanceof"].map(keyword).map(binaryOp)),
     choice(["===", "!==", "==", "!="].map(operator).map(binaryOp)),
+    choice(["&"].map(operator).map(binaryOp)),
+    choice(["^"].map(operator).map(binaryOp)),
+    choice(["|"].map(operator).map(binaryOp)),
     choice(["&&"].map(operator).map(binaryOp)),
     choice(["||"].map(operator).map(binaryOp)),
     choice(["="].map(operator).map(binaryOp))

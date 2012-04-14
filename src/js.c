@@ -340,6 +340,18 @@ int js_is_truthy(JSValue* v) {
     }
 }
 
+JSValue* js_binary_and(JSValue* v1, JSValue* v2) {
+    return js_new_number(js_to_number(v1)->number_value & js_to_number(v2)->number_value);
+}
+
+JSValue* js_binary_xor(JSValue* v1, JSValue* v2) {
+    return js_new_number(js_to_number(v1)->number_value ^ js_to_number(v2)->number_value);
+}
+
+JSValue* js_binary_or(JSValue* v1, JSValue* v2) {
+    return js_new_number(js_to_number(v1)->number_value | js_to_number(v2)->number_value);
+}
+
 JSValue* js_logical_and(JSValue* v1, JSValue* v2) {
     if (js_is_truthy(js_to_boolean(v1))) {
         return v2;
