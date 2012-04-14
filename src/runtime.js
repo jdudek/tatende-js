@@ -35,6 +35,22 @@ Array.prototype.toString = function () {
     return Object.prototype.toString.call(this);
   }
 };
+Array.prototype.slice = function (start, end) {
+  if (typeof start === "undefined") {
+    start = 0;
+  }
+  if (typeof end === "undefined") {
+    end = this.length;
+  }
+  var arr = [];
+  var i = 0;
+  arr.length = end - start; // FIXME: array should autoupdate its length
+  while (start + i < end) {
+    arr[i] = this[start + i];
+    i = i + 1;
+  }
+  return arr;
+};
 
 global.Error = function (message) { this.message = message; };
 Error.prototype.name = "Error";
