@@ -267,6 +267,7 @@ exports.compile = function (ast) {
       "<": "js_lt", ">": "js_gt",
       "==": "js_eq", "!=": "js_neq",
       "===": "js_strict_eq", "!==": "js_strict_neq",
+      "&&": "js_logical_and", "||": "js_logical_or",
       "instanceof": "js_instanceof"
     };
     if (node.operator() === "=") {

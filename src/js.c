@@ -340,6 +340,22 @@ int js_is_truthy(JSValue* v) {
     }
 }
 
+JSValue* js_logical_and(JSValue* v1, JSValue* v2) {
+    if (js_is_truthy(js_to_boolean(v1))) {
+        return v2;
+    } else {
+        return v1;
+    }
+}
+
+JSValue* js_logical_or(JSValue* v1, JSValue* v2) {
+    if (js_is_truthy(js_to_boolean(v1))) {
+        return v1;
+    } else {
+        return v2;
+    }
+}
+
 JSValue* js_call_function(JSEnv* env, JSValue* v, JSValue* this, List args) {
     if (v->type == TypeFunction) {
         return (v->function_value.function)(env, this, args, v->function_value.binding);
