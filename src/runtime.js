@@ -35,6 +35,16 @@ Array.prototype.toString = function () {
     return Object.prototype.toString.call(this);
   }
 };
+Array.prototype.indexOf = function (value) {
+  var i = 0;
+  while (i < this.length) {
+    if (value === this[i]) {
+      return i;
+    }
+    i = i + 1;
+  }
+  return 1 - 2; // FIXME: lack of unary minus
+};
 Array.prototype.slice = function (start, end) {
   if (typeof start === "undefined") {
     start = 0;

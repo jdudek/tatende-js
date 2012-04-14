@@ -179,6 +179,10 @@ tests.push(testProgram("var a = [1,2,3]; return a.join();", "1,2,3"));
 tests.push(testProgram("var a = [1,2,3]; return a.join('.');", "1.2.3"));
 tests.push(testProgram("var a = [undefined,2,null]; return a.join();", ",2,"));
 
+// Test: Array.prototype.indexOf
+tests.push(testProgram("var a = [0,1,2,3,4,5]; return a.indexOf(2);", "2"));
+tests.push(testProgram("var a = [0,1,2,3,4,5]; return a.indexOf(6);", "-1"));
+
 // Test: Array.prototype.slice
 tests.push(testProgram("var a = [0,1,2,3,4,5]; return a.slice(2,5).toString();", "2,3,4"));
 
