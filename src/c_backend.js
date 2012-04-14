@@ -335,6 +335,18 @@ exports.compile = function (ast) {
       '}\n';
   };
 
-  var program = AST.Invocation(AST.FunctionLiteral([], ast), []);
+  // Wrap program statements in try {} block and anonymous function invocation.
+  var program = AST.Invocation(AST.FunctionLiteral([],
+    [AST.TryStatement(
+      ast, "e",
+      [AST.ExpressionStatement(
+        AST.Invocation(
+          AST.Refinement(AST.Variable("console"), AST.StringLiteral("log")),
+          [AST.Variable("e")]
+        )
+      )], []
+    )]
+  ), []);
+
   return addTemplate(expression(program));
 };
