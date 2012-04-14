@@ -14,6 +14,11 @@ enum JSType {
 };
 
 typedef struct {
+    Dict properties;
+    struct TJSValue* prototype;
+} JSObject;
+
+typedef struct {
     struct TJSValue* (*function)();
     Dict binding;
 } JSClosure;
@@ -23,9 +28,10 @@ typedef struct TJSValue {
     int number_value;
     char* string_value;
     char boolean_value;
-    Dict object_value;
+    JSObject* object_value;
+    // Dict object_value;
     JSClosure function_value;
-    struct TJSValue* prototype;
+    // struct TJSValue* prototype;
 } JSValue;
 
 typedef JSValue** JSVariable;
@@ -105,15 +111,16 @@ JSValue* js_new_boolean(char i) {
 JSValue* js_new_bare_object() {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeObject;
-    v->object_value = NULL;
-    v->prototype = NULL;
+    v->object_value = malloc(sizeof(JSObject));
+    v->object_value->properties = NULL;
+    v->object_value->prototype = NULL;
     return v;
 }
 
 JSValue* js_new_object(JSEnv* env, Dict d) {
     JSValue* v = js_new_bare_object();
-    v->object_value = d;
-    v->prototype = get_object_property(get_object_property(env->global, "Object"), "prototype");
+    v->object_value->properties = d;
+    v->object_value->prototype = get_object_property(get_object_property(env->global, "Object"), "prototype");
     set_object_property(v, "constructor", get_object_property(env->global, "Object"));
     return v;
 }
@@ -132,10 +139,13 @@ JSValue* js_new_function(JSEnv* env, JSValue* (*function_ptr)(), Dict binding) {
     JSValue* v = js_new_bare_function(function_ptr, binding);
 
     // function is also an object, initialize properties dictionary
-    v->object_value = dict_create();
+    v->object_value = malloc(sizeof(JSObject));
+    v->object_value->properties = dict_create();
+    v->object_value->prototype = NULL;
 
     // every function has a prototype object for instances
-    v->object_value = dict_insert(v->object_value, "prototype", js_new_object(env, dict_create()));
+    v->object_value->properties =
+        dict_insert(v->object_value->properties, "prototype", js_new_object(env, dict_create()));
 
     return v;
 }
@@ -143,6 +153,13 @@ JSValue* js_new_function(JSEnv* env, JSValue* (*function_ptr)(), Dict binding) {
 JSValue* js_new_undefined() {
     JSValue* v = malloc(sizeof(JSValue));
     v->type = TypeUndefined;
+    return v;
+}
+
+JSValue* js_new_null() {
+    JSValue* v = malloc(sizeof(JSValue));
+    v->type = TypeObject;
+    v->object_value = NULL;
     return v;
 }
 
@@ -232,7 +249,7 @@ JSValue* js_instanceof(JSValue* object, JSValue* constructor) {
         if (get_object_property(object, "constructor") == constructor) {
             return js_new_boolean(1);
         } else {
-            object = object->prototype;
+            object = object->object_value->prototype;
         }
     }
     return js_new_boolean(0);
@@ -355,7 +372,7 @@ JSValue* js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
     if (variable != NULL) {
         return *variable;
     } else {
-        JSValue* global_value = dict_find(env->global->object_value, name);
+        JSValue* global_value = dict_find(env->global->object_value->properties, name);
         if (global_value) {
             return global_value;
         } else {
@@ -402,18 +419,19 @@ void js_throw(JSEnv* env, JSValue* value) {
 static JSValue* get_object_property(JSValue* object, char* key) {
     while (object != NULL) {
         JSValue* value = (JSValue*) dict_find_with_default(
-            object->object_value, key, js_new_undefined());
+            object->object_value->properties, key, js_new_undefined());
         if (value->type != TypeUndefined) {
             return value;
         } else {
-            object = object->prototype;
+            object = object->object_value->prototype;
         }
     }
     return js_new_undefined();
 }
 
 static void set_object_property(JSValue* object, char* key, JSValue* value) {
-    object->object_value = dict_insert(object->object_value, key, value);
+    object->object_value->properties =
+        dict_insert(object->object_value->properties, key, value);
 }
 
 JSValue* js_get_object_property(JSEnv* env, JSValue* object, JSValue* key) {
@@ -431,7 +449,7 @@ JSValue* js_call_method(JSEnv* env, JSValue* object, JSValue* key, List args) {
 
 JSValue* js_invoke_constructor(JSEnv* env, JSValue* function, List args) {
     JSValue* this = js_new_object(env, dict_create());
-    this->prototype = dict_find(function->object_value, "prototype");
+    this->object_value->prototype = dict_find(function->object_value->properties, "prototype");
     set_object_property(this, "constructor", function);
     JSValue* ret = js_call_function(env, function, this, args);
     if (ret->type == TypeObject) {
@@ -473,10 +491,10 @@ JSValue* js_is_prototype_of(JSEnv* env, JSValue* this, List argValues, Dict bind
     JSValue* maybeChild = (JSValue*) list_head(argValues);
 
     while (maybeChild != NULL) {
-        if (maybeChild->prototype == this) {
+        if (maybeChild->object_value->prototype == this) {
             return js_new_boolean(1);
         }
-        maybeChild = maybeChild->prototype;
+        maybeChild = maybeChild->object_value->prototype;
     }
     return js_new_boolean(0);
 }
@@ -507,7 +525,9 @@ void js_create_native_objects(JSEnv* env) {
     set_object_property(object_prototype, "isPrototypeOf", js_new_bare_function(&js_is_prototype_of, NULL));
 
     JSValue* object_constructor = js_new_bare_function(&js_object_constructor, NULL);
-    object_constructor->object_value = dict_create();
+    object_constructor->object_value = malloc(sizeof(JSObject));
+    object_constructor->object_value->properties = dict_create();
+    object_constructor->object_value->prototype = NULL;
     set_object_property(object_constructor, "prototype", object_prototype);
     set_object_property(global, "Object", object_constructor);
 

@@ -4,6 +4,13 @@ if (typeof process.env.ECMA_TESTS_PATH === "undefined") {
 }
 
 var testFiles = [
+  // 8.2 The Null Type
+
+  "/ch08/8.2/S8.2_A1_T1.js",
+  "/ch08/8.2/S8.2_A1_T2.js",
+  // "/ch08/8.2/S8.2_A2.js", // @negative
+  "/ch08/8.2/S8.2_A3.js",
+
   // 8.3 The Boolean type
 
   "/ch08/8.3/S8.3_A1_T1.js",

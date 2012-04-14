@@ -130,6 +130,9 @@ exports.compile = function (ast) {
       case AST.UndefinedLiteral:
         return "js_new_undefined()";
 
+      case AST.NullLiteral:
+        return "js_new_null()";
+
       case AST.Variable:
         return "js_get_variable_rvalue(env, binding, " + quotes(node.identifier()) + ")";
 
