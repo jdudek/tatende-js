@@ -244,7 +244,7 @@ JSValue* js_typeof(JSValue* v) {
     }
 }
 
-JSValue* js_instanceof(JSValue* object, JSValue* constructor) {
+JSValue* js_instanceof(JSEnv* env, JSValue* object, JSValue* constructor) {
     if (object->type != TypeObject) {
         return js_new_boolean(0);
     }
@@ -258,21 +258,21 @@ JSValue* js_instanceof(JSValue* object, JSValue* constructor) {
     return js_new_boolean(0);
 }
 
-JSValue* js_add(JSValue* v1, JSValue* v2) {
-    if (v1->type == TypeNumber && v2->type == TypeNumber) {
-        return js_new_number(v1->number_value + v2->number_value);
-    } else if (v1->type == TypeString && v2->type == TypeString) {
-        char* new_string = malloc(sizeof(char) * (strlen(v1->string_value) + strlen(v2->string_value) + 1));
-        strcpy(new_string, v1->string_value);
-        strcat(new_string, v2->string_value);
+JSValue* js_add(JSEnv* env, JSValue* v1, JSValue* v2) {
+    if (v1->type == TypeString || v2->type == TypeString) {
+        char* str1 = js_to_string(env, v1)->string_value;
+        char* str2 = js_to_string(env, v2)->string_value;
+
+        char* new_string = malloc(sizeof(char) * (strlen(str1) + strlen(str2) + 1));
+        strcpy(new_string, str1);
+        strcat(new_string, str2);
         return js_new_string(new_string);
     } else {
-        fprintf(stderr, "Cannot add");
-        exit(1);
+        return js_new_number(js_to_number(v1)->number_value + js_to_number(v2)->number_value);
     }
 }
 
-JSValue* js_sub(JSValue* v1, JSValue* v2) {
+JSValue* js_sub(JSEnv* env, JSValue* v1, JSValue* v2) {
     if (v1->type == TypeNumber && v2->type == TypeNumber) {
         return js_new_number(v1->number_value - v2->number_value);
     } else {
@@ -281,11 +281,11 @@ JSValue* js_sub(JSValue* v1, JSValue* v2) {
     }
 }
 
-JSValue* js_mult(JSValue* v1, JSValue* v2) {
+JSValue* js_mult(JSEnv* env, JSValue* v1, JSValue* v2) {
     return js_new_number(v1->number_value * v2->number_value);
 }
 
-JSValue* js_strict_eq(JSValue* v1, JSValue* v2) {
+JSValue* js_strict_eq(JSEnv* env, JSValue* v1, JSValue* v2) {
     if (v1->type != v2->type) {
         return js_new_boolean(0);
     }
@@ -306,23 +306,23 @@ JSValue* js_strict_eq(JSValue* v1, JSValue* v2) {
     }
 }
 
-JSValue* js_strict_neq(JSValue* v1, JSValue* v2) {
-    return js_new_boolean(! js_strict_eq(v1, v2)->boolean_value);
+JSValue* js_strict_neq(JSEnv* env, JSValue* v1, JSValue* v2) {
+    return js_new_boolean(! js_strict_eq(env, v1, v2)->boolean_value);
 }
 
-JSValue* js_eq(JSValue* v1, JSValue* v2) {
-    return js_strict_eq(v1, v2);
+JSValue* js_eq(JSEnv* env, JSValue* v1, JSValue* v2) {
+    return js_strict_eq(env, v1, v2);
 }
 
-JSValue* js_neq(JSValue* v1, JSValue* v2) {
-    return js_strict_neq(v1, v2);
+JSValue* js_neq(JSEnv* env, JSValue* v1, JSValue* v2) {
+    return js_strict_neq(env, v1, v2);
 }
 
-JSValue* js_lt(JSValue* v1, JSValue* v2) {
+JSValue* js_lt(JSEnv* env, JSValue* v1, JSValue* v2) {
     return js_new_boolean(js_to_number(v1)->number_value < js_to_number(v2)->number_value);
 }
 
-JSValue* js_gt(JSValue* v1, JSValue* v2) {
+JSValue* js_gt(JSEnv* env, JSValue* v1, JSValue* v2) {
     return js_new_boolean(js_to_number(v1)->number_value > js_to_number(v2)->number_value);
 }
 
@@ -343,19 +343,19 @@ int js_is_truthy(JSValue* v) {
     }
 }
 
-JSValue* js_binary_and(JSValue* v1, JSValue* v2) {
+JSValue* js_binary_and(JSEnv* env, JSValue* v1, JSValue* v2) {
     return js_new_number(js_to_number(v1)->number_value & js_to_number(v2)->number_value);
 }
 
-JSValue* js_binary_xor(JSValue* v1, JSValue* v2) {
+JSValue* js_binary_xor(JSEnv* env, JSValue* v1, JSValue* v2) {
     return js_new_number(js_to_number(v1)->number_value ^ js_to_number(v2)->number_value);
 }
 
-JSValue* js_binary_or(JSValue* v1, JSValue* v2) {
+JSValue* js_binary_or(JSEnv* env, JSValue* v1, JSValue* v2) {
     return js_new_number(js_to_number(v1)->number_value | js_to_number(v2)->number_value);
 }
 
-JSValue* js_logical_and(JSValue* v1, JSValue* v2) {
+JSValue* js_logical_and(JSEnv* env, JSValue* v1, JSValue* v2) {
     if (js_is_truthy(js_to_boolean(v1))) {
         return v2;
     } else {
@@ -363,7 +363,7 @@ JSValue* js_logical_and(JSValue* v1, JSValue* v2) {
     }
 }
 
-JSValue* js_logical_or(JSValue* v1, JSValue* v2) {
+JSValue* js_logical_or(JSEnv* env, JSValue* v1, JSValue* v2) {
     if (js_is_truthy(js_to_boolean(v1))) {
         return v1;
     } else {
@@ -375,7 +375,7 @@ JSValue* js_call_function(JSEnv* env, JSValue* v, JSValue* this, List args) {
     if (v->type == TypeFunction) {
         return (v->function_value.function)(env, this, args, v->function_value.binding);
     } else {
-        JSValue* message = js_add(js_typeof(v), js_new_string(" is not a function."));
+        JSValue* message = js_add(env, js_typeof(v), js_new_string(" is not a function."));
         JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "TypeError"),
             list_insert(list_create(), message));
         js_throw(env, exception);
@@ -407,7 +407,7 @@ JSValue* js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
         if (global_value) {
             return global_value;
         } else {
-            JSValue* message = js_add(js_new_string(name), js_new_string(" is not defined."));
+            JSValue* message = js_add(env, js_new_string(name), js_new_string(" is not defined."));
             JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "ReferenceError"),
                 list_insert(list_create(), message));
             js_throw(env, exception);

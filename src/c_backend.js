@@ -297,7 +297,7 @@ exports.compile = function (ast) {
     if (typeof operatorFunctions[node.operator()] === "undefined") {
       throw "Unsupported operator: " + node.operator();
     }
-    return operatorFunctions[node.operator()] + "(" +
+    return operatorFunctions[node.operator()] + "(env, " +
       expression(node.leftExpr()) + ", " + expression(node.rightExpr())  + ")";
   };
 
