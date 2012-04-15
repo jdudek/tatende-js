@@ -531,6 +531,23 @@ JSValue* js_string_to_string(JSEnv* env, JSValue* this, List argValues, Dict bin
     return js_new_string(this->string_value);
 }
 
+JSValue* js_string_substring(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    int from = js_to_number((JSValue*) list_head(argValues))->number_value;
+    int to = js_to_number((JSValue*) list_head(list_tail(argValues)))->number_value;
+    int len = strlen(this->string_value);
+
+    if (to > len) {
+        to = len;
+    }
+
+    int new_len = to - from;
+    char* cstr = malloc(sizeof(char) * (new_len + 1));
+    memcpy(cstr, this->string_value + from, new_len);
+    cstr[new_len] = '\0';
+
+    return js_new_string(cstr);
+}
+
 JSValue* js_is_prototype_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     JSValue* maybeChild = (JSValue*) list_head(argValues);
 
@@ -589,6 +606,7 @@ void js_create_native_objects(JSEnv* env) {
     set_object_property(global, "String", string_constructor);
     set_object_property(string_prototype, "valueOf", js_new_function(env, &js_string_value_of, NULL));
     set_object_property(string_prototype, "toString", js_new_function(env, &js_string_to_string, NULL));
+    set_object_property(string_prototype, "substring", js_new_function(env, &js_string_substring, NULL));
 
     JSValue* console = js_new_object(env, NULL);
     set_object_property(console, "log", js_new_function(env, &js_console_log, NULL));

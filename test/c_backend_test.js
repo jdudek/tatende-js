@@ -151,6 +151,9 @@ tests.push(testProgram("return (new String('xx')).toString();", "xx"));
 tests.push(testProgram("return (2).toString();", "2"));
 tests.push(testProgram("return ('xx').toString();", "xx"));
 
+// Test: String methods
+tests.push(testProgram("return ('abc').substring(1,3);", "bc"));
+
 // Test: Error objects
 tests.push(testProgram("var e = new Error('msg'); return e.name;", "Error"));
 tests.push(testProgram("var e = new Error('msg'); return e.message;", "msg"));
