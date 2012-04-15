@@ -312,6 +312,12 @@ exports.compile = function (ast) {
       case "!":
         return "js_new_boolean(! js_to_boolean(" + expression(node.expression()) + ")->boolean_value)";
 
+      case "+":
+        return "js_new_number(js_to_number(" + expression(node.expression()) + ")->number_value)";
+
+      case "-":
+        return "js_new_number(-1 * js_to_number(" + expression(node.expression()) + ")->number_value)";
+
       default:
         throw "Unsupported operator: " + node.operator();
     }
