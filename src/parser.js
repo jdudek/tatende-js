@@ -341,8 +341,23 @@ var keyword = function (s) {
   return lexeme(notFollowedBy(letter, string(s)));
 };
 
+// We need to check for special cases: some operators are prefixes of other
+// operators.
 var operator = function (s) {
-  return lexeme(notFollowedBy(anyCharOf("-+=<>!|&".split("")), string(s)));
+  var p;
+
+  if (s === "==" || s === "!=") {
+    p = notFollowedBy(character("="), string(s));
+  } else if (s === "+") {
+    p = notFollowedBy(anyCharOf(["+", "="]), string(s));
+  } else if (s === "-") {
+    p = notFollowedBy(anyCharOf(["-", "="]), string(s));
+  } else if (s === "!") {
+    p = notFollowedBy(character("="), string(s));
+  } else {
+    p = string(s);
+  }
+  return lexeme(p);
 };
 
 var symbol = function (s) {

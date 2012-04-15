@@ -156,7 +156,7 @@ assert.deepEqual({ failure: [] }, parser.parse("truex", parser.keyword("true")))
 
 // tests for operator parser
 assert.deepEqual({ success: "=" }, parser.parse("=", parser.operator("=")));
-assert.deepEqual({ failure: [] }, parser.parse("==", parser.operator("=")));
+assert.ok(parser.parse("==", parser.operator("=")).failure);
 
 // tests for expression parser
 testParser("5", { numberLiteral: 5 }, parser.expr);
@@ -245,6 +245,9 @@ testParser("function (a, b) { return 5; }(2, 3)['foo'](4, 5)[bar].baz", {
     { stringLiteral: "baz" } ]
 }, parser.expr);
 testParser("new X()", { unaryOp: ["new", { invocation: [ { variable: "X" }, [] ] }] }, parser.expr);
+testParser("2!==-2", {
+  binaryOp: ["!==", { numberLiteral: 2 }, { unaryOp: ["-", { numberLiteral: 2 } ]}]
+}, parser.expr);
 
 testParser('"\\"xy\\""', { stringLiteral: '"xy"' }, parser.stringLiteral);
 testParser('"aa\\nbb"', { stringLiteral: 'aa\nbb' }, parser.stringLiteral);
