@@ -548,6 +548,31 @@ JSValue* js_string_substring(JSEnv* env, JSValue* this, List argValues, Dict bin
     return js_new_string(cstr);
 }
 
+JSValue* js_string_index_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    JSValue* js_substring = (JSValue*) list_head(argValues);
+    JSValue* js_position = (JSValue*) list_head(list_tail(argValues));
+    char *string = js_to_string(env, this)->string_value;
+    int i = 0, j;
+
+    if (js_substring == NULL) {
+        js_substring = js_new_undefined();
+    }
+    char *substring = js_to_string(env, js_substring)->string_value;
+    if (js_position != NULL) {
+        i = js_to_number(js_position)->number_value;
+    }
+    int string_len = strlen(string);
+    int substring_len = strlen(substring);
+
+    for (; i < string_len - substring_len; i++) {
+        for (j = 0; j < substring_len; j++) {
+            if (string[i+j] != substring[j]) break;
+        }
+        if (j == substring_len) return js_new_number(i);
+    }
+    return js_new_number(-1);
+}
+
 JSValue* js_is_prototype_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     JSValue* maybeChild = (JSValue*) list_head(argValues);
 
@@ -607,6 +632,7 @@ void js_create_native_objects(JSEnv* env) {
     set_object_property(string_prototype, "valueOf", js_new_function(env, &js_string_value_of, NULL));
     set_object_property(string_prototype, "toString", js_new_function(env, &js_string_to_string, NULL));
     set_object_property(string_prototype, "substring", js_new_function(env, &js_string_substring, NULL));
+    set_object_property(string_prototype, "indexOf", js_new_function(env, &js_string_index_of, NULL));
 
     JSValue* console = js_new_object(env, NULL);
     set_object_property(console, "log", js_new_function(env, &js_console_log, NULL));

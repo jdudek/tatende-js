@@ -153,6 +153,8 @@ tests.push(testProgram("return ('xx').toString();", "xx"));
 
 // Test: String methods
 tests.push(testProgram("return ('abc').substring(1,3);", "bc"));
+tests.push(testProgram("return ('abc').indexOf('a');", "0"));
+tests.push(testProgram("return ('abc').indexOf('a', 1);", "-1"));
 
 // Test: Error objects
 tests.push(testProgram("var e = new Error('msg'); return e.name;", "Error"));
