@@ -142,8 +142,14 @@ tests.push(testProgram("return new Number(2);", "[object]"));
 tests.push(testProgram("return (new Number(2)).valueOf();", "2"));
 tests.push(testProgram("return (new Number(2)).toString();", "2"));
 
+// Test: String constructor
+tests.push(testProgram("return new String('xx');", "[object]"));
+tests.push(testProgram("return (new String('xx')).valueOf();", "xx"));
+tests.push(testProgram("return (new String('xx')).toString();", "xx"));
+
 // Test: automatic conversion of primitive types to objects
 tests.push(testProgram("return (2).toString();", "2"));
+tests.push(testProgram("return ('xx').toString();", "xx"));
 
 // Test: Error objects
 tests.push(testProgram("var e = new Error('msg'); return e.name;", "Error"));

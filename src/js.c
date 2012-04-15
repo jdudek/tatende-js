@@ -218,6 +218,9 @@ JSValue* js_to_object(JSEnv* env, JSValue* v) {
     } else if (v->type == TypeNumber) {
         return js_invoke_constructor(env, get_object_property(env->global, "Number"),
             list_insert(list_create(), v));
+    } else if (v->type == TypeString) {
+        return js_invoke_constructor(env, get_object_property(env->global, "String"),
+            list_insert(list_create(), v));
     } else {
         fprintf(stderr, "Cannot convert to object");
         exit(1);
@@ -515,6 +518,19 @@ JSValue* js_number_to_string(JSEnv* env, JSValue* this, List argValues, Dict bin
     return js_to_string(env, js_new_number(this->number_value));
 }
 
+JSValue* js_string_constructor(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    this->string_value = ((JSValue*) list_head(argValues))->string_value;
+    return this;
+}
+
+JSValue* js_string_value_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    return js_new_string(this->string_value);
+}
+
+JSValue* js_string_to_string(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    return js_new_string(this->string_value);
+}
+
 JSValue* js_is_prototype_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     JSValue* maybeChild = (JSValue*) list_head(argValues);
 
@@ -567,6 +583,12 @@ void js_create_native_objects(JSEnv* env) {
     set_object_property(global, "Number", number_constructor);
     set_object_property(number_prototype, "valueOf", js_new_function(env, &js_number_value_of, NULL));
     set_object_property(number_prototype, "toString", js_new_function(env, &js_number_to_string, NULL));
+
+    JSValue* string_constructor = js_new_function(env, &js_string_constructor, NULL);
+    JSValue* string_prototype = get_object_property(string_constructor, "prototype");
+    set_object_property(global, "String", string_constructor);
+    set_object_property(string_prototype, "valueOf", js_new_function(env, &js_string_value_of, NULL));
+    set_object_property(string_prototype, "toString", js_new_function(env, &js_string_to_string, NULL));
 
     JSValue* console = js_new_object(env, NULL);
     set_object_property(console, "log", js_new_function(env, &js_console_log, NULL));
