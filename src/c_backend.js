@@ -39,6 +39,20 @@ exports.compile = function (ast) {
           "{ " + node.whenTruthy().map(statement).join("") + " } " +
           "else { " + node.whenFalsy().map(statement).join("") + " }";
 
+      case AST.ForInStatement:
+        return "{" +
+            "JSValue* object = js_to_object(env, " + expression(node.object()) + ");\n" +
+            "Dict property = NULL;\n" +
+            "if (object->object_value) property = object->object_value->properties;\n" +
+            "while (object && object->object_value && property) {\n"+
+              "js_assign_variable(env, binding, " + quotes(node.identifier()) +
+                ", js_new_string(property->key));\n" +
+              node.statements().map(statement).join("") +
+              "property = property->next;\n" +
+              "if (property == NULL) { object = object->object_value->prototype; if (object) { property = object->object_value->properties; } };\n" +
+            "}" +
+          "}";
+
       case AST.WhileStatement:
         return "while (js_is_truthy(" + expression(node.condition()) + "))" +
           "{ " + node.statements().map(statement).join("") + " }; ";

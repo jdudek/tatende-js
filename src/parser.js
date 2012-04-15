@@ -742,6 +742,28 @@ var forStatement = function (input) {
   return p(input);
 };
 
+// for-in loop has the following form: for (property in object) { body }
+var forInStatement = function (input) {
+  var p = sequence(
+    [
+      keyword("for"),
+      parens(sequence(
+        [identifier, keyword("in"), expr],
+        function (id, k_, e) {
+          return { identifier: id, expression: e };
+        }
+      )),
+      braces(many(statement))
+    ],
+    function (k_, inParens, body) {
+      return AST.ForInStatement(
+        inParens.identifier, inParens.expression, body);
+    }
+  );
+
+  return p(input);
+};
+
 // switch statement has the following form: switch (expression) { clauses }
 // clauses start with either "case expression:" or "default:" followed by any
 // number of statements.
@@ -799,6 +821,7 @@ var statement = choice([
     tryStatement,
     whileStatement,
     forStatement,
+    forInStatement,
     switchStatement,
 
     // But we want to allow programs with unnecessary semicolons, so we add

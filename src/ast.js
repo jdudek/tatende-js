@@ -67,6 +67,7 @@ exports.TryStatement = makeNodeConstructor("tryStatement",
     ["tryStatements", "identifier", "catchStatements", "finallyStatements"]);
 exports.WhileStatement = makeNodeConstructor("whileStatement", ["condition", "statements"]);
 exports.ForStatement = makeNodeConstructor("forStatement", ["initial", "condition", "finalize", "statements"]);
+exports.ForInStatement = makeNodeConstructor("forInStatement", ["identifier", "object", "statements"]);
 exports.SwitchStatement = makeNodeConstructor("switchStatement", ["expression", "clauses"]);
 
 // Declarations are parts of var statements.

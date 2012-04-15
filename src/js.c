@@ -180,6 +180,8 @@ JSValue* js_to_string(JSEnv* env, JSValue* v) {
         } else {
             return js_new_string("[object]");
         }
+    } else if (v->type == TypeFunction) {
+        return js_new_string("[function]");
     } else {
         fprintf(stderr, "Cannot convert to string");
         exit(1);
@@ -189,6 +191,8 @@ JSValue* js_to_string(JSEnv* env, JSValue* v) {
 JSValue* js_to_number(JSValue* v) {
     if (v->type == TypeNumber) {
         return v;
+    } else if (v->type == TypeBoolean) {
+        return js_new_number(v->boolean_value);
     } else {
         fprintf(stderr, "Cannot convert to number");
         exit(1);

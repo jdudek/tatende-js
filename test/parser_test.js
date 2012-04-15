@@ -125,6 +125,9 @@ testParser("for (;;) { f(x); }", [
     [{ expressionStatement: { invocation: [{ variable: "f" }, [{ variable: "x" }]] } }]
   ]}
 ]);
+testParser("for (x in obj) { }", [
+  { forInStatement: [ "x", { variable: "obj" }, [] ]}
+]);
 testParser("switch (1) { }", [
   { switchStatement: [ { numberLiteral: 1 }, [] ]}
 ]);
