@@ -3,17 +3,23 @@
 // To avoid repetitive definitions, we'll use a bit of metaprogramming.
 var makeNodeConstructor = function (name, fields) {
   var constructor = function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-
     // This condition fails unless we called constructor with new operator.
     // In such cases we call new manually. instanceof operator works properly
     // if objects are created with new.
     if (! (this instanceof constructor)) {
-      // This is a nasty hack to call new with variable number of arguments.
-      // First argument of bind() is an object that will be value of this,
-      // which we don't care about, hence null.
-      return new (constructor.bind.apply(constructor, [null].concat(args)));
+      // Passing variable number of arguments to constructor is a bit tricky.
+      // We avoid nasty hacks by passing an object with a key "constructorArgs"
+      return new constructor({ constructorArgs: arguments });
     }
+
+    // Now we take care of unpacking arguments passed via constructorArgs.
+    var args = arguments;
+    if (args.length > 0 && typeof args[0].constructorArgs !== "undefined") {
+      args = args[0].constructorArgs;
+    }
+    // Make sure args is a proper array.
+    args = Array.prototype.slice.call(args, 0);
+
     if (fields.length > 1) {
       this[name] = args;
     } else {
