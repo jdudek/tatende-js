@@ -141,7 +141,8 @@ JSValue* js_new_function(JSEnv* env, JSValue* (*function_ptr)(), Dict binding) {
     // function is also an object, initialize properties dictionary
     v->object_value = malloc(sizeof(JSObject));
     v->object_value->properties = dict_create();
-    v->object_value->prototype = NULL;
+    v->object_value->prototype =
+        get_object_property(get_object_property(env->global, "Function"), "prototype");
 
     // every function has a prototype object for instances
     v->object_value->properties =
@@ -498,6 +499,39 @@ JSValue* js_object_constructor(JSEnv* env, JSValue* this, List argValues, Dict b
     return js_new_object(env, NULL);
 }
 
+JSValue* js_function_constructor(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    js_throw(env, js_new_string("Cannot use Function constructor in compiled code."));
+}
+
+JSValue* js_function_prototype_call(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    JSValue* new_this = list_head(argValues);
+    if (new_this == NULL) {
+        new_this = js_new_undefined();
+    }
+    return js_call_function(env, this, new_this, list_tail(argValues));
+}
+
+JSValue* js_function_prototype_apply(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    JSValue* new_this = list_head(argValues);
+    if (new_this == NULL) {
+        new_this = js_new_undefined();
+    }
+    List new_args = list_create();
+    if (list_tail(argValues)) {
+        JSValue* args_obj = (JSValue*) list_head(list_tail(argValues));
+        if (args_obj->type == TypeObject) {
+            // FIXME will fail if "length" does not exist or is not number
+            int i, length = get_object_property(args_obj, "length")->number_value;
+            for (i = length - 1; i >= 0; i--) {
+                JSValue* arg_value = get_object_property(args_obj,
+                    js_to_string(env, js_new_number(i))->string_value);
+                new_args = list_insert(new_args, arg_value);
+            }
+        }
+    }
+    return js_call_function(env, this, new_this, new_args);
+}
+
 JSValue* js_array_constructor(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     int i = 0;
     while (argValues != NULL) {
@@ -620,6 +654,17 @@ void js_create_native_objects(JSEnv* env) {
     object_constructor->object_value->prototype = NULL;
     set_object_property(object_constructor, "prototype", object_prototype);
     set_object_property(global, "Object", object_constructor);
+
+    JSValue* function_constructor = js_new_bare_function(&js_function_constructor, NULL);
+    JSValue* function_prototype = js_new_object(env, dict_create());
+    function_constructor->object_value = malloc(sizeof(JSObject));
+    function_constructor->object_value->properties = dict_create();
+    function_constructor->object_value->prototype =
+        get_object_property(get_object_property(global, "Object"), "prototype");
+    set_object_property(function_constructor, "prototype", function_prototype);
+    set_object_property(global, "Function", function_constructor);
+    set_object_property(function_prototype, "call", js_new_function(env, &js_function_prototype_call, NULL));
+    set_object_property(function_prototype, "apply", js_new_function(env, &js_function_prototype_apply, NULL));
 
     JSValue* array_constructor = js_new_function(env, &js_array_constructor, NULL);
     set_object_property(global, "Array", array_constructor);

@@ -204,4 +204,14 @@ tests.push(testProgram("var f = function () { return arguments[0]; }; return f(1
 tests.push(testProgram("var f = function () { return arguments[1]; }; return f(13);", "[undefined]"));
 tests.push(testProgram("var f = function () { return arguments.length; }; return f(1, 2, 3);", "3"));
 
+// Test: Function.prototype.call
+tests.push(testProgram("var f = function (x) { return x; }; return f.call(null, 2);", "2"));
+tests.push(testProgram("var f = function (x) { return this; }; return f.call(5, 2);", "5"));
+tests.push(testProgram("var a = [0,1,2,3,4]; return Array.prototype.slice.call(a, 2, 4).toString();", "2,3"));
+
+// Test: Function.prototype.apply
+tests.push(testProgram("var f = function (x) { return x; }; return f.apply(null, [2]);", "2"));
+tests.push(testProgram("var f = function (x) { return this; }; return f.apply(5, [2]);", "5"));
+tests.push(testProgram("var a = [0,1,2,3,4]; return Array.prototype.slice.apply(a, [2, 4]).toString();", "2,3"));
+
 runTests();
