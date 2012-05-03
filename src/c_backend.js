@@ -39,6 +39,12 @@ exports.compile = function (ast) {
           "{ " + node.whenTruthy().map(statement).join("") + " } " +
           "else { " + node.whenFalsy().map(statement).join("") + " }";
 
+      case AST.ForStatement:
+        return [
+          node.initial(),
+          AST.WhileStatement(node.condition(), node.statements().concat(node.finalize()))
+        ].map(statement).join("");
+
       case AST.ForInStatement:
         return "{" +
             "JSValue* object = js_to_object(env, " + expression(node.object()) + ");\n" +
@@ -227,7 +233,8 @@ exports.compile = function (ast) {
       for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
         var assignments = [];
-        if (node instanceof AST.VarStatement) {
+
+        var convertVarStatement = function (node) {
           node.declarations().forEach(function (declaration) {
             identifiers.push(declaration.identifier());
             if (declaration instanceof AST.VarWithValueDeclaration) {
@@ -236,14 +243,29 @@ exports.compile = function (ast) {
             }
           });
           if (assignments.length > 0) {
-            nodes[i] = AST.ExpressionStatement(AST.Comma(assignments));
+            return AST.ExpressionStatement(AST.Comma(assignments));
           } else {
-            nodes[i] = null;
+            return null;
           }
+        };
+
+        if (node instanceof AST.VarStatement) {
+          nodes[i] = convertVarStatement(node);
         }
         if (node instanceof AST.IfStatement) {
           visit(node.whenTruthy());
           visit(node.whenFalsy());
+        }
+        if (node instanceof AST.ForStatement) {
+          if (node.initial() instanceof AST.VarStatement) {
+            nodes[i] = AST.ForStatement(
+              convertVarStatement(node.initial()),
+              node.condition(),
+              node.finalize(),
+              node.statements()
+            );
+          }
+          visit(node.statements());
         }
         if (node instanceof AST.TryStatement) {
           visit(node.tryStatements());

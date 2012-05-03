@@ -122,6 +122,10 @@ tests.push(testProgram("function () { x = 2; }(); if (true) {} else { var x; } r
 // Test: Factorial
 tests.push(testProgram("var fac = function (n) { if (n > 0) { return n * fac(n-1); } else { return 1; } }; return fac(5);", "120"));
 
+// Test: for loop
+tests.push(testProgram("var x = 3; var i; for (i = 0; i < 5; i += 1) { x += 1; } return x;", "8"));
+tests.push(testProgram("var x = 3; for (var i = 0; i < 5; i += 1) { x += 1; } return x;", "8"));
+
 // Test: function uses "this"
 tests.push(testProgram("var x = { a: 2, f: function () { return this.a; } }; return x.f();", "2"));
 
