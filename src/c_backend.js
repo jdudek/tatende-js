@@ -155,7 +155,7 @@ exports.compile = function (ast) {
 
       case AST.Refinement:
         return "js_get_object_property(env, " +
-          expression(node.expression()) + ", " +
+          "js_to_object(env, " + expression(node.expression()) + "), " +
           expression(node.key()) + ")";
 
       case AST.Invocation:

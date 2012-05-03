@@ -120,6 +120,7 @@ tests.push(testProgram("var f = function () {}; f.x = 2; return f.x;", "2"));
 
 // Test: prototypes
 tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X(); return x.y;", "2"));
+tests.push(testProgram("var X = function () {}; var x = new X(); return x.z;", "[undefined]"));
 
 // Test: Object prototype method isPrototypeOf
 tests.push(testProgram("var X = function () {}; var x = new X(); return X.prototype.isPrototypeOf(x);", "true"));
@@ -150,6 +151,7 @@ tests.push(testProgram("return (new String('xx')).toString();", "xx"));
 // Test: automatic conversion of primitive types to objects
 tests.push(testProgram("return (2).toString();", "2"));
 tests.push(testProgram("return ('xx').toString();", "xx"));
+tests.push(testProgram("return ('xx').z;", "[undefined]"));
 
 // Test: String methods
 tests.push(testProgram("return ('abc').substring(1,3);", "bc"));
