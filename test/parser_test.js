@@ -202,22 +202,22 @@ testParser("2 + 3 * 5", { binaryOp: [
 testParser("2 + 3 + 4", { binaryOp: [
   "+",
     { binaryOp: ["+", { numberLiteral: 2 }, { numberLiteral: 3 }] },
-    { numberLiteral: 4 },
+    { numberLiteral: 4 }
   ] }, parser.expr);
 testParser("2 + 3 == 7", { binaryOp: [
   "==",
     { binaryOp: ["+", { numberLiteral: 2 }, { numberLiteral: 3 }] },
-    { numberLiteral: 7 },
+    { numberLiteral: 7 }
   ] }, parser.expr);
 testParser("-2 + 3 == 1", { binaryOp: [
   "==",
     { binaryOp: ["+", { unaryOp: ["-", { numberLiteral: 2 }] }, { numberLiteral: 3 }] },
-    { numberLiteral: 1 },
+    { numberLiteral: 1 }
   ] }, parser.expr);
 testParser("\"x\" + \"y\" == \"xy\"", { binaryOp: [
   "==",
     { binaryOp: ["+", { stringLiteral: "x" }, { stringLiteral: "y" }] },
-    { stringLiteral: "xy" },
+    { stringLiteral: "xy" }
   ] }, parser.expr);
 testParser("x instanceof y", { binaryOp: ["instanceof", { variable: "x" }, { variable: "y" }] }, parser.expr);
 testParser("--x", { preDecrement: { variable: "x" } }, parser.expr);
