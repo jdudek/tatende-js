@@ -173,6 +173,12 @@ exports.compile = function (ast) {
       case AST.UnaryOp:
         return unaryOp(node);
 
+      case AST.PostIncrement:
+        return expression(AST.BinaryOp("+=", node.expression(), AST.NumberLiteral(1)));
+
+      case AST.PostDecrement:
+        return expression(AST.BinaryOp("-=", node.expression(), AST.NumberLiteral(1)));
+
       case AST.Comma:
         return "(" + node.expressions().map(expression).join(", ") + ")";
 

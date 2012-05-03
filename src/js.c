@@ -278,12 +278,7 @@ JSValue* js_add(JSEnv* env, JSValue* v1, JSValue* v2) {
 }
 
 JSValue* js_sub(JSEnv* env, JSValue* v1, JSValue* v2) {
-    if (v1->type == TypeNumber && v2->type == TypeNumber) {
-        return js_new_number(v1->number_value - v2->number_value);
-    } else {
-        fprintf(stderr, "Cannot subtract");
-        exit(1);
-    }
+    return js_new_number(js_to_number(v1)->number_value - js_to_number(v2)->number_value);
 }
 
 JSValue* js_mult(JSEnv* env, JSValue* v1, JSValue* v2) {
