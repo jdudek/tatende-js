@@ -28,11 +28,28 @@ var testProgram = function (program, expectedOutput) {
     fs.writeFileSync("program.c", compiled);
     childProcess.exec("gcc program.c && ./a.out", function (error, stdout, stderr) {
       assert.strictEqual(stderr, "");
-      assert.strictEqual(stdout, expectedOutput);
+      if (typeof expectedOutput !== "undefined") {
+        assert.strictEqual(stdout, expectedOutput);
+      }
       assert.ok(! error);
       callback();
     });
   };
+};
+
+var testFile = function (filename, dependencies) {
+  var input = "";
+  input += "var modules = {};\n"
+  input += "var require = function (dep) { if (modules[dep]) { return modules[dep]; } else { throw \"Module \" + dep + \" not found.\"; } };\n";
+  for (dependency in dependencies) {
+    if (dependencies.hasOwnProperty(dependency)) {
+      input += "modules[\"" + dependency + "\"] = {};\n";
+      input += "function (exports) { " + fs.readFileSync(__dirname + "/" +
+        dependencies[dependency], "utf8") + " }(modules[\"" + dependency + "\"]);\n";
+    }
+  }
+  input += fs.readFileSync(__dirname + "/" + filename, "utf8");
+  return testProgram(input, "[undefined]");
 };
 
 tests.push(testProgram("return 123;", "123"));
@@ -215,5 +232,7 @@ tests.push(testProgram("var a = [0,1,2,3,4]; return Array.prototype.slice.call(a
 tests.push(testProgram("var f = function (x) { return x; }; return f.apply(null, [2]);", "2"));
 tests.push(testProgram("var f = function (x) { return this; }; return f.apply(5, [2]);", "5"));
 tests.push(testProgram("var a = [0,1,2,3,4]; return Array.prototype.slice.apply(a, [2, 4]).toString();", "2,3"));
+
+tests.push(testFile("../test/ast_test.js", { "ast": "../src/ast.js", "assert": "../src/assert.js" }));
 
 runTests();
