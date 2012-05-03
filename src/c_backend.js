@@ -120,6 +120,8 @@ exports.compile = function (ast) {
     };
     str = replace(str, "\\", "\\\\");
     str = replace(str, "\"", "\\\"");
+    str = replace(str, "\n", "\\n");
+    str = replace(str, "\t", "\\t");
     return str;
   };
 
