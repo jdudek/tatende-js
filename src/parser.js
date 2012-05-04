@@ -794,14 +794,14 @@ var switchStatement = function (input) {
   return p(input);
 };
 
-throwStatement = sequence(
+var throwStatement = sequence(
   [keyword("throw"), expr],
   function (t_, expr) {
     return AST.ThrowStatement(expr);
   }
 );
 
-exprStatement = decorate(exprAllowingCommas, function (e) {
+var exprStatement = decorate(exprAllowingCommas, function (e) {
   return AST.ExpressionStatement(e);
 });
 
