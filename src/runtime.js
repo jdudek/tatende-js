@@ -84,6 +84,22 @@ Array.prototype.indexOf = function (value) {
   }
   return 1 - 2; // FIXME: lack of unary minus
 };
+Array.prototype.reduce = function (callback, initial) {
+  var i = 0;
+  if (typeof initial === "undefined") {
+    if (this.length < 1) {
+      throw new TypeError("Reduce of empty array with no initial value");
+    }
+    initial = this[0];
+    i = 1;
+  }
+  var result = initial;
+  while (i < this.length) {
+    result = callback(result, this[i]);
+    i++;
+  }
+  return result;
+};
 Array.prototype.slice = function (start, end) {
   if (typeof start === "undefined") {
     start = 0;
