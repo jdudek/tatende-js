@@ -227,6 +227,9 @@ tests.push(testProgram("var a = [0,1,2,3,4,5]; return a.indexOf(6);", "-1"));
 // Test: Array.prototype.slice
 tests.push(testProgram("var a = [0,1,2,3,4,5]; return a.slice(2,5).toString();", "2,3,4"));
 
+// Test: Array.prototype.concat
+tests.push(testProgram("return [0,1,2].concat([3,4], [5]).toString();", "0,1,2,3,4,5"));
+
 // Test: Array.prototype.map
 tests.push(testProgram("var a = [1,2,3]; return a.map(function (x) { return x+1; }).toString();", "2,3,4"));
 

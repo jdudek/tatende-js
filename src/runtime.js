@@ -1,3 +1,21 @@
+Array.prototype.concat = function () {
+  var i = 0, j = 0, k, result = [];
+  while (i < this.length) {
+    result[i] = this[i];
+    i++;
+  }
+  while (j < arguments.length) {
+    k = 0;
+    while (k < arguments[j].length) {
+      result[i] = arguments[j][k];
+      i++;
+      k++;
+    }
+    j++;
+  }
+  result.length = i;  // FIXME
+  return result;
+};
 Array.prototype.forEach = function (callback) {
   var i = 0;
   while (i < this.length) {
