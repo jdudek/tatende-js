@@ -16,6 +16,18 @@ Array.prototype.concat = function () {
   result.length = i;  // FIXME
   return result;
 };
+Array.prototype.filter = function (callback) {
+  var i = 0, j = 0, result = [];
+  while (i < this.length) {
+    if (callback(this[i])) {
+      result[j] = this[i];
+      j++;
+    }
+    i++;
+  }
+  result.length = j;  // FIXME
+  return result;
+};
 Array.prototype.forEach = function (callback) {
   var i = 0;
   while (i < this.length) {

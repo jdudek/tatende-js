@@ -234,6 +234,9 @@ tests.push(testProgram("return [0,1,2].concat([3,4], [5]).toString();", "0,1,2,3
 // Test: Array.prototype.map
 tests.push(testProgram("var a = [1,2,3]; return a.map(function (x) { return x+1; }).toString();", "2,3,4"));
 
+// Test: Array.prototype.filter
+tests.push(testProgram("return [0,1,2,3].filter(function (x) { return x > 1; }).toString();", "2,3"));
+
 // Test: arguments object
 tests.push(testProgram("var f = function () { return arguments[0]; }; return f(13);", "13"));
 tests.push(testProgram("var f = function () { return arguments[1]; }; return f(13);", "[undefined]"));
