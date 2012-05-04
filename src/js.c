@@ -675,6 +675,12 @@ JSValue* js_string_index_of(JSEnv* env, JSValue* this, List argValues, Dict bind
     return js_new_number(-1);
 }
 
+JSValue* js_string_slice(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    int start = js_to_number(list_head(argValues))->number_value;
+    this = js_to_string(env, this);
+    return js_new_string(this->string_value + start);
+}
+
 JSValue* js_is_prototype_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     JSValue* maybeChild = (JSValue*) list_head(argValues);
 
@@ -747,6 +753,7 @@ void js_create_native_objects(JSEnv* env) {
     set_object_property(string_prototype, "charAt", js_new_function(env, &js_string_char_at, NULL));
     set_object_property(string_prototype, "substring", js_new_function(env, &js_string_substring, NULL));
     set_object_property(string_prototype, "indexOf", js_new_function(env, &js_string_index_of, NULL));
+    set_object_property(string_prototype, "slice", js_new_function(env, &js_string_slice, NULL));
 
     JSValue* console = js_new_object(env, NULL);
     set_object_property(console, "log", js_new_function(env, &js_console_log, NULL));
