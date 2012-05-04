@@ -465,8 +465,34 @@ static void set_object_property(JSValue* object, char* key, JSValue* value) {
         dict_insert(object->object_value->properties, key, value);
 }
 
-JSValue* js_get_object_property(JSEnv* env, JSValue* object, JSValue* key) {
-    return get_object_property(object, js_to_string(env, key)->string_value);
+JSValue* js_get_property(JSEnv* env, JSValue* value, JSValue* key) {
+    key = js_to_string(env, key);
+    switch (value->type) {
+        case TypeUndefined:
+            // TypeError: Cannot read property '#{key}' of undefined
+            {
+                JSValue* message =
+                    js_add(env, js_new_string("Cannot read property '"),
+                        js_add(env, key, js_new_string("' of undefined")));
+                JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "TypeError"),
+                    list_insert(list_create(), message));
+                js_throw(env, exception);
+            }
+            break;
+        case TypeNumber:
+            return js_get_property(env, js_to_object(env, value), key);
+        case TypeString:
+            if (strcmp(key->string_value, "length") == 0) {
+                return js_new_number(strlen(value->string_value));
+            } else {
+                return js_get_property(env, js_to_object(env, value), key);
+            }
+        case TypeBoolean:
+            return js_get_property(env, js_to_object(env, value), key);
+        case TypeObject:
+        case TypeFunction:
+            return get_object_property(value, key->string_value);
+    }
 }
 
 JSValue* js_set_object_property(JSEnv* env, JSValue* object, JSValue* key, JSValue* value) {
@@ -475,7 +501,7 @@ JSValue* js_set_object_property(JSEnv* env, JSValue* object, JSValue* key, JSVal
 }
 
 JSValue* js_call_method(JSEnv* env, JSValue* object, JSValue* key, List args) {
-    return js_call_function(env, js_get_object_property(env, object, key), object, args);
+    return js_call_function(env, js_get_property(env, object, key), object, args);
 }
 
 JSValue* js_invoke_constructor(JSEnv* env, JSValue* function, List args) {

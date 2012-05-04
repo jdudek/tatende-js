@@ -162,8 +162,8 @@ exports.compile = function (ast) {
         return "this";
 
       case AST.Refinement:
-        return "js_get_object_property(env, " +
-          "js_to_object(env, " + expression(node.expression()) + "), " +
+        return "js_get_property(env, " +
+          expression(node.expression()) + ", " +
           expression(node.key()) + ")";
 
       case AST.Invocation:
@@ -214,7 +214,7 @@ exports.compile = function (ast) {
     var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
     var buildArgumentsObject = "binding = dict_insert(binding, \"arguments\", js_create_variable(" +
       "js_invoke_constructor(env, "+
-        "js_get_object_property(env, env->global, js_new_string(\"Array\")), "+
+        "js_get_property(env, env->global, js_new_string(\"Array\")), "+
         "argValues)"+
       "));";
 
@@ -298,7 +298,7 @@ exports.compile = function (ast) {
     if (node.expression() instanceof AST.Refinement) {
       var object = node.expression().expression();
       var key = node.expression().key();
-      return "js_call_method(env, js_to_object(env, " + expression(object) + "), " +
+      return "js_call_method(env, " + expression(object) + ", " +
         expression(key) + ", " + argValues + ")";
     } else {
       return "js_call_function(env, " + expression(node.expression()) + ", env->global, " + argValues + ")";
