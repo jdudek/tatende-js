@@ -181,6 +181,8 @@ tests.push(testProgram("return 'abc'.length;", "3"));
 tests.push(testProgram("return ('abc').substring(1,3);", "bc"));
 tests.push(testProgram("return ('abc').indexOf('a');", "0"));
 tests.push(testProgram("return ('abc').indexOf('a', 1);", "-1"));
+tests.push(testProgram("var s = 'abc'; return s.charAt(1);", "b"));
+tests.push(testProgram("var s = 'abc'; return s.split('').toString();", "a,b,c"));
 
 // Test: Error objects
 tests.push(testProgram("var e = new Error('msg'); return e.name;", "Error"));

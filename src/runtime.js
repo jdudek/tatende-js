@@ -62,6 +62,25 @@ Array.prototype.slice = function (start, end) {
   return arr;
 };
 
+String.prototype.split = function (separator, limit) {
+  // FIXME: only empty separators are supported
+  // FIXME: limit is not supported
+
+  if (typeof separator !== "undefined" && separator.length > 0) {
+    throw "String.prototype.split not yet implemented for non-empty separators";
+  }
+
+  var arr = [];
+  var i = 0;
+  while (i < this.length) {
+    arr[i] = this.charAt(i);
+    i++;
+  }
+  arr.length = this.length;
+
+  return arr;
+};
+
 global.Error = function (message) { this.message = message; };
 Error.prototype.name = "Error";
 Error.prototype.message = "";
