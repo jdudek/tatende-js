@@ -24,13 +24,14 @@ Dict dict_insert(Dict old_dict, char* key, void* value) {
 }
 
 void* dict_find(Dict dict, char* key) {
-    if (dict == NULL) {
-        return NULL;
-    } else if (strcmp(dict->key, key) == 0) {
-        return dict->value;
-    } else {
-        return dict_find(dict->next, key);
+    while (dict != NULL) {
+        if (strcmp(dict->key, key) == 0) {
+            return dict->value;
+        } else {
+            dict = dict->next;
+        }
     }
+    return NULL;
 }
 
 void* dict_find_with_default(Dict dict, char* key, void* deflt) {
