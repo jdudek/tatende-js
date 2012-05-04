@@ -121,7 +121,6 @@ JSValue* js_new_object(JSEnv* env, Dict d) {
     JSValue* v = js_new_bare_object();
     v->object_value->properties = d;
     v->object_value->prototype = get_object_property(get_object_property(env->global, "Object"), "prototype");
-    set_object_property(v, "constructor", get_object_property(env->global, "Object"));
     return v;
 }
 
@@ -145,8 +144,9 @@ JSValue* js_new_function(JSEnv* env, JSValue* (*function_ptr)(), Dict binding) {
         get_object_property(get_object_property(env->global, "Function"), "prototype");
 
     // every function has a prototype object for instances
+    JSValue* prototype = js_new_object(env, dict_insert(dict_create(), "constructor", v));
     v->object_value->properties =
-        dict_insert(v->object_value->properties, "prototype", js_new_object(env, dict_create()));
+        dict_insert(v->object_value->properties, "prototype", prototype);
 
     return v;
 }
@@ -250,11 +250,15 @@ JSValue* js_typeof(JSValue* v) {
 }
 
 JSValue* js_instanceof(JSEnv* env, JSValue* object, JSValue* constructor) {
-    if (object->type != TypeObject) {
-        return js_new_boolean(0);
+    JSValue* constructor_prototype = get_object_property(constructor, "prototype");
+    if (constructor_prototype->type != TypeObject) {
+        js_throw(env, js_new_string("TypeError"));
     }
     while (object != NULL) {
-        if (get_object_property(object, "constructor") == constructor) {
+        if (object->type != TypeObject) {
+            return js_new_boolean(0);
+        }
+        if (object->object_value->prototype == constructor_prototype) {
             return js_new_boolean(1);
         } else {
             object = object->object_value->prototype;
@@ -536,7 +540,6 @@ JSValue* js_call_method(JSEnv* env, JSValue* object, JSValue* key, List args) {
 JSValue* js_invoke_constructor(JSEnv* env, JSValue* function, List args) {
     JSValue* this = js_new_object(env, dict_create());
     this->object_value->prototype = dict_find(function->object_value->properties, "prototype");
-    set_object_property(this, "constructor", function);
     JSValue* ret = js_call_function(env, function, this, args);
     if (ret->type == TypeObject) {
         return ret;
