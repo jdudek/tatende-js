@@ -227,6 +227,9 @@ tests.push(testProgram("var a = [0,1,2,3,4,5]; return a.indexOf(6);", "-1"));
 // Test: Array.prototype.slice
 tests.push(testProgram("var a = [0,1,2,3,4,5]; return a.slice(2,5).toString();", "2,3,4"));
 
+// Test: Array.prototype.map
+tests.push(testProgram("var a = [1,2,3]; return a.map(function (x) { return x+1; }).toString();", "2,3,4"));
+
 // Test: arguments object
 tests.push(testProgram("var f = function () { return arguments[0]; }; return f(13);", "13"));
 tests.push(testProgram("var f = function () { return arguments[1]; }; return f(13);", "[undefined]"));

@@ -28,6 +28,15 @@ Array.prototype.join = function (separator) {
   }
   return out;
 };
+Array.prototype.map = function (callback) {
+  var arr = [], i = 0, length = this.length;
+  while (i < length) {
+    arr[i] = callback(this[i]);
+    i++;
+  }
+  arr.length = length; // FIXME
+  return arr;
+};
 Array.prototype.toString = function () {
   if (typeof this.join === "function") {
     return this.join(",");
