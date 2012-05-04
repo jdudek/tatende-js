@@ -28,10 +28,14 @@ assert.deepEqual = function (actual, expected) {
     if (typeof actual == "object" && typeof expected == "object") {
       if (actual !== expected) {
         for (key in actual) {
-          deepEqual(actual[key], expected[key]);
+          if (actual.hasOwnProperty(key)) {
+            deepEqual(actual[key], expected[key]);
+          }
         }
         for (key in expected) {
-          deepEqual(actual[key], expected[key]);
+          if (expected.hasOwnProperty(key)) {
+            deepEqual(actual[key], expected[key]);
+          }
         }
       }
     } else {
