@@ -134,3 +134,25 @@ ReferenceError.prototype.name = "ReferenceError";
 global.TypeError = function (message) { this.message = message; };
 TypeError.prototype = new Error();
 TypeError.prototype.name = "TypeError";
+
+global.parseInt = function (string, radix) {
+  var parseDigit = function (digit) {
+    if (digit == "0") return 0;
+    if (digit == "1") return 1;
+    if (digit == "2") return 2;
+    if (digit == "3") return 3;
+    if (digit == "4") return 4;
+    if (digit == "5") return 5;
+    if (digit == "6") return 6;
+    if (digit == "7") return 7;
+    if (digit == "8") return 8;
+    if (digit == "9") return 9;
+  };
+  radix = 10; // FIXME
+  var i = 0, result = 0;
+  while (i < string.length) {
+    result = result * radix + parseDigit(string.charAt(i));
+    i++;
+  }
+  return result;
+};
