@@ -549,6 +549,31 @@ JSValue* js_object_constructor(JSEnv* env, JSValue* this, List argValues, Dict b
     return js_new_object(env, NULL);
 }
 
+JSValue* js_object_is_prototype_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    JSValue* maybeChild = (JSValue*) list_head(argValues);
+
+    while (maybeChild != NULL) {
+        if (maybeChild->object_value->prototype == this) {
+            return js_new_boolean(1);
+        }
+        maybeChild = maybeChild->object_value->prototype;
+    }
+    return js_new_boolean(0);
+}
+
+JSValue* js_object_has_own_property(JSEnv* env, JSValue* this, List argValues, Dict binding) {
+    JSValue* key = js_to_string(env, (JSValue*) list_head(argValues));
+    this = js_to_object(env, this);
+    Dict property = this->object_value->properties;
+    while (property) {
+        if (strcmp(property->key, key->string_value) == 0) {
+            return js_new_boolean(1);
+        }
+        property = property->next;
+    }
+    return js_new_boolean(0);
+}
+
 JSValue* js_function_constructor(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     js_throw(env, js_new_string("Cannot use Function constructor in compiled code."));
 }
@@ -681,18 +706,6 @@ JSValue* js_string_slice(JSEnv* env, JSValue* this, List argValues, Dict binding
     return js_new_string(this->string_value + start);
 }
 
-JSValue* js_is_prototype_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
-    JSValue* maybeChild = (JSValue*) list_head(argValues);
-
-    while (maybeChild != NULL) {
-        if (maybeChild->object_value->prototype == this) {
-            return js_new_boolean(1);
-        }
-        maybeChild = maybeChild->object_value->prototype;
-    }
-    return js_new_boolean(0);
-}
-
 JSValue* js_console_log(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     printf("%s\n", js_to_string(env, list_head(argValues))->string_value);
     return js_new_undefined();
@@ -716,8 +729,6 @@ void js_create_native_objects(JSEnv* env) {
     set_object_property(global, "global", global);
 
     JSValue* object_prototype = js_new_bare_object();
-    set_object_property(object_prototype, "isPrototypeOf", js_new_bare_function(&js_is_prototype_of, NULL));
-
     JSValue* object_constructor = js_new_bare_function(&js_object_constructor, NULL);
     object_constructor->object_value = malloc(sizeof(JSObject));
     object_constructor->object_value->properties = dict_create();
@@ -735,6 +746,9 @@ void js_create_native_objects(JSEnv* env) {
     set_object_property(global, "Function", function_constructor);
     set_object_property(function_prototype, "call", js_new_function(env, &js_function_prototype_call, NULL));
     set_object_property(function_prototype, "apply", js_new_function(env, &js_function_prototype_apply, NULL));
+
+    set_object_property(object_prototype, "isPrototypeOf", js_new_function(env, &js_object_is_prototype_of, NULL));
+    set_object_property(object_prototype, "hasOwnProperty", js_new_function(env, &js_object_has_own_property, NULL));
 
     JSValue* array_constructor = js_new_function(env, &js_array_constructor, NULL);
     set_object_property(global, "Array", array_constructor);

@@ -256,6 +256,11 @@ tests.push(testProgram("var f = function (x) { return x; }; return f.apply(null,
 tests.push(testProgram("var f = function (x) { return this; }; return f.apply(5, [2]);", "5"));
 tests.push(testProgram("var a = [0,1,2,3,4]; return Array.prototype.slice.apply(a, [2, 4]).toString();", "2,3"));
 
+// Test: Object.prototype.hasOwnProperty
+tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X(); return x.hasOwnProperty('y');", "false"));
+tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X(); x.z = 1; return x.hasOwnProperty('z');", "true"));
+tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X(); return x.hasOwnProperty('1');", "false"));
+
 // Test: global parseInt function
 tests.push(testProgram("return parseInt('2');", "2"));
 tests.push(testProgram("return parseInt('123');", "123"));
