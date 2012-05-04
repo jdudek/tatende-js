@@ -212,16 +212,19 @@ exports.compile = function (ast) {
     var name = "fun_" + unique();
     var body = reorderVarStatements(node.statements()).map(statement).join("\n");
     var argNames = toCList(node.args().map(function (a) { return '"' + a + '"'; }));
-    var buildArgumentsObject = "binding = dict_insert(binding, \"arguments\", js_create_variable(" +
-      "js_invoke_constructor(env, "+
-        "js_get_property(env, env->global, js_new_string(\"Array\")), "+
-        "argValues)"+
-      "));";
+    var argumentsObjectDefinition = "";
+    if (node.statements().some(needsArgumentsObject)) {
+      argumentsObjectDefinition = "binding = dict_insert(binding, \"arguments\", js_create_variable(" +
+        "js_invoke_constructor(env, "+
+          "js_get_property(env, env->global, js_new_string(\"Array\")), "+
+          "argValues)"+
+        "));";
+    }
 
     var cFunction =
       "JSValue* " + name + "(JSEnv* env, JSValue* this, List argValues, Dict binding) {\n" +
         "List argNames = " + argNames + ";\n" +
-        buildArgumentsObject + "\n" +
+        argumentsObjectDefinition + "\n" +
         "binding = js_append_args_to_binding(argNames, argValues, binding);\n" +
         body +
         "return js_new_undefined();\n" +
@@ -291,6 +294,93 @@ exports.compile = function (ast) {
 
     prepend(nodes, AST.VarStatement(identifiers.map(AST.VarDeclaration)));
     return nodes;
+  };
+
+  var needsArgumentsObject = function (node) {
+    if (node === null) {
+      return false;
+    }
+    switch (node.constructor) {
+      case AST.VarStatement:
+        return node.declarations().some(needsArgumentsObject);
+
+      case AST.ReturnStatement:
+      case AST.ExpressionStatement:
+      case AST.ThrowStatement:
+        return needsArgumentsObject(node.expression());
+
+      case AST.IfStatement:
+        return needsArgumentsObject(node.condition()) ||
+          node.whenTruthy().some(needsArgumentsObject) ||
+          node.whenFalsy().some(needsArgumentsObject);
+
+      case AST.ForStatement:
+        return needsArgumentsObject(node.initial()) ||
+          needsArgumentsObject(node.condition()) ||
+          needsArgumentsObject(node.finalize()) ||
+          node.statements().some(needsArgumentsObject);
+
+      case AST.ForInStatement:
+        return needsArgumentsObject(node.object()) ||
+          node.statements().some(needsArgumentsObject);
+
+      case AST.WhileStatement:
+        return needsArgumentsObject(node.condition()) ||
+          node.statements().some(needsArgumentsObject);
+
+      case AST.TryStatement:
+        return node.tryStatements().some(needsArgumentsObject) ||
+          node.catchStatements().some(needsArgumentsObject) ||
+          node.finallyStatements().some(needsArgumentsObject);
+
+      case AST.NumberLiteral:
+      case AST.StringLiteral:
+      case AST.BooleanLiteral:
+      case AST.FunctionLiteral:
+      case AST.UndefinedLiteral:
+      case AST.NullLiteral:
+      case AST.ThisVariable:
+        return false;
+
+      case AST.ObjectLiteral:
+        return node.pairs().some(function (pair) { return needsArgumentsObject(pair[1]); });
+
+      case AST.ArrayLiteral:
+        return node.items().some(needsArgumentsObject);
+
+      case AST.Variable:
+        return (node.identifier() == "arguments");
+
+      case AST.Refinement:
+      case AST.UnaryOp:
+      case AST.PostIncrement:
+      case AST.PostDecrement:
+        return needsArgumentsObject(node.expression());
+
+      case AST.Invocation:
+        return needsArgumentsObject(node.expression()) ||
+          node.args().some(needsArgumentsObject);
+
+      case AST.BinaryOp:
+        return needsArgumentsObject(node.leftExpr()) ||
+          needsArgumentsObject(node.rightExpr());
+
+      case AST.Comma:
+        return node.expressions().some(needsArgumentsObject);
+
+      case AST.VarDeclaration:
+        return false;
+
+      case AST.VarWithValueDeclaration:
+        return needsArgumentsObject(node.expression());
+
+      case AST.CaseClause:
+      case AST.DefaultClause:
+        return node.statements().some(needsArgumentsObject);
+
+      default:
+        throw "Incorrect AST";
+    }
   };
 
   var invocation = function (node) {
