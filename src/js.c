@@ -501,7 +501,36 @@ JSValue* js_set_object_property(JSEnv* env, JSValue* object, JSValue* key, JSVal
 }
 
 JSValue* js_call_method(JSEnv* env, JSValue* object, JSValue* key, List args) {
-    return js_call_function(env, js_get_property(env, object, key), object, args);
+    JSValue* function = js_get_property(env, object, key);
+    if (function->type == TypeUndefined) {
+        // TypeError: Object #{object} has no method '#{key}'
+        JSValue* message =
+            js_add(env, js_new_string("Object "),
+                js_add(env, js_to_string(env, object),
+                    js_add(env, js_new_string(" has no method '"),
+                        js_add(env, js_to_string(env, key), js_new_string("'"))
+                    )
+                )
+            );
+        JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "TypeError"),
+            list_insert(list_create(), message));
+        js_throw(env, exception);
+    }
+    if (function->type != TypeFunction) {
+        // TypeError: Property 'wtf' of object #<Object> is not a function
+        JSValue* message =
+            js_add(env, js_new_string("Property '"),
+                js_add(env, js_to_string(env, key),
+                    js_add(env, js_new_string("' of object "),
+                        js_add(env, js_to_string(env, object), js_new_string(" is not a function"))
+                    )
+                )
+            );
+        JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "TypeError"),
+            list_insert(list_create(), message));
+        js_throw(env, exception);
+    }
+    return js_call_function(env, function, object, args);
 }
 
 JSValue* js_invoke_constructor(JSEnv* env, JSValue* function, List args) {
