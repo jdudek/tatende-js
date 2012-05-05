@@ -47,15 +47,16 @@ exports.compile = function (ast) {
 
       case AST.ForInStatement:
         return "{" +
-            "JSValue* object = js_to_object(env, " + expression(node.object()) + ");\n" +
-            "Dict property = NULL;\n" +
-            "if (object->object_value) property = object->object_value->properties;\n" +
-            "while (object && object->object_value && property) {\n"+
-              "js_assign_variable(env, binding, " + quotes(node.identifier()) +
-                ", js_new_string(property->key));\n" +
-              node.statements().map(statement).join("") +
-              "property = property->next;\n" +
-              "if (property == NULL) { object = object->object_value->prototype; if (object) { property = object->object_value->properties; } };\n" +
+            "JSObject* object = js_to_object(env, " + expression(node.object()) + ")->object_value;\n" +
+            "while (object) {\n"+
+              "Dict property = object->properties;\n" +
+              "while (property) {\n" +
+                "js_assign_variable(env, binding, " + quotes(node.identifier()) +
+                  ", js_new_string(property->key));\n" +
+                node.statements().map(statement).join("") +
+                "property = property->next;\n" +
+              "}\n" +
+              "object = object->prototype;\n" +
             "}" +
           "}";
 
@@ -421,7 +422,7 @@ exports.compile = function (ast) {
           expression(node.rightExpr()) +
         ")";
       } else if (node.leftExpr() instanceof AST.Refinement) {
-        return "js_set_object_property(env, " + expression(node.leftExpr().expression()) + ", " +
+        return "js_set_property(env, " + expression(node.leftExpr().expression()) + ", " +
           expression(node.leftExpr().key()) + ", " + expression(node.rightExpr()) + ")";
       } else {
         throw "Invalid left-hand side in assignment";

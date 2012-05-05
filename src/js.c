@@ -13,9 +13,9 @@ enum JSType {
     TypeObject
 };
 
-typedef struct {
+typedef struct TJSObject {
     Dict properties;
-    struct TJSValue* prototype;
+    struct TJSObject* prototype;
 } JSObject;
 
 typedef struct {
@@ -29,9 +29,7 @@ typedef struct TJSValue {
     char* string_value;
     char boolean_value;
     JSObject* object_value;
-    // Dict object_value;
     JSClosure function_value;
-    // struct TJSValue* prototype;
 } JSValue;
 
 typedef JSValue** JSVariable;
@@ -53,9 +51,17 @@ JSValue* js_new_bare_function(JSValue* (*function_ptr)(), Dict binding);
 void js_throw(JSEnv* env, JSValue* exception);
 JSValue* js_call_method(JSEnv* env, JSValue* object, JSValue* key, List args);
 JSValue* js_invoke_constructor(JSEnv* env, JSValue* function, List args);
-static JSValue* get_object_property(JSValue* object, char* key);
-static void set_object_property(JSValue* object, char* key, JSValue* value);
 
+static JSValue* object_get_own_property(JSObject* object, char* key);
+static JSValue* object_get_property(JSObject* object, char* key);
+static void object_set_property(JSObject* object, char* key, JSValue* value);
+
+JSValue* js_get_property(JSEnv* env, JSValue* value, JSValue* key);
+JSValue* js_set_property(JSEnv* env, JSValue* object, JSValue* key, JSValue* value);
+JSValue* js_get_global(JSEnv* env, char* key);
+
+
+// TODO remove
 void js_dump_value(JSValue* v)
 {
     switch (v->type) {
@@ -86,6 +92,8 @@ void js_dump_value(JSValue* v)
             break;
     }
 }
+
+// --- constructors for values ------------------------------------------------
 
 JSValue* js_new_number(int n) {
     JSValue* v = malloc(sizeof(JSValue));
@@ -120,7 +128,8 @@ JSValue* js_new_bare_object() {
 JSValue* js_new_object(JSEnv* env, Dict d) {
     JSValue* v = js_new_bare_object();
     v->object_value->properties = d;
-    v->object_value->prototype = get_object_property(get_object_property(env->global, "Object"), "prototype");
+    v->object_value->prototype =
+        js_get_property(env, js_get_global(env, "Object"), js_new_string("prototype"))->object_value;
     return v;
 }
 
@@ -141,7 +150,7 @@ JSValue* js_new_function(JSEnv* env, JSValue* (*function_ptr)(), Dict binding) {
     v->object_value = malloc(sizeof(JSObject));
     v->object_value->properties = dict_create();
     v->object_value->prototype =
-        get_object_property(get_object_property(env->global, "Function"), "prototype");
+        js_get_property(env, js_get_global(env, "Function"), js_new_string("prototype"))->object_value;
 
     // every function has a prototype object for instances
     JSValue* prototype = js_new_object(env, dict_insert(dict_create(), "constructor", v));
@@ -164,6 +173,8 @@ JSValue* js_new_null() {
     return v;
 }
 
+// --- conversions ------------------------------------------------------------
+
 JSValue* js_to_string(JSEnv* env, JSValue* v) {
     if (v->type == TypeString) {
         return v;
@@ -176,7 +187,8 @@ JSValue* js_to_string(JSEnv* env, JSValue* v) {
         snprintf(s, len, "%d", v->number_value);
         return js_new_string(s);
     } else if (v->type == TypeObject) {
-        if (get_object_property(v, "toString")->type == TypeFunction) {
+        JSValue* to_string = object_get_property(v->object_value, "toString");
+        if (to_string && to_string->type == TypeFunction) {
             return js_call_method(env, v, js_new_string("toString"), list_create());
         } else {
             return js_new_string("[object]");
@@ -221,16 +233,36 @@ JSValue* js_to_object(JSEnv* env, JSValue* v) {
     if (v->type == TypeObject || v->type == TypeFunction) {
         return v;
     } else if (v->type == TypeNumber) {
-        return js_invoke_constructor(env, get_object_property(env->global, "Number"),
+        return js_invoke_constructor(env, js_get_global(env, "Number"),
             list_insert(list_create(), v));
     } else if (v->type == TypeString) {
-        return js_invoke_constructor(env, get_object_property(env->global, "String"),
+        return js_invoke_constructor(env, js_get_global(env, "String"),
             list_insert(list_create(), v));
     } else {
         fprintf(stderr, "Cannot convert to object");
         exit(1);
     }
 }
+
+// TODO replace with js_to_boolean
+int js_is_truthy(JSValue* v) {
+    switch (v->type) {
+        case TypeNumber:
+            return v->number_value != 0;
+        case TypeString:
+            return strlen(v->string_value) > 0;
+        case TypeBoolean:
+            return v->boolean_value;
+        case TypeObject:
+            return v->object_value != NULL;
+        case TypeFunction:
+            return 1;
+        case TypeUndefined:
+            return 0;
+    }
+}
+
+// --- operators --------------------------------------------------------------
 
 JSValue* js_typeof(JSValue* v) {
     switch (v->type) {
@@ -249,19 +281,24 @@ JSValue* js_typeof(JSValue* v) {
     }
 }
 
-JSValue* js_instanceof(JSEnv* env, JSValue* object, JSValue* constructor) {
-    JSValue* constructor_prototype = get_object_property(constructor, "prototype");
+JSValue* js_instanceof(JSEnv* env, JSValue* left, JSValue* right) {
+    if (left->type != TypeObject) {
+        return js_new_boolean(0);
+    }
+    if (right->type != TypeFunction) {
+        js_throw(env, js_new_string("TypeError"));
+    }
+    JSValue* constructor_prototype = object_get_property(right->object_value, "prototype");
     if (constructor_prototype->type != TypeObject) {
         js_throw(env, js_new_string("TypeError"));
     }
+    JSObject* object = left->object_value;
+
     while (object != NULL) {
-        if (object->type != TypeObject) {
-            return js_new_boolean(0);
-        }
-        if (object->object_value->prototype == constructor_prototype) {
+        if (object->prototype == constructor_prototype->object_value) {
             return js_new_boolean(1);
         } else {
-            object = object->object_value->prototype;
+            object = object->prototype;
         }
     }
     return js_new_boolean(0);
@@ -330,23 +367,6 @@ JSValue* js_gt(JSEnv* env, JSValue* v1, JSValue* v2) {
     return js_new_boolean(js_to_number(v1)->number_value > js_to_number(v2)->number_value);
 }
 
-int js_is_truthy(JSValue* v) {
-    switch (v->type) {
-        case TypeNumber:
-            return v->number_value != 0;
-        case TypeString:
-            return strlen(v->string_value) > 0;
-        case TypeBoolean:
-            return v->boolean_value;
-        case TypeObject:
-            return v->object_value != NULL;
-        case TypeFunction:
-            return 1;
-        case TypeUndefined:
-            return 0;
-    }
-}
-
 JSValue* js_binary_and(JSEnv* env, JSValue* v1, JSValue* v2) {
     return js_new_number(js_to_number(v1)->number_value & js_to_number(v2)->number_value);
 }
@@ -375,16 +395,70 @@ JSValue* js_logical_or(JSEnv* env, JSValue* v1, JSValue* v2) {
     }
 }
 
+// --- function calls ---------------------------------------------------------
+
 JSValue* js_call_function(JSEnv* env, JSValue* v, JSValue* this, List args) {
     if (v->type == TypeFunction) {
         return (v->function_value.function)(env, this, args, v->function_value.binding);
     } else {
         JSValue* message = js_add(env, js_typeof(v), js_new_string(" is not a function."));
-        JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "TypeError"),
+        JSValue* exception = js_invoke_constructor(env, js_get_global(env, "TypeError"),
             list_insert(list_create(), message));
         js_throw(env, exception);
     }
 }
+
+JSValue* js_call_method(JSEnv* env, JSValue* object, JSValue* key, List args) {
+    JSValue* function = js_get_property(env, object, key);
+    if (function->type == TypeUndefined) {
+        // TypeError: Object #{object} has no method '#{key}'
+        JSValue* message =
+            js_add(env, js_new_string("Object "),
+                js_add(env, js_to_string(env, object),
+                    js_add(env, js_new_string(" has no method '"),
+                        js_add(env, js_to_string(env, key), js_new_string("'"))
+                    )
+                )
+            );
+        JSValue* exception = js_invoke_constructor(env, js_get_global(env, "TypeError"),
+            list_insert(list_create(), message));
+        js_throw(env, exception);
+    }
+    if (function->type != TypeFunction) {
+        // TypeError: Property 'wtf' of object #<Object> is not a function
+        JSValue* message =
+            js_add(env, js_new_string("Property '"),
+                js_add(env, js_to_string(env, key),
+                    js_add(env, js_new_string("' of object "),
+                        js_add(env, js_to_string(env, object), js_new_string(" is not a function"))
+                    )
+                )
+            );
+        JSValue* exception = js_invoke_constructor(env, js_get_global(env, "TypeError"),
+            list_insert(list_create(), message));
+        js_throw(env, exception);
+    }
+    return js_call_function(env, function, object, args);
+}
+
+JSValue* js_invoke_constructor(JSEnv* env, JSValue* function, List args) {
+    JSValue* this = js_new_object(env, dict_create());
+    JSValue* constructor_prototype = dict_find(function->object_value->properties, "prototype");
+    if (constructor_prototype && constructor_prototype->type == TypeObject) {
+        this->object_value->prototype = constructor_prototype->object_value;
+    } else {
+        this->object_value = js_get_property(env, js_get_global(env, "Object"),
+            js_new_string("prototype"))->object_value;
+    }
+    JSValue* ret = js_call_function(env, function, this, args);
+    if (ret->type == TypeObject) {
+        return ret;
+    } else {
+        return this;
+    }
+}
+
+// --- variables --------------------------------------------------------------
 
 JSVariable js_create_variable(JSValue* value) {
     JSVariable var = malloc(sizeof(JSValue*));
@@ -397,7 +471,7 @@ JSValue* js_assign_variable(JSEnv* env, Dict binding, char* name, JSValue* value
     if (variable != NULL) {
         *variable = value;
     } else {
-        set_object_property(env->global, name, value);
+        object_set_property(env->global->object_value, name, value);
     }
     return value;
 }
@@ -412,12 +486,14 @@ JSValue* js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
             return global_value;
         } else {
             JSValue* message = js_add(env, js_new_string(name), js_new_string(" is not defined."));
-            JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "ReferenceError"),
+            JSValue* exception = js_invoke_constructor(env, js_get_global(env, "ReferenceError"),
                 list_insert(list_create(), message));
             js_throw(env, exception);
         }
     }
 }
+
+// --- exceptions -------------------------------------------------------------
 
 JSException* js_push_new_exception(JSEnv *env) {
     if (env->exceptions_count >= JS_EXCEPTION_STACK_SIZE) {
@@ -451,22 +527,26 @@ void js_throw(JSEnv* env, JSValue* value) {
     longjmp(exc->jmp, 1);
 }
 
-static JSValue* get_object_property(JSValue* object, char* key) {
+// --- objects' properties ----------------------------------------------------
+
+static JSValue* object_get_own_property(JSObject* object, char* key) {
+    return (JSValue*) dict_find_with_default(object->properties, key, js_new_undefined());
+}
+
+static JSValue* object_get_property(JSObject* object, char* key) {
     while (object != NULL) {
-        JSValue* value = (JSValue*) dict_find_with_default(
-            object->object_value->properties, key, js_new_undefined());
-        if (value->type != TypeUndefined) {
+        JSValue* value = (JSValue*) dict_find(object->properties, key);
+        if (value) {
             return value;
         } else {
-            object = object->object_value->prototype;
+            object = object->prototype;
         }
     }
     return js_new_undefined();
 }
 
-static void set_object_property(JSValue* object, char* key, JSValue* value) {
-    object->object_value->properties =
-        dict_insert(object->object_value->properties, key, value);
+static void object_set_property(JSObject* object, char* key, JSValue* value) {
+    object->properties = dict_insert(object->properties, key, value);
 }
 
 JSValue* js_get_property(JSEnv* env, JSValue* value, JSValue* key) {
@@ -478,7 +558,7 @@ JSValue* js_get_property(JSEnv* env, JSValue* value, JSValue* key) {
                 JSValue* message =
                     js_add(env, js_new_string("Cannot read property '"),
                         js_add(env, key, js_new_string("' of undefined")));
-                JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "TypeError"),
+                JSValue* exception = js_invoke_constructor(env, js_get_global(env, "TypeError"),
                     list_insert(list_create(), message));
                 js_throw(env, exception);
             }
@@ -495,71 +575,36 @@ JSValue* js_get_property(JSEnv* env, JSValue* value, JSValue* key) {
             return js_get_property(env, js_to_object(env, value), key);
         case TypeObject:
         case TypeFunction:
-            return get_object_property(value, key->string_value);
+            return object_get_property(value->object_value, key->string_value);
     }
 }
 
-JSValue* js_set_object_property(JSEnv* env, JSValue* object, JSValue* key, JSValue* value) {
-    set_object_property(js_to_object(env, object), js_to_string(env, key)->string_value, value);
+JSValue* js_set_property(JSEnv* env, JSValue* object, JSValue* key, JSValue* value) {
+    object_set_property(js_to_object(env, object)->object_value, js_to_string(env, key)->string_value, value);
     return value;
 }
 
-JSValue* js_call_method(JSEnv* env, JSValue* object, JSValue* key, List args) {
-    JSValue* function = js_get_property(env, object, key);
-    if (function->type == TypeUndefined) {
-        // TypeError: Object #{object} has no method '#{key}'
-        JSValue* message =
-            js_add(env, js_new_string("Object "),
-                js_add(env, js_to_string(env, object),
-                    js_add(env, js_new_string(" has no method '"),
-                        js_add(env, js_to_string(env, key), js_new_string("'"))
-                    )
-                )
-            );
-        JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "TypeError"),
-            list_insert(list_create(), message));
-        js_throw(env, exception);
-    }
-    if (function->type != TypeFunction) {
-        // TypeError: Property 'wtf' of object #<Object> is not a function
-        JSValue* message =
-            js_add(env, js_new_string("Property '"),
-                js_add(env, js_to_string(env, key),
-                    js_add(env, js_new_string("' of object "),
-                        js_add(env, js_to_string(env, object), js_new_string(" is not a function"))
-                    )
-                )
-            );
-        JSValue* exception = js_invoke_constructor(env, get_object_property(env->global, "TypeError"),
-            list_insert(list_create(), message));
-        js_throw(env, exception);
-    }
-    return js_call_function(env, function, object, args);
+JSValue* js_get_global(JSEnv* env, char* key) {
+    return object_get_property(env->global->object_value, key);
 }
 
-JSValue* js_invoke_constructor(JSEnv* env, JSValue* function, List args) {
-    JSValue* this = js_new_object(env, dict_create());
-    this->object_value->prototype = dict_find(function->object_value->properties, "prototype");
-    JSValue* ret = js_call_function(env, function, this, args);
-    if (ret->type == TypeObject) {
-        return ret;
-    } else {
-        return this;
-    }
-}
+// --- built-in objects -------------------------------------------------------
 
 JSValue* js_object_constructor(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     return js_new_object(env, NULL);
 }
 
 JSValue* js_object_is_prototype_of(JSEnv* env, JSValue* this, List argValues, Dict binding) {
-    JSValue* maybeChild = (JSValue*) list_head(argValues);
+    JSValue* object_value = (JSValue*) list_head(argValues);
+    if (!object_value || object_value->type != TypeObject) return js_new_boolean(0);
+    JSObject* object = object_value->object_value;
+    this = js_to_object(env, this);
 
-    while (maybeChild != NULL) {
-        if (maybeChild->object_value->prototype == this) {
+    while (object != NULL) {
+        if (object->prototype == this->object_value) {
             return js_new_boolean(1);
         }
-        maybeChild = maybeChild->object_value->prototype;
+        object = object->prototype;
     }
     return js_new_boolean(0);
 }
@@ -599,10 +644,9 @@ JSValue* js_function_prototype_apply(JSEnv* env, JSValue* this, List argValues, 
         JSValue* args_obj = (JSValue*) list_head(list_tail(argValues));
         if (args_obj->type == TypeObject) {
             // FIXME will fail if "length" does not exist or is not number
-            int i, length = get_object_property(args_obj, "length")->number_value;
+            int i, length = object_get_property(args_obj->object_value, "length")->number_value;
             for (i = length - 1; i >= 0; i--) {
-                JSValue* arg_value = get_object_property(args_obj,
-                    js_to_string(env, js_new_number(i))->string_value);
+                JSValue* arg_value = js_get_property(env, args_obj, js_new_number(i));
                 new_args = list_insert(new_args, arg_value);
             }
         }
@@ -613,11 +657,12 @@ JSValue* js_function_prototype_apply(JSEnv* env, JSValue* this, List argValues, 
 JSValue* js_array_constructor(JSEnv* env, JSValue* this, List argValues, Dict binding) {
     int i = 0;
     while (argValues != NULL) {
-        set_object_property(this, js_to_string(env, js_new_number(i))->string_value, list_head(argValues));
+        object_set_property(this->object_value,
+            js_to_string(env, js_new_number(i))->string_value, list_head(argValues));
         argValues = list_tail(argValues);
         i++;
     }
-    set_object_property(this, "length", js_new_number(i));
+    object_set_property(this->object_value, "length", js_new_number(i));
     return this;
 }
 
@@ -716,50 +761,54 @@ JSValue* js_console_log(JSEnv* env, JSValue* this, List argValues, Dict binding)
 
 void js_create_native_objects(JSEnv* env) {
     JSValue* global = env->global;
-    set_object_property(global, "global", global);
+    js_set_property(env, global, js_new_string("global"), global);
 
     JSValue* object_prototype = js_new_bare_object();
     JSValue* object_constructor = js_new_bare_function(&js_object_constructor, NULL);
     object_constructor->object_value = malloc(sizeof(JSObject));
     object_constructor->object_value->properties = dict_create();
     object_constructor->object_value->prototype = NULL;
-    set_object_property(object_constructor, "prototype", object_prototype);
-    set_object_property(global, "Object", object_constructor);
+    js_set_property(env, object_constructor, js_new_string("prototype"), object_prototype);
+    js_set_property(env, global, js_new_string("Object"), object_constructor);
 
     JSValue* function_constructor = js_new_bare_function(&js_function_constructor, NULL);
     JSValue* function_prototype = js_new_object(env, dict_create());
     function_constructor->object_value = malloc(sizeof(JSObject));
     function_constructor->object_value->properties = dict_create();
-    function_constructor->object_value->prototype =
-        get_object_property(get_object_property(global, "Object"), "prototype");
-    set_object_property(function_constructor, "prototype", function_prototype);
-    set_object_property(global, "Function", function_constructor);
-    set_object_property(function_prototype, "call", js_new_function(env, &js_function_prototype_call, NULL));
-    set_object_property(function_prototype, "apply", js_new_function(env, &js_function_prototype_apply, NULL));
+    function_constructor->object_value->prototype = js_get_property(env,
+        js_get_property(env, global, js_new_string("Object")), js_new_string("prototype"))->object_value;
+    js_set_property(env, function_constructor, js_new_string("prototype"), function_prototype);
+    js_set_property(env, global, js_new_string("Function"), function_constructor);
+    js_set_property(env, function_prototype, js_new_string("call"),
+        js_new_function(env, &js_function_prototype_call, NULL));
+    js_set_property(env, function_prototype, js_new_string("apply"),
+        js_new_function(env, &js_function_prototype_apply, NULL));
 
-    set_object_property(object_prototype, "isPrototypeOf", js_new_function(env, &js_object_is_prototype_of, NULL));
-    set_object_property(object_prototype, "hasOwnProperty", js_new_function(env, &js_object_has_own_property, NULL));
+    js_set_property(env, object_prototype, js_new_string("isPrototypeOf"),
+        js_new_function(env, &js_object_is_prototype_of, NULL));
+    js_set_property(env, object_prototype, js_new_string("hasOwnProperty"),
+        js_new_function(env, &js_object_has_own_property, NULL));
 
     JSValue* array_constructor = js_new_function(env, &js_array_constructor, NULL);
-    set_object_property(global, "Array", array_constructor);
+    js_set_property(env, global, js_new_string("Array"), array_constructor);
 
     JSValue* number_constructor = js_new_function(env, &js_number_constructor, NULL);
-    JSValue* number_prototype = get_object_property(number_constructor, "prototype");
-    set_object_property(global, "Number", number_constructor);
-    set_object_property(number_prototype, "valueOf", js_new_function(env, &js_number_value_of, NULL));
-    set_object_property(number_prototype, "toString", js_new_function(env, &js_number_to_string, NULL));
+    JSValue* number_prototype = js_get_property(env, number_constructor, js_new_string("prototype"));
+    js_set_property(env, global, js_new_string("Number"), number_constructor);
+    js_set_property(env, number_prototype, js_new_string("valueOf"), js_new_function(env, &js_number_value_of, NULL));
+    js_set_property(env, number_prototype, js_new_string("toString"), js_new_function(env, &js_number_to_string, NULL));
 
     JSValue* string_constructor = js_new_function(env, &js_string_constructor, NULL);
-    JSValue* string_prototype = get_object_property(string_constructor, "prototype");
-    set_object_property(global, "String", string_constructor);
-    set_object_property(string_prototype, "valueOf", js_new_function(env, &js_string_value_of, NULL));
-    set_object_property(string_prototype, "toString", js_new_function(env, &js_string_to_string, NULL));
-    set_object_property(string_prototype, "charAt", js_new_function(env, &js_string_char_at, NULL));
-    set_object_property(string_prototype, "substring", js_new_function(env, &js_string_substring, NULL));
-    set_object_property(string_prototype, "indexOf", js_new_function(env, &js_string_index_of, NULL));
-    set_object_property(string_prototype, "slice", js_new_function(env, &js_string_slice, NULL));
+    JSValue* string_prototype = js_get_property(env, string_constructor, js_new_string("prototype"));
+    js_set_property(env, global, js_new_string("String"), string_constructor);
+    js_set_property(env, string_prototype, js_new_string("valueOf"), js_new_function(env, &js_string_value_of, NULL));
+    js_set_property(env, string_prototype, js_new_string("toString"), js_new_function(env, &js_string_to_string, NULL));
+    js_set_property(env, string_prototype, js_new_string("charAt"), js_new_function(env, &js_string_char_at, NULL));
+    js_set_property(env, string_prototype, js_new_string("substring"), js_new_function(env, &js_string_substring, NULL));
+    js_set_property(env, string_prototype, js_new_string("indexOf"), js_new_function(env, &js_string_index_of, NULL));
+    js_set_property(env, string_prototype, js_new_string("slice"), js_new_function(env, &js_string_slice, NULL));
 
     JSValue* console = js_new_object(env, NULL);
-    set_object_property(console, "log", js_new_function(env, &js_console_log, NULL));
-    set_object_property(global, "console", console);
+    js_set_property(env, console, js_new_string("log"), js_new_function(env, &js_console_log, NULL));
+    js_set_property(env, global, js_new_string("console"), console);
 }
