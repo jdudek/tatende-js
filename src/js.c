@@ -714,19 +714,6 @@ JSValue* js_console_log(JSEnv* env, JSValue* this, List argValues, Dict binding)
     return js_new_undefined();
 }
 
-Dict js_append_args_to_binding(List argNames, List argValues, Dict dict) {
-    while (argNames != NULL) {
-        if (argValues != NULL) {
-            dict = dict_insert(dict, list_head(argNames), js_create_variable(list_head(argValues)));
-            argValues = list_tail(argValues);
-        } else {
-            dict = dict_insert(dict, list_head(argNames), js_create_variable(js_new_undefined()));
-        }
-        argNames = list_tail(argNames);
-    }
-    return dict;
-}
-
 void js_create_native_objects(JSEnv* env) {
     JSValue* global = env->global;
     set_object_property(global, "global", global);
