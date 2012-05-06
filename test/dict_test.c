@@ -25,8 +25,5 @@ int main()
     assert(*(int *)dict_find(dict2, "abc") == 42);
     assert(*(int *)dict_find(dict2, "def") == 37);
 
-    assert(*(int *)dict_find_with_default(dict2, "def", value) == 37);
-    assert(*(int *)dict_find_with_default(dict2, "xyz", value) == 42);
-
     return 0;
 }

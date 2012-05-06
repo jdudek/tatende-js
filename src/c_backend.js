@@ -47,7 +47,7 @@ exports.compile = function (ast) {
 
       case AST.ForInStatement:
         return "{" +
-            "JSObject* object = js_to_object(env, " + expression(node.object()) + ")->as_object;\n" +
+            "JSObject* object = js_to_object(env, " + expression(node.object()) + ").as_object;\n" +
             "while (object) {\n"+
               "Dict property = object->properties;\n" +
               "while (property) {\n" +
@@ -77,9 +77,10 @@ exports.compile = function (ast) {
 
   var tryStatement = function (node) {
     var toCFunction = function (name, statements) {
-      return "JSValue* " + name + "(JSEnv* env, JSValue* this, Dict binding) {\n" +
+      return "JSValue " + name + "(JSEnv* env, JSValue this, Dict binding, int* returned) {\n" +
         statements.map(statement).join("\n") +
-        "return NULL;\n" +
+        "*returned = 0;\n" +
+        "return js_new_undefined();\n" +
         "}";
     };
 
@@ -101,17 +102,19 @@ exports.compile = function (ast) {
     return "{\n" +
       "JSException* exc = js_push_new_exception(env);\n" +
       "if (!setjmp(exc->jmp)) { " +
-        "JSValue* ret = " + tryFunc + "(env, this, binding);\n" +
+        "int returned = 1, finally_returned = 0;\n" +
+        "JSValue ret = " + tryFunc + "(env, this, binding, &returned);\n" +
         "js_pop_exception(env);\n" +
-        finallyFunc + "(env, this, binding);\n" +
-        "if (ret) return ret;\n" +
+        finallyFunc + "(env, this, binding, &finally_returned);\n" +
+        "if (returned) return ret;\n" +
       "} else {\n" +
-        "JSVariable exc_variable = js_create_variable((JSValue *) exc->value);\n" +
+        "int returned = 1, finally_returned = 0;\n" +
+        "JSVariable exc_variable = js_create_variable(exc->value);\n" +
         "js_pop_exception(env);\n" +
-        "JSValue* ret = " + catchFunc + "(env, this, dict_insert(binding, " +
-          quotes(catchIdentifier) + ", exc_variable));\n" +
-        finallyFunc + "(env, this, binding);\n" +
-        "if (ret) return ret;\n" +
+        "JSValue ret = " + catchFunc + "(env, this, dict_insert(binding, " +
+          quotes(catchIdentifier) + ", exc_variable), &returned);\n" +
+        finallyFunc + "(env, this, binding, &finally_returned);\n" +
+        "if (returned) return ret;\n" +
       "}\n}\n";
   };
 
@@ -191,11 +194,9 @@ exports.compile = function (ast) {
   };
 
   var objectLiteral = function (node) {
-    return "js_new_object(env, " +
-      node.pairs().reduce(function (acc, property) {
-        return "dict_insert(" + acc + ", \"" + property[0] + "\", " + expression(property[1]) + ")";
-      }, "dict_create()") +
-    ")";
+    return node.pairs().reduce(function (acc, property) {
+      return "js_add_property(env, " + acc + ", js_new_string(\"" + property[0] + "\"), " + expression(property[1]) + ")";
+    }, "js_new_object(env)");
   };
 
   var arrayLiteral = function (node) {
@@ -232,7 +233,7 @@ exports.compile = function (ast) {
     }).join("\n");
 
     var cFunction =
-      "JSValue* " + name + "(JSEnv* env, JSValue* this, List arg_values, Dict binding) {\n" +
+      "JSValue " + name + "(JSEnv* env, JSValue this, List arg_values, Dict binding) {\n" +
         argumentsObjectDefinition + "\n" +
         argumentsDefinition + "\n" +
         body +
@@ -453,13 +454,13 @@ exports.compile = function (ast) {
         return "js_typeof(" + expression(node.expression()) + ")";
 
       case "!":
-        return "js_new_boolean(! js_to_boolean(" + expression(node.expression()) + ")->as_boolean)";
+        return "js_new_boolean(! js_to_boolean(" + expression(node.expression()) + ").as_boolean)";
 
       case "+":
-        return "js_new_number(js_to_number(" + expression(node.expression()) + ")->as_number)";
+        return "js_new_number(js_to_number(" + expression(node.expression()) + ").as_number)";
 
       case "-":
-        return "js_new_number(-1 * js_to_number(" + expression(node.expression()) + ")->as_number)";
+        return "js_new_number(-1 * js_to_number(" + expression(node.expression()) + ").as_number)";
 
       default:
         throw "Unsupported operator: " + node.operator();
