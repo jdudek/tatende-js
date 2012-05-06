@@ -47,7 +47,7 @@ exports.compile = function (ast) {
 
       case AST.ForInStatement:
         return "{" +
-            "JSObject* object = js_to_object(env, " + expression(node.object()) + ")->object_value;\n" +
+            "JSObject* object = js_to_object(env, " + expression(node.object()) + ")->as_object;\n" +
             "while (object) {\n"+
               "Dict property = object->properties;\n" +
               "while (property) {\n" +
@@ -453,13 +453,13 @@ exports.compile = function (ast) {
         return "js_typeof(" + expression(node.expression()) + ")";
 
       case "!":
-        return "js_new_boolean(! js_to_boolean(" + expression(node.expression()) + ")->boolean_value)";
+        return "js_new_boolean(! js_to_boolean(" + expression(node.expression()) + ")->as_boolean)";
 
       case "+":
-        return "js_new_number(js_to_number(" + expression(node.expression()) + ")->number_value)";
+        return "js_new_number(js_to_number(" + expression(node.expression()) + ")->as_number)";
 
       case "-":
-        return "js_new_number(-1 * js_to_number(" + expression(node.expression()) + ")->number_value)";
+        return "js_new_number(-1 * js_to_number(" + expression(node.expression()) + ")->as_number)";
 
       default:
         throw "Unsupported operator: " + node.operator();
