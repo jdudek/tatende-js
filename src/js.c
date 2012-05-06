@@ -20,6 +20,7 @@ typedef struct TJSObject {
 typedef struct {
     struct TJSValue (*function)();
     Dict binding;
+    JSObject* as_object;
 } JSClosure;
 
 typedef struct TJSValue {
@@ -148,15 +149,15 @@ JSValue js_new_function(JSEnv* env, JSValue (*function_ptr)(), Dict binding) {
     JSValue v = js_new_bare_function(function_ptr, binding);
 
     // function is also an object, initialize properties dictionary
-    v.as_object = malloc(sizeof(JSObject));
-    v.as_object->properties = dict_create();
-    v.as_object->prototype =
+    v.as_function.as_object = malloc(sizeof(JSObject));
+    v.as_function.as_object->properties = dict_create();
+    v.as_function.as_object->prototype =
         js_get_property(env, js_get_global(env, "Function"), js_new_string("prototype")).as_object;
 
     // every function has a prototype object for instances
     JSValue prototype = js_new_object(env);
     object_set_property(prototype.as_object, "constructor", v);
-    object_set_property(v.as_object, "prototype", prototype);
+    object_set_property(v.as_function.as_object, "prototype", prototype);
 
     return v;
 }
@@ -231,8 +232,13 @@ JSValue js_to_boolean(JSValue v) {
 }
 
 JSValue js_to_object(JSEnv* env, JSValue v) {
-    if (v.type == TypeObject || v.type == TypeFunction) {
+    if (v.type == TypeObject) {
         return v;
+    } else if (v.type == TypeFunction) {
+        JSValue v2;
+        v2.type = TypeObject;
+        v2.as_object = v.as_function.as_object;
+        return v2;
     } else if (v.type == TypeNumber) {
         return js_invoke_constructor(env, js_get_global(env, "Number"),
             list_insert(list_create(), v));
@@ -289,7 +295,7 @@ JSValue js_instanceof(JSEnv* env, JSValue left, JSValue right) {
     if (right.type != TypeFunction) {
         js_throw(env, js_new_string("TypeError"));
     }
-    JSValue constructor_prototype = object_get_property(right.as_object, "prototype");
+    JSValue constructor_prototype = object_get_property(right.as_function.as_object, "prototype");
     if (constructor_prototype.type != TypeObject) {
         js_throw(env, js_new_string("TypeError"));
     }
@@ -444,7 +450,7 @@ JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args) {
 
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args) {
     JSValue this = js_new_object(env);
-    JSValue constructor_prototype = object_get_property(function.as_object, "prototype");
+    JSValue constructor_prototype = object_get_property(function.as_function.as_object, "prototype");
     if (constructor_prototype.type == TypeObject) {
         this.as_object->prototype = constructor_prototype.as_object;
     } else {
@@ -582,8 +588,9 @@ JSValue js_get_property(JSEnv* env, JSValue value, JSValue key) {
         case TypeBoolean:
             return js_get_property(env, js_to_object(env, value), key);
         case TypeObject:
-        case TypeFunction:
             return object_get_property(value.as_object, key.as_string);
+        case TypeFunction:
+            return object_get_property(value.as_function.as_object, key.as_string);
     }
 }
 
@@ -787,17 +794,17 @@ void js_create_native_objects(JSEnv* env) {
 
     JSValue object_prototype = js_new_bare_object();
     JSValue object_constructor = js_new_bare_function(&js_object_constructor, NULL);
-    object_constructor.as_object = malloc(sizeof(JSObject));
-    object_constructor.as_object->properties = dict_create();
-    object_constructor.as_object->prototype = NULL;
+    object_constructor.as_function.as_object = malloc(sizeof(JSObject));
+    object_constructor.as_function.as_object->properties = dict_create();
+    object_constructor.as_function.as_object->prototype = NULL;
     js_set_property(env, object_constructor, js_new_string("prototype"), object_prototype);
     js_set_property(env, global, js_new_string("Object"), object_constructor);
 
     JSValue function_constructor = js_new_bare_function(&js_function_constructor, NULL);
     JSValue function_prototype = js_new_object(env);
-    function_constructor.as_object = malloc(sizeof(JSObject));
-    function_constructor.as_object->properties = dict_create();
-    function_constructor.as_object->prototype = js_get_property(env,
+    function_constructor.as_function.as_object = malloc(sizeof(JSObject));
+    function_constructor.as_function.as_object->properties = dict_create();
+    function_constructor.as_function.as_object->prototype = js_get_property(env,
         js_get_property(env, global, js_new_string("Object")), js_new_string("prototype")).as_object;
     js_set_property(env, function_constructor, js_new_string("prototype"), function_prototype);
     js_set_property(env, global, js_new_string("Function"), function_constructor);
