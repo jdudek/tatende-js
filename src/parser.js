@@ -9,13 +9,18 @@
 // combinators like sequence() or choice(), finally leading to program() parser
 // which returns abstract syntax tree (AST) for whole program.
 
-// TODO describe
+// ret() creates a parser which does not consume any input, only returns (puts
+// in results list) given value.
 var ret = function (v) {
   return function (input) {
     return [[v, input]];
   };
 };
 
+// bind() combines two parsers, with the latter wrapped in a function which
+// receives result from the first one.
+// For example: bind(string("x"), function (r) { return ret(r); }) is
+// equivalent to string("x").
 var bind = function (p, f) {
   return function (input) {
     var results = p(input);
@@ -29,9 +34,10 @@ var bind = function (p, f) {
 
 // Two basic building blocks for parsers are sequence() and choice().
 
-// sequence() accepts a list of parsers and creates new parser which will run
-// them consecutively. The results from each parser are passed
-// to "decorator" which builds a node of AST.
+// sequence() is a more friendly wrapper for common usage of bind(). It accepts
+// a list of parsers and creates new parser which will run them consecutively.
+// The results from each parser are passed to "decorator" which builds a node
+// of AST.
 
 // decorator functions will not necesseraly use results from all parsers
 // in the sequence. We will add suffix _ to names of such parameters.
@@ -149,7 +155,7 @@ var chainl1 = function(parser, op) {
   return bind(parser, rest);
 };
 
-// prefix() allows input accepted by parser to be preceded by input accepted
+// prefixOp() allows input accepted by parser to be preceded by input accepted
 // by op, multiple times.
 // Similar to chainl1, the result from op should be a function (unary).
 // For example, prefix(bool, bang) will parse !true and !!true.
@@ -159,7 +165,7 @@ var prefixOp = function (parser, op) {
   }), parser]);
 };
 
-// suffix() allows input accepted by parser to be followed by input accepted
+// suffixOp() allows input accepted by parser to be followed by input accepted
 // by op, multiple times.
 var suffixOp = function (parser, op) {
   var rest = function (x) {
