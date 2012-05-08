@@ -41,6 +41,7 @@ var testFile = function (filename, dependencies) {
   var input = "";
   input += "var modules = {};\n"
   input += "var require = function (dep) { if (modules[dep]) { return modules[dep]; } else { throw \"Module \" + dep + \" not found.\"; } };\n";
+  input += "modules.fs = { readFileSync: global.readFileSync };\n"
   for (dependency in dependencies) {
     if (dependencies.hasOwnProperty(dependency)) {
       input += "modules[\"" + dependency + "\"] = {};\n";
@@ -266,5 +267,6 @@ tests.push(testProgram("return parseInt('2');", "2"));
 tests.push(testProgram("return parseInt('123');", "123"));
 
 tests.push(testFile("../test/ast_test.js", { "ast": "../src/ast.js", "assert": "../src/assert.js" }));
+tests.push(testFile("../test/parser_test.js", { "ast": "../src/ast.js", "parser": "../src/parser.js", "assert": "../src/assert.js" }));
 
 runTests();

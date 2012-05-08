@@ -797,6 +797,22 @@ JSValue js_console_log(JSEnv* env, JSValue this, List argValues, Dict binding) {
     return js_new_undefined();
 }
 
+JSValue js_read_file(JSEnv* env, JSValue this, List argValues, Dict binding) {
+    char* file_name = js_to_string(env, list_head(argValues)).as.string;
+    FILE *fp = fopen(file_name, "rb");
+    if (fp == NULL) js_throw(env, js_new_string("Cannot open file"));
+
+    fseek(fp, 0, SEEK_END);
+    int size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    char* contents = malloc(sizeof(char) * (size + 1));
+    fread(contents, 1, size, fp);
+    fclose(fp);
+    contents[size] = '\0';
+    return js_new_string(contents);
+}
+
 void js_create_native_objects(JSEnv* env) {
     JSValue global = env->global;
     js_set_property(env, global, js_new_string("global"), global);
@@ -849,4 +865,6 @@ void js_create_native_objects(JSEnv* env) {
     JSValue console = js_new_object(env);
     js_set_property(env, console, js_new_string("log"), js_new_function(env, &js_console_log, NULL));
     js_set_property(env, global, js_new_string("console"), console);
+
+    js_set_property(env, global, js_new_string("readFileSync"), js_new_function(env, &js_read_file, NULL));
 }

@@ -6,9 +6,9 @@ var testParser = function (input, expectedAst, specificParser) {
   assert.deepEqual(parser.parse(input, specificParser), { success: expectedAst });
 };
 var testParserOnFile = function (filename) {
-  var input = fs.readFileSync(__dirname + "/" + filename, "utf8");
+  var input = fs.readFileSync(filename, "utf8");
   var result = parser.parse(input);
-  assert.ok(!! result.success);
+  assert.ok(result.success);
 };
 
 testParser("var x;", [{ varStatement: [{ varDeclaration: "x" }] }]);
@@ -257,6 +257,8 @@ testParser('"aa\\nbb"', { stringLiteral: 'aa\nbb' }, parser.stringLiteral);
 
 
 // tests on real files
-testParserOnFile("../src/parser.js");
-testParserOnFile("../src/ast.js");
-testParserOnFile("../src/c_backend.js");
+testParserOnFile("src/parser.js");
+if (typeof global.process !== "undefined") { // run only in Node
+  testParserOnFile("src/ast.js");
+  testParserOnFile("src/c_backend.js");
+}
