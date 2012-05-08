@@ -29,7 +29,7 @@ exports.compile = function (ast) {
         }).join("\n");
 
       case AST.ReturnStatement:
-        return "return " + expression(node.expression()) + ";";
+        return "ret = " + expression(node.expression()) + "; goto end;";
 
       case AST.ExpressionStatement:
         return expression(node.expression()) + ";";
@@ -78,9 +78,11 @@ exports.compile = function (ast) {
   var tryStatement = function (node) {
     var toCFunction = function (name, statements) {
       return "JSValue " + name + "(JSEnv* env, JSValue this, Dict binding, int* returned) {\n" +
+        "JSValue ret = js_new_undefined();\n" +
         statements.map(statement).join("\n") +
         "*returned = 0;\n" +
-        "return js_new_undefined();\n" +
+        "end:\n" +
+        "return ret;\n" +
         "}";
     };
 
@@ -103,18 +105,18 @@ exports.compile = function (ast) {
       "JSException* exc = js_push_new_exception(env);\n" +
       "if (!setjmp(exc->jmp)) { " +
         "int returned = 1, finally_returned = 0;\n" +
-        "JSValue ret = " + tryFunc + "(env, this, binding, &returned);\n" +
+        "JSValue inner_ret = " + tryFunc + "(env, this, binding, &returned);\n" +
         "js_pop_exception(env);\n" +
         finallyFunc + "(env, this, binding, &finally_returned);\n" +
-        "if (returned) return ret;\n" +
+        "if (returned) { ret = inner_ret; goto end; }\n" +
       "} else {\n" +
         "int returned = 1, finally_returned = 0;\n" +
         "JSVariable exc_variable = js_create_variable(exc->value);\n" +
         "js_pop_exception(env);\n" +
-        "JSValue ret = " + catchFunc + "(env, this, dict_insert(binding, " +
+        "JSValue inner_ret = " + catchFunc + "(env, this, dict_insert(binding, " +
           quotes(catchIdentifier) + ", exc_variable), &returned);\n" +
         finallyFunc + "(env, this, binding, &finally_returned);\n" +
-        "if (returned) return ret;\n" +
+        "if (returned) { ret = inner_ret; goto end; }\n" +
       "}\n}\n";
   };
 
@@ -236,8 +238,11 @@ exports.compile = function (ast) {
       "JSValue " + name + "(JSEnv* env, JSValue this, List arg_values, Dict binding) {\n" +
         argumentsObjectDefinition + "\n" +
         argumentsDefinition + "\n" +
+        "JSValue ret = js_new_undefined();\n" +
         body +
-        "return js_new_undefined();\n" +
+        "end:\n" +
+        "list_free(arg_values);\n" +
+        "return ret;\n" +
       "}\n";
     functions.push(cFunction);
     return "js_new_function(env, &" + name + ", binding)";

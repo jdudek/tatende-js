@@ -32,3 +32,12 @@ List list_tail(List list) {
         return list->next;
     }
 }
+
+void list_free(List list) {
+    List next;
+    while (list != NULL) {
+        next = list->next;
+        free(list);
+        list = next;
+    }
+}
