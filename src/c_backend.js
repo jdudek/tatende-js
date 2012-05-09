@@ -49,7 +49,7 @@ exports.compile = function (ast) {
         return "{" +
             "JSObject* object = js_to_object(env, " + expression(node.object()) + ").as.object;\n" +
             "while (object) {\n"+
-              "Dict property = object->properties;\n" +
+              "JSValueDict property = object->properties;\n" +
               "while (property) {\n" +
                 "js_assign_variable(env, binding, " + quotes(node.identifier()) +
                   ", js_new_string(property->key));\n" +

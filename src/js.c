@@ -29,8 +29,16 @@ typedef struct TJSValue {
     } as;
 } JSValue;
 
+struct JSValueDictElem {
+    char* key;
+    JSValue value;
+    struct JSValueDictElem* next;
+};
+
+typedef struct JSValueDictElem* JSValueDict;
+
 typedef struct TJSObject {
-    Dict properties;
+    JSValueDict properties;
     struct TJSObject* prototype;
     struct TJSValue primitive;
 } JSObject;
@@ -57,6 +65,7 @@ void js_throw(JSEnv* env, JSValue exception);
 JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args);
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args);
 
+static JSValueDict object_find_property(JSObject* object, char* key);
 static JSValue object_get_own_property(JSObject* object, char* key);
 static JSValue object_get_property(JSObject* object, char* key);
 static void object_set_property(JSObject* object, char* key, JSValue value);
@@ -154,7 +163,7 @@ JSValue js_new_function(JSEnv* env, JSValue (*function_ptr)(), Dict binding) {
 
     // function is also an object, initialize properties dictionary
     v.as.function.as_object = malloc(sizeof(JSObject));
-    v.as.function.as_object->properties = dict_create();
+    v.as.function.as_object->properties = NULL;
     v.as.function.as_object->prototype =
         js_get_property(env, js_get_global(env, "Function"), js_new_string("prototype")).as.object;
     v.as.function.as_object->primitive = v;
@@ -494,9 +503,9 @@ JSValue js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
     if (variable != NULL) {
         return *variable;
     } else {
-        JSValue* global_value = dict_find(env->global.as.object->properties, name);
-        if (global_value) {
-            return *global_value;
+        JSValueDict global_property = object_find_property(env->global.as.object, name);
+        if (global_property) {
+            return global_property->value;
         } else {
             JSValue message = js_add(env, js_new_string(name), js_new_string(" is not defined."));
             JSValue exception = js_invoke_constructor(env, js_get_global(env, "ReferenceError"),
@@ -542,10 +551,26 @@ void js_throw(JSEnv* env, JSValue value) {
 
 // --- objects' properties ----------------------------------------------------
 
+static JSValueDict object_find_property(JSObject* object, char* key) {
+    JSValueDict dict = object->properties;
+    while (dict != NULL) {
+        if (strcmp(dict->key, key) == 0) {
+            return dict;
+        } else {
+            dict = dict->next;
+        }
+    }
+    return NULL;
+}
+
+static int object_has_own_property(JSObject* object, char* key) {
+    return !! object_find_property(object, key);
+}
+
 static JSValue object_get_own_property(JSObject* object, char* key) {
-    JSValue* value_ptr = (JSValue*) dict_find(object->properties, key);
-    if (value_ptr) {
-        return *value_ptr;
+    JSValueDict dict = object_find_property(object, key);
+    if (dict != NULL) {
+        return dict->value;
     } else {
         return js_new_undefined();
     }
@@ -553,9 +578,9 @@ static JSValue object_get_own_property(JSObject* object, char* key) {
 
 static JSValue object_get_property(JSObject* object, char* key) {
     while (object != NULL) {
-        JSValue* value_ptr = (JSValue*) dict_find(object->properties, key);
-        if (value_ptr) {
-            return *value_ptr;
+        JSValueDict dict = object_find_property(object, key);
+        if (dict != NULL) {
+            return dict->value;
         } else {
             object = object->prototype;
         }
@@ -563,10 +588,22 @@ static JSValue object_get_property(JSObject* object, char* key) {
     return js_new_undefined();
 }
 
+static void object_add_property(JSObject* object, char* key, JSValue value) {
+    struct JSValueDictElem* new_dict = malloc(sizeof(struct JSValueDictElem));
+    new_dict->key = key;
+    new_dict->value = value;
+    new_dict->next = object->properties;
+    object->properties = new_dict;
+}
+
 static void object_set_property(JSObject* object, char* key, JSValue value) {
-    JSValue* value_ptr = malloc(sizeof(JSValue));
-    *value_ptr = value;
-    object->properties = dict_insert(object->properties, key, value_ptr);
+    JSValueDict dict = object_find_property(object, key);;
+    if (dict != NULL) {
+        dict->value = value;
+        return;
+    } else {
+        object_add_property(object, key, value);
+    }
 }
 
 JSValue js_get_property(JSEnv* env, JSValue value, JSValue key) {
@@ -639,14 +676,7 @@ JSValue js_object_is_prototype_of(JSEnv* env, JSValue this, List argValues, Dict
 JSValue js_object_has_own_property(JSEnv* env, JSValue this, List argValues, Dict binding) {
     JSValue key = js_to_string(env, (JSValue) list_head(argValues));
     this = js_to_object(env, this);
-    Dict property = this.as.object->properties;
-    while (property) {
-        if (strcmp(property->key, key.as.string) == 0) {
-            return js_new_boolean(1);
-        }
-        property = property->next;
-    }
-    return js_new_boolean(0);
+    return js_new_boolean(object_has_own_property(this.as.object, key.as.string));
 }
 
 JSValue js_function_constructor(JSEnv* env, JSValue this, List argValues, Dict binding) {
@@ -820,7 +850,7 @@ void js_create_native_objects(JSEnv* env) {
     JSValue object_prototype = js_new_bare_object();
     JSValue object_constructor = js_new_bare_function(&js_object_constructor, NULL);
     object_constructor.as.function.as_object = malloc(sizeof(JSObject));
-    object_constructor.as.function.as_object->properties = dict_create();
+    object_constructor.as.function.as_object->properties = NULL;
     object_constructor.as.function.as_object->prototype = NULL;
     js_set_property(env, object_constructor, js_new_string("prototype"), object_prototype);
     js_set_property(env, global, js_new_string("Object"), object_constructor);
@@ -828,7 +858,7 @@ void js_create_native_objects(JSEnv* env) {
     JSValue function_constructor = js_new_bare_function(&js_function_constructor, NULL);
     JSValue function_prototype = js_new_object(env);
     function_constructor.as.function.as_object = malloc(sizeof(JSObject));
-    function_constructor.as.function.as_object->properties = dict_create();
+    function_constructor.as.function.as_object->properties = NULL;
     function_constructor.as.function.as_object->prototype = js_get_property(env,
         js_get_property(env, global, js_new_string("Object")), js_new_string("prototype")).as.object;
     js_set_property(env, function_constructor, js_new_string("prototype"), function_prototype);
