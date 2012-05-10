@@ -83,3 +83,11 @@ exports.VarWithValueDeclaration = makeNodeConstructor("varWithValueDeclaration",
 // Clauses are parts of switch statements.
 exports.CaseClause = makeNodeConstructor("caseClause", ["expression", "statements"]);
 exports.DefaultClause = makeNodeConstructor("defaultClause", ["statements"]);
+
+exports.FunctionLiteral.prototype.addLocalVariable = function (identifier) {
+  this.localVariables().push(identifier);
+};
+exports.FunctionLiteral.prototype.localVariables = function () {
+  this._localVariables = this._localVariables || [];
+  return this._localVariables;
+};

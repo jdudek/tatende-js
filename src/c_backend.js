@@ -20,14 +20,6 @@ exports.compile = function (ast) {
     }
 
     switch (node.constructor) {
-      // When we reach this place, we've already splitted var statements with assignment
-      // into var statement and assignment statement.
-      case AST.VarStatement:
-        return node.declarations().map(function (declaration) {
-          return "binding = dict_insert(binding, " +
-            quotes(declaration.identifier()) + ", js_create_variable(js_new_undefined()));";
-        }).join("\n");
-
       case AST.ReturnStatement:
         return "ret = " + expression(node.expression()) + "; goto end;";
 
@@ -213,8 +205,9 @@ exports.compile = function (ast) {
   };
 
   var functionLiteral = function (node) {
+    reorderVarStatements(node);
     var name = "fun_" + unique();
-    var body = reorderVarStatements(node.statements()).map(statement).join("\n");
+    var body = node.statements().map(statement).join("\n");
 
     var argumentsObjectDefinition = "";
     if (node.statements().some(needsArgumentsObject)) {
@@ -234,10 +227,16 @@ exports.compile = function (ast) {
         "}";
     }).join("\n");
 
+    var localDeclarations = node.localVariables().map(function (identifier) {
+      return "binding = dict_insert(binding, " + quotes(identifier) +
+        ", js_create_variable(js_new_undefined()));";
+    }).join("\n");
+
     var cFunction =
       "JSValue " + name + "(JSEnv* env, JSValue this, List arg_values, Dict binding) {\n" +
         argumentsObjectDefinition + "\n" +
         argumentsDefinition + "\n" +
+        localDeclarations + "\n" +
         "JSValue ret = js_new_undefined();\n" +
         body +
         "end:\n" +
@@ -248,13 +247,11 @@ exports.compile = function (ast) {
     return "js_new_function(env, &" + name + ", binding)";
   };
 
-  // Traverse list of nodes and move all var statements to the top.
-  // When var statement also assigns value, create new assign statement,
-  // but still move variable declaration to the top.
+  // Traverse function statements and move all declared variables to node's
+  // localVariables property.
+  // When var statement also assigns value, create new assign statement.
   // Please note this function will modify the tree in-place.
-  var reorderVarStatements = function (nodes) {
-    var identifiers = [];
-
+  var reorderVarStatements = function (functionNode) {
     var visit = function (nodes) {
       for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
@@ -262,7 +259,7 @@ exports.compile = function (ast) {
 
         var convertVarStatement = function (node) {
           node.declarations().forEach(function (declaration) {
-            identifiers.push(declaration.identifier());
+            functionNode.addLocalVariable(declaration.identifier());
             if (declaration instanceof AST.VarWithValueDeclaration) {
               assignments.push(
                 AST.BinaryOp("=", AST.Variable(declaration.identifier()), declaration.expression()));
@@ -300,15 +297,7 @@ exports.compile = function (ast) {
         }
       }
     };
-    visit(nodes);
-
-    // A utility function that modifies array and puts items before existing array items.
-    var prepend = function (array, items) {
-      Array.prototype.splice.apply(array, [0, 0].concat(items));
-    };
-
-    prepend(nodes, AST.VarStatement(identifiers.map(AST.VarDeclaration)));
-    return nodes;
+    visit(functionNode.statements());
   };
 
   var needsArgumentsObject = function (node) {
