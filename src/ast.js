@@ -64,6 +64,7 @@ exports.PostIncrement = makeNodeConstructor("postIncrement", ["expression"]);
 exports.Comma = makeNodeConstructor("comma", ["expressions"]);
 
 exports.VarStatement = makeNodeConstructor("varStatement", ["declarations"]);
+exports.FunctionStatement = makeNodeConstructor("functionStatement", ["name", "args", "statements"]);
 exports.ReturnStatement = makeNodeConstructor("returnStatement", ["expression"]);
 exports.ThrowStatement = makeNodeConstructor("throwStatement", ["expression"]);
 exports.ExpressionStatement = makeNodeConstructor("expressionStatement", ["expression"]);

@@ -237,6 +237,12 @@ var testFiles = [
   // "/ch12/12.14/S12.14_A18_T7.js",
   // "/ch12/12.14/S12.14_A19_T1.js",
   // "/ch12/12.14/S12.14_A19_T2.js
+
+  // 13 Function Definition
+
+  "/ch13/13.0/S13_A4_T1.js",
+  // "/ch13/13.0/S13_A4_T2.js", // pre-increment
+  "/ch13/13.0/S13_A4_T3.js"
 ];
 
 var header = "global['$ERROR'] = function (msg) { console.log(msg); };";

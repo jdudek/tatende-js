@@ -141,6 +141,9 @@ testParser("switch (1) { case 1: return 1; case 2: default: return 2; }", [
     ]
   ]}
 ]);
+testParser("function fun(x) {}", [
+  { functionStatement: [ "fun", ["x"], [] ]}
+]);
 
 // tests for lexer
 testParser("var x ; ", [{ varStatement: [{"varDeclaration":"x"}] }]);

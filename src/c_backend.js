@@ -275,6 +275,13 @@ exports.compile = function (ast) {
         if (node instanceof AST.VarStatement) {
           nodes[i] = convertVarStatement(node);
         }
+        if (node instanceof AST.FunctionStatement) {
+          nodes[i] = convertVarStatement(AST.VarStatement([
+            AST.VarWithValueDeclaration(node.name(),
+              AST.FunctionLiteral(node.args(), node.statements())
+            )
+          ]));
+        }
         if (node instanceof AST.IfStatement) {
           visit(node.whenTruthy());
           visit(node.whenFalsy());

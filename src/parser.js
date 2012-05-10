@@ -630,6 +630,23 @@ var varStatement = function (input) {
   return p(input);
 };
 
+// Function statement is similar to function literal, but it contains also
+// a function name and it's not part of an expression.
+// Function statement does not need trailing semicolon.
+var functionStatement = function (input) {
+  var args = parens(sepBy(symbol(","), identifier));
+  var body = braces(many(statement));
+
+  var p = sequence(
+    [keyword("function"), identifier, args, body],
+    function (k_, name, args, statements) {
+      return AST.FunctionStatement(name, args, statements);
+    }
+  );
+
+  return p(input);
+};
+
 var returnStatement = sequence(
   [keyword("return"), expr],
   function (k_, expr) {
@@ -822,13 +839,14 @@ var statement = choice([
     skipTrailing(semicolon, exprStatement),
     skipTrailing(semicolon, doWhileStatement),
 
-    // if and try statements, unlike others, are not followed by a semicolon.
+    // if and try statements (among others) are not followed by a semicolon.
     ifStatement,
     tryStatement,
     whileStatement,
     forStatement,
     forInStatement,
     switchStatement,
+    functionStatement,
 
     // But we want to allow programs with unnecessary semicolons, so we add
     // "empty" statement that parses to null.
