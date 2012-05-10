@@ -454,6 +454,9 @@ exports.compile = function (ast) {
       case "typeof":
         return "js_typeof(" + expression(node.expression()) + ")";
 
+      case "void":
+        return "(" + expression(node.expression()) + ", js_new_undefined())";
+
       case "!":
         return "js_new_boolean(! js_to_boolean(" + expression(node.expression()) + ").as.boolean)";
 

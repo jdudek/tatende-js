@@ -260,6 +260,7 @@ testParser("new X()", { unaryOp: ["new", { invocation: [ { variable: "X" }, [] ]
 testParser("2!==-2", {
   binaryOp: ["!==", { numberLiteral: 2 }, { unaryOp: ["-", { numberLiteral: 2 } ]}]
 }, parser.expr);
+testParser("void 0", { unaryOp: ["void", { numberLiteral: 0 } ] }, parser.expr);
 
 testParser('"\\"xy\\""', { stringLiteral: '"xy"' }, parser.stringLiteral);
 testParser('"aa\\nbb"', { stringLiteral: 'aa\nbb' }, parser.stringLiteral);

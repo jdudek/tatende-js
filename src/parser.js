@@ -575,7 +575,7 @@ var expr = function (input) {
   simple = prefixOp(simple, choice([
     unaryOp(operator("+")), unaryOp(operator("-")), unaryOp(operator("!")),
     unaryOp(keyword("new")), unaryOp(keyword("delete")), unaryOp(keyword("typeof")),
-    preDecrement, preIncrement
+    unaryOp(keyword("void")), preDecrement, preIncrement
   ]));
 
   // Below we define binary operators in their order of precedence.
