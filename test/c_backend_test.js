@@ -26,7 +26,7 @@ var testProgram = function (program, expectedOutput) {
     assert.ok(!! runtime)
     var compiled = backend.compile(runtime.concat(ast));
     fs.writeFileSync("program.c", compiled);
-    childProcess.exec("gcc program.c && ./a.out", function (error, stdout, stderr) {
+    childProcess.exec("gcc -m32 -O2 program.c && ./a.out", function (error, stdout, stderr) {
       assert.strictEqual(stderr, "");
       if (typeof expectedOutput !== "undefined") {
         assert.strictEqual(stdout, expectedOutput);
