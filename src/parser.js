@@ -828,6 +828,9 @@ var exprStatement = decorate(exprAllowingCommas, function (e) {
   return AST.ExpressionStatement(e);
 });
 
+var breakStatement = decorate(keyword("break"), AST.BreakStatement);
+var continueStatement = decorate(keyword("continue"), AST.ContinueStatement);
+
 var emptyStatement = ret(null);
 
 var semicolon = lexeme(character(";"));
@@ -835,6 +838,8 @@ var semicolon = lexeme(character(";"));
 var statement = choice([
     skipTrailing(semicolon, varStatement),
     skipTrailing(semicolon, returnStatement),
+    skipTrailing(semicolon, breakStatement),
+    skipTrailing(semicolon, continueStatement),
     skipTrailing(semicolon, throwStatement),
     skipTrailing(semicolon, exprStatement),
     skipTrailing(semicolon, doWhileStatement),
