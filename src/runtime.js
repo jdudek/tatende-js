@@ -84,6 +84,10 @@ Array.prototype.indexOf = function (value) {
   }
   return 1 - 2; // FIXME: lack of unary minus
 };
+Array.prototype.push = function (value) {
+  this[this.length] = value;
+  this.length++;
+};
 Array.prototype.reduce = function (callback, initial) {
   var i = 0;
   if (typeof initial === "undefined") {
