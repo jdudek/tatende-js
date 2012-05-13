@@ -261,13 +261,12 @@ var testFiles = [
   "/ch13/13.0/S13_A4_T3.js"
 ];
 
-var header = "global['$ERROR'] = function (msg) { console.log(msg); };";
+var header = "global['$ERROR'] = function (msg) { console.log(msg); };\n";
 
 var assert = require("assert");
 var fs = require("fs");
 var childProcess = require("child_process");
-var parser = require("parser");
-var backend = require("c_backend");
+var compiler = require("compiler");
 
 var tests = [];
 
@@ -286,13 +285,7 @@ var runTests = function () {
 
 var testProgram = function (program) {
   return function (callback) {
-    var ast = parser.parse(program).success;
-    assert.ok(!! ast, "Program wasn't parsed succesfully")
-    var runtime = parser.parse(fs.readFileSync(__dirname + "/../src/runtime.js", "utf8")).success;
-    assert.ok(!! runtime)
-    var headerAst = parser.parse(header).success;
-    assert.ok(!! headerAst)
-    var compiled = backend.compile(runtime.concat(headerAst.concat(ast)));
+    var compiled = compiler.compile(header + program);
     fs.writeFileSync("program.c", compiled);
     childProcess.exec("gcc program.c && ./a.out", function (error, stdout, stderr) {
       assert.strictEqual(stderr, "");
