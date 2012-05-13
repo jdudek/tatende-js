@@ -852,6 +852,11 @@ JSValue js_read_file(JSEnv* env, JSValue this, List argValues, JSObject* binding
     return js_new_string(contents);
 }
 
+JSValue js_system(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+    char* command = js_to_string(env, list_head(argValues)).as.string;
+    return js_new_number(system(command));
+}
+
 void js_create_native_objects(JSEnv* env) {
     JSValue global = env->global;
     js_set_property(env, global, js_new_string("global"), global);
@@ -906,4 +911,5 @@ void js_create_native_objects(JSEnv* env) {
     js_set_property(env, global, js_new_string("console"), console);
 
     js_set_property(env, global, js_new_string("readFileSync"), js_new_function(env, &js_read_file, NULL));
+    js_set_property(env, global, js_new_string("system"), js_new_function(env, &js_system, NULL));
 }

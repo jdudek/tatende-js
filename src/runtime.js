@@ -186,3 +186,15 @@ global.require = function (name) {
   }
 };
 modules.fs = { readFileSync: global.readFileSync };
+modules.child_process = {
+  exec: function (command, callback) {
+    var status = global.system("(" + command + ") > stdout.txt 2> stderr.txt");
+    var error = null;
+    if (status !== 0) {
+      error = { status: status };
+    }
+    var stdout = global.readFileSync("stdout.txt");
+    var stderr = global.readFileSync("stderr.txt");
+    callback(error, stdout, stderr);
+  }
+};
