@@ -65,7 +65,7 @@ void js_throw(JSEnv* env, JSValue exception);
 JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args);
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args);
 
-static JSValueDict object_find_property(JSObject* object, char* key);
+static JSValueDict object_find_own_property(JSObject* object, char* key);
 static JSValue object_get_own_property(JSObject* object, char* key);
 static JSValue object_get_property(JSObject* object, char* key);
 static void object_set_property(JSObject* object, char* key, JSValue value);
@@ -503,7 +503,7 @@ JSValue js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
     if (variable != NULL) {
         return *variable;
     } else {
-        JSValueDict global_property = object_find_property(env->global.as.object, name);
+        JSValueDict global_property = object_find_own_property(env->global.as.object, name);
         if (global_property) {
             return global_property->value;
         } else {
@@ -551,7 +551,7 @@ void js_throw(JSEnv* env, JSValue value) {
 
 // --- objects' properties ----------------------------------------------------
 
-static JSValueDict object_find_property(JSObject* object, char* key) {
+static JSValueDict object_find_own_property(JSObject* object, char* key) {
     JSValueDict dict = object->properties;
     while (dict != NULL) {
         if (strcmp(dict->key, key) == 0) {
@@ -564,11 +564,11 @@ static JSValueDict object_find_property(JSObject* object, char* key) {
 }
 
 static int object_has_own_property(JSObject* object, char* key) {
-    return !! object_find_property(object, key);
+    return !! object_find_own_property(object, key);
 }
 
 static JSValue object_get_own_property(JSObject* object, char* key) {
-    JSValueDict dict = object_find_property(object, key);
+    JSValueDict dict = object_find_own_property(object, key);
     if (dict != NULL) {
         return dict->value;
     } else {
@@ -578,7 +578,7 @@ static JSValue object_get_own_property(JSObject* object, char* key) {
 
 static JSValue object_get_property(JSObject* object, char* key) {
     while (object != NULL) {
-        JSValueDict dict = object_find_property(object, key);
+        JSValueDict dict = object_find_own_property(object, key);
         if (dict != NULL) {
             return dict->value;
         } else {
@@ -597,7 +597,7 @@ static void object_add_property(JSObject* object, char* key, JSValue value) {
 }
 
 static void object_set_property(JSObject* object, char* key, JSValue value) {
-    JSValueDict dict = object_find_property(object, key);;
+    JSValueDict dict = object_find_own_property(object, key);;
     if (dict != NULL) {
         dict->value = value;
         return;
