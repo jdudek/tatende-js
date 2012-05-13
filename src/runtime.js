@@ -172,3 +172,13 @@ global.parseInt = function (string, radix) {
   }
   return result;
 };
+
+global.modules = {};
+global.require = function (name) {
+  if (modules[name]) {
+    return modules[name];
+  } else {
+    throw "Module " + name + " not found.";
+  }
+};
+modules.fs = { readFileSync: global.readFileSync };
