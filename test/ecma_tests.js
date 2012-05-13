@@ -189,7 +189,11 @@ var testFiles = [
   // "/ch12/12.6/12.6.4/S12.6.4_A14_T2.js",
   // "/ch12/12.6/12.6.4/S12.6.4_A15.js",
 
-  // 12.14 The try statements
+  // 12.11 The switch Statement
+
+  "/ch12/12.11/S12.11_A1_T1.js",
+
+  // 12.14 The try Statement
 
   "/ch12/12.14/S12.14_A1.js",
   "/ch12/12.14/S12.14_A2.js",

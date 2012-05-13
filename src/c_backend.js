@@ -2,6 +2,7 @@ var AST = require("ast");
 
 exports.compile = function (ast) {
   var functions = [];
+  var breakLabel;
 
   var unique = function () {
     var i = 1;
@@ -62,7 +63,14 @@ exports.compile = function (ast) {
       case AST.ThrowStatement:
         return "js_throw(env, " + expression(node.expression()) + ");";
 
+      case AST.SwitchStatement:
+        return switchStatement(node);
+
+      case AST.BreakStatement:
+        return "goto " + breakLabel + ";";
+
       default:
+        console.log(node);
         throw "Incorrect AST";
     }
   };
@@ -110,6 +118,34 @@ exports.compile = function (ast) {
         finallyFunc + "(env, this, binding, &finally_returned);\n" +
         "if (returned) { ret = inner_ret; goto end; }\n" +
       "}\n}\n";
+  };
+
+  var switchStatement = function (node) {
+    var name = "switch_" + unique();
+    var switchEnd = name + "_end";
+    breakLabel = switchEnd;
+    node.clauses().forEach(function (clause, i) { clause.index = i; });
+    var conditions = node.clauses().filter(function (clause) {
+      return clause instanceof AST.CaseClause;
+    }).map(function (clause) {
+      return "if (js_strict_eq(env, switch_value, " + expression(clause.expression()) + ").as.boolean) " +
+        "{ goto " + name + "_" + clause.index + "; }\n";
+    }).join(" else ") + " else { goto " + name + "_default; }";
+    var statements = node.clauses().map(function (clause) {
+      var clauseName;
+      if (clause instanceof AST.CaseClause) {
+        clauseName = name + "_" + clause.index;
+      } else {
+        clauseName = name + "_default";
+      }
+      return clauseName + ":;\n" + clause.statements().map(statement).join("\n") + "\n";
+    }).join("\n") + "\n";
+    return "{\n" +
+        "JSValue switch_value = " + expression(node.expression()) + ";\n" +
+        conditions + ";\n"+
+        statements + ";\n"+
+        switchEnd + ":;\n"+
+      "}";
   };
 
   var escapeCString = function (str) {
@@ -344,6 +380,17 @@ exports.compile = function (ast) {
           node.catchStatements().some(needsArgumentsObject) ||
           node.finallyStatements().some(needsArgumentsObject);
 
+      case AST.SwitchStatement:
+        return needsArgumentsObject(node.expression()) ||
+          node.clauses().some(needsArgumentsObject);
+
+      case AST.CaseClause:
+      case AST.DefaultClause:
+        return node.statements().some(needsArgumentsObject);
+
+      case AST.BreakStatement:
+        return false;
+
       case AST.NumberLiteral:
       case AST.StringLiteral:
       case AST.BooleanLiteral:
@@ -384,10 +431,6 @@ exports.compile = function (ast) {
 
       case AST.VarWithValueDeclaration:
         return needsArgumentsObject(node.expression());
-
-      case AST.CaseClause:
-      case AST.DefaultClause:
-        return node.statements().some(needsArgumentsObject);
 
       default:
         throw "Incorrect AST";
