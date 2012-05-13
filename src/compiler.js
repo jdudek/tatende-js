@@ -2,23 +2,25 @@ var fs = require("fs");
 var parser = require("parser");
 var backend = require("c_backend");
 
-exports.compile = function (filename, dependencies) {
-  var readFile = function (filename) {
-    return fs.readFileSync(filename);
-  };
-  var asModule = function (name, source) {
-    return "modules[\"" + name + "\"] = {};\n" +
-      "function (exports) { " + source + " }(modules[\"" + name + "\"]);\n";
-  };
-  // Format of the list: parser=src/parser.js,assert=src/assert.js
-  var parseDependenciesList = function (list) {
-    return list.split(",").reduce(function (obj, entry) {
-      entry = entry.split("=");
-      obj[entry[0]] = entry[1];
-      return obj;
-    }, {});
-  };
+var readFile = function (filename) {
+  return fs.readFileSync(filename);
+};
 
+var asModule = function (name, source) {
+  return "modules[\"" + name + "\"] = {};\n" +
+    "function (exports) { " + source + " }(modules[\"" + name + "\"]);\n";
+};
+
+// Format of the list: parser=src/parser.js,assert=src/assert.js
+var parseDependenciesList = function (list) {
+  return list.split(",").reduce(function (obj, entry) {
+    entry = entry.split("=");
+    obj[entry[0]] = entry[1];
+    return obj;
+  }, {});
+};
+
+exports.compile = function (input, dependencies) {
   if (typeof dependencies === "undefined") {
     dependencies = {};
   } else if (typeof dependencies === "string") {
@@ -34,7 +36,7 @@ exports.compile = function (filename, dependencies) {
       sources.push(asModule(name, readFile(dependencies[name])));
     }
   }
-  sources.push(readFile(filename));
+  sources.push(input);
 
   var ast = parser.parse(sources.join("\n")).success;
   if (! ast) {
@@ -42,4 +44,8 @@ exports.compile = function (filename, dependencies) {
   }
 
   return backend.compile(ast);
+};
+
+exports.compileFile = function (filename, dependencies) {
+  return exports.compile(readFile(filename), dependencies);
 };

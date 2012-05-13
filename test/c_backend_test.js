@@ -1,9 +1,7 @@
 var assert = require("assert");
 var fs = require("fs");
 var childProcess = require("child_process");
-
-var parser = require("parser");
-var backend = require("c_backend");
+var compiler = require("compiler");
 
 var tests = [];
 
@@ -20,13 +18,10 @@ var runTests = function () {
 // it's done.
 var testProgram = function (program, expectedOutput) {
   return function (callback) {
-    var ast = parser.parse(program).success;
-    assert.ok(!! ast)
-    var runtime = parser.parse(fs.readFileSync(__dirname + "/../src/runtime.js", "utf8")).success;
-    assert.ok(!! runtime)
-    var compiled = backend.compile(runtime.concat(ast));
+    var compiled = compiler.compile(program);
     fs.writeFileSync("program.c", compiled);
-    childProcess.exec("gcc -m32 -O2 program.c && ./a.out", function (error, stdout, stderr) {
+
+    childProcess.exec("gcc program.c && ./a.out", function (error, stdout, stderr) {
       assert.strictEqual(stderr, "");
       if (typeof expectedOutput !== "undefined") {
         assert.strictEqual(stdout, expectedOutput);
@@ -35,22 +30,6 @@ var testProgram = function (program, expectedOutput) {
       callback();
     });
   };
-};
-
-var testFile = function (filename, dependencies) {
-  var input = "";
-  input += "var modules = {};\n"
-  input += "var require = function (dep) { if (modules[dep]) { return modules[dep]; } else { throw \"Module \" + dep + \" not found.\"; } };\n";
-  input += "modules.fs = { readFileSync: global.readFileSync };\n"
-  for (dependency in dependencies) {
-    if (dependencies.hasOwnProperty(dependency)) {
-      input += "modules[\"" + dependency + "\"] = {};\n";
-      input += "function (exports) { " + fs.readFileSync(__dirname + "/" +
-        dependencies[dependency], "utf8") + " }(modules[\"" + dependency + "\"]);\n";
-    }
-  }
-  input += fs.readFileSync(__dirname + "/" + filename, "utf8");
-  return testProgram(input, "[undefined]");
 };
 
 tests.push(testProgram("return 123;", "123"));
@@ -265,8 +244,5 @@ tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X
 // Test: global parseInt function
 tests.push(testProgram("return parseInt('2');", "2"));
 tests.push(testProgram("return parseInt('123');", "123"));
-
-tests.push(testFile("../test/ast_test.js", { "ast": "../src/ast.js", "assert": "../src/assert.js" }));
-tests.push(testFile("../test/parser_test.js", { "ast": "../src/ast.js", "parser": "../src/parser.js", "assert": "../src/assert.js" }));
 
 runTests();
