@@ -77,7 +77,7 @@ exports.compile = function (ast) {
 
   var tryStatement = function (node) {
     var toCFunction = function (name, statements) {
-      return "JSValue " + name + "(JSEnv* env, JSValue this, Dict binding, int* returned) {\n" +
+      return "JSValue " + name + "(JSEnv* env, JSValue this, JSObject* binding, int* returned) {\n" +
         "JSValue ret = js_new_undefined();\n" +
         statements.map(statement).join("\n") +
         "*returned = 0;\n" +
@@ -111,10 +111,10 @@ exports.compile = function (ast) {
         "if (returned) { ret = inner_ret; goto end; }\n" +
       "} else {\n" +
         "int returned = 1, finally_returned = 0;\n" +
-        "JSVariable exc_variable = js_create_variable(exc->value);\n" +
+        "JSObject* catch_binding = object_new(binding);\n" +
+        "object_add_property(catch_binding, " + quotes(catchIdentifier) + ", exc->value);\n" +
         "js_pop_exception(env);\n" +
-        "JSValue inner_ret = " + catchFunc + "(env, this, dict_insert(binding, " +
-          quotes(catchIdentifier) + ", exc_variable), &returned);\n" +
+        "JSValue inner_ret = " + catchFunc + "(env, this, catch_binding, &returned);\n" +
         finallyFunc + "(env, this, binding, &finally_returned);\n" +
         "if (returned) { ret = inner_ret; goto end; }\n" +
       "}\n}\n";
@@ -247,29 +247,29 @@ exports.compile = function (ast) {
 
     var argumentsObjectDefinition = "";
     if (node.statements().some(needsArgumentsObject)) {
-      argumentsObjectDefinition = "binding = dict_insert(binding, \"arguments\", js_create_variable(" +
+      argumentsObjectDefinition = "object_add_property(binding, \"arguments\", " +
         "js_invoke_constructor(env, "+
           "js_get_property(env, env->global, js_new_string(\"Array\")), "+
           "arg_values)"+
-        "));";
+        ");";
     }
 
     var argumentsDefinition = node.args().map(function (argName) {
       return "if (arg_values) { " +
-          "binding = dict_insert(binding, " + quotes(argName) + ", js_create_variable(list_head(arg_values)));" +
+          "object_add_property(binding, " + quotes(argName) + ", list_head(arg_values));" +
           "arg_values = list_tail(arg_values);" +
         "} else { " +
-          "binding = dict_insert(binding, " + quotes(argName) + ", js_create_variable(js_new_undefined()));" +
+          "object_add_property(binding, " + quotes(argName) + ", js_new_undefined());" +
         "}";
     }).join("\n");
 
     var localDeclarations = node.localVariables().map(function (identifier) {
-      return "binding = dict_insert(binding, " + quotes(identifier) +
-        ", js_create_variable(js_new_undefined()));";
+      return "object_add_property(binding, " + quotes(identifier) + ", js_new_undefined());";
     }).join("\n");
 
     var cFunction =
-      "JSValue " + name + "(JSEnv* env, JSValue this, List arg_values, Dict binding) {\n" +
+      "JSValue " + name + "(JSEnv* env, JSValue this, List arg_values, JSObject* parent_binding) {\n" +
+        "JSObject* binding = object_new(parent_binding);\n" +
         argumentsObjectDefinition + "\n" +
         argumentsDefinition + "\n" +
         localDeclarations + "\n" +
@@ -538,7 +538,7 @@ exports.compile = function (ast) {
       '  env->exceptions_count = 0;\n' +
       '  env->global = js_new_bare_object();\n' +
       '  js_create_native_objects(env);\n' +
-      '  Dict binding = dict_create();\n' +
+      '  JSObject* binding = NULL;\n' +
       '  js_dump_value(' + program + ');\n' +
       '  return 0;\n' +
       '}\n';

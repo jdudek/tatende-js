@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <setjmp.h>
-#include "dict.c"
 
 enum JSType {
     TypeUndefined,
@@ -14,7 +13,7 @@ enum JSType {
 
 typedef struct TJSClosure {
     struct TJSValue (*function)();
-    Dict binding;
+    struct TJSObject* binding;
     struct TJSObject* as_object;
 } JSClosure;
 
@@ -43,8 +42,6 @@ typedef struct TJSObject {
     struct TJSValue primitive;
 } JSObject;
 
-typedef JSValue* JSVariable;
-
 #define JS_EXCEPTION_STACK_SIZE 1024
 
 #include "list.c"
@@ -60,11 +57,12 @@ typedef struct {
     unsigned int exceptions_count;
 } JSEnv;
 
-JSValue js_new_bare_function(JSValue (*function_ptr)(), Dict binding);
+JSValue js_new_bare_function(JSValue (*function_ptr)(), JSObject* binding);
 void js_throw(JSEnv* env, JSValue exception);
 JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args);
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args);
 
+static JSValueDict object_find_property(JSObject* object, char* key);
 static JSValueDict object_find_own_property(JSObject* object, char* key);
 static JSValue object_get_own_property(JSObject* object, char* key);
 static JSValue object_get_property(JSObject* object, char* key);
@@ -147,7 +145,7 @@ JSValue js_new_object(JSEnv* env) {
     return v;
 }
 
-JSValue js_new_bare_function(JSValue (*function_ptr)(), Dict binding) {
+JSValue js_new_bare_function(JSValue (*function_ptr)(), JSObject* binding) {
     JSValue v;
     v.type = TypeFunction;
     JSClosure closure;
@@ -158,7 +156,7 @@ JSValue js_new_bare_function(JSValue (*function_ptr)(), Dict binding) {
     return v;
 }
 
-JSValue js_new_function(JSEnv* env, JSValue (*function_ptr)(), Dict binding) {
+JSValue js_new_function(JSEnv* env, JSValue (*function_ptr)(), JSObject* binding) {
     JSValue v = js_new_bare_function(function_ptr, binding);
 
     // function is also an object, initialize properties dictionary
@@ -482,26 +480,20 @@ JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args) {
 
 // --- variables --------------------------------------------------------------
 
-JSVariable js_create_variable(JSValue value) {
-    JSVariable var = malloc(sizeof(JSValue));
-    *var = value;
-    return var;
-}
-
-JSValue js_assign_variable(JSEnv* env, Dict binding, char* name, JSValue value) {
-    JSVariable variable = dict_find(binding, name);
-    if (variable != NULL) {
-        *variable = value;
+JSValue js_assign_variable(JSEnv* env, JSObject* binding, char* name, JSValue value) {
+    JSValueDict property = object_find_property(binding, name);
+    if (property != NULL) {
+        property->value = value;
     } else {
         object_set_property(env->global.as.object, name, value);
     }
     return value;
 }
 
-JSValue js_get_variable_rvalue(JSEnv* env, Dict binding, char* name) {
-    JSVariable variable = dict_find(binding, name);
-    if (variable != NULL) {
-        return *variable;
+JSValue js_get_variable_rvalue(JSEnv* env, JSObject* binding, char* name) {
+    JSValueDict property = object_find_property(binding, name);
+    if (property != NULL) {
+        return property->value;
     } else {
         JSValueDict global_property = object_find_own_property(env->global.as.object, name);
         if (global_property) {
@@ -551,6 +543,13 @@ void js_throw(JSEnv* env, JSValue value) {
 
 // --- objects' properties ----------------------------------------------------
 
+static JSObject* object_new(JSObject* prototype) {
+    JSObject* object = malloc(sizeof(JSObject));
+    object->properties = NULL;
+    object->prototype = prototype;
+    return object;
+}
+
 static JSValueDict object_find_own_property(JSObject* object, char* key) {
     JSValueDict dict = object->properties;
     while (dict != NULL) {
@@ -558,6 +557,18 @@ static JSValueDict object_find_own_property(JSObject* object, char* key) {
             return dict;
         } else {
             dict = dict->next;
+        }
+    }
+    return NULL;
+}
+
+static JSValueDict object_find_property(JSObject* object, char* key) {
+    while (object != NULL) {
+        JSValueDict dict = object_find_own_property(object, key);
+        if (dict != NULL) {
+            return dict;
+        } else {
+            object = object->prototype;
         }
     }
     return NULL;
@@ -577,17 +588,15 @@ static JSValue object_get_own_property(JSObject* object, char* key) {
 }
 
 static JSValue object_get_property(JSObject* object, char* key) {
-    while (object != NULL) {
-        JSValueDict dict = object_find_own_property(object, key);
-        if (dict != NULL) {
-            return dict->value;
-        } else {
-            object = object->prototype;
-        }
+    JSValueDict dict = object_find_property(object, key);
+    if (dict != NULL) {
+        return dict->value;
+    } else {
+        return js_new_undefined();
     }
-    return js_new_undefined();
 }
 
+// Faster than object_set_property, because it doesn't check whether property exists.
 static void object_add_property(JSObject* object, char* key, JSValue value) {
     struct JSValueDictElem* new_dict = malloc(sizeof(struct JSValueDictElem));
     new_dict->key = key;
@@ -653,11 +662,11 @@ JSValue js_get_global(JSEnv* env, char* key) {
 
 // --- built-in objects -------------------------------------------------------
 
-JSValue js_object_constructor(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_object_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     return js_new_object(env);
 }
 
-JSValue js_object_is_prototype_of(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_object_is_prototype_of(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     if (list_is_empty(argValues)) return js_new_boolean(0);
     JSValue object_value = list_head(argValues);
     if (object_value.type != TypeObject) return js_new_boolean(0);
@@ -673,17 +682,17 @@ JSValue js_object_is_prototype_of(JSEnv* env, JSValue this, List argValues, Dict
     return js_new_boolean(0);
 }
 
-JSValue js_object_has_own_property(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_object_has_own_property(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     JSValue key = js_to_string(env, (JSValue) list_head(argValues));
     this = js_to_object(env, this);
     return js_new_boolean(object_has_own_property(this.as.object, key.as.string));
 }
 
-JSValue js_function_constructor(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_function_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     js_throw(env, js_new_string("Cannot use Function constructor in compiled code."));
 }
 
-JSValue js_function_prototype_call(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_function_prototype_call(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     JSValue new_this;
     if (list_is_empty(argValues)) {
         new_this = js_new_undefined();
@@ -693,7 +702,7 @@ JSValue js_function_prototype_call(JSEnv* env, JSValue this, List argValues, Dic
     return js_call_function(env, this.as.object->primitive, new_this, list_tail(argValues));
 }
 
-JSValue js_function_prototype_apply(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_function_prototype_apply(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     JSValue new_this;
     if (list_is_empty(argValues)) {
         new_this = js_new_undefined();
@@ -715,7 +724,7 @@ JSValue js_function_prototype_apply(JSEnv* env, JSValue this, List argValues, Di
     return js_call_function(env, this.as.object->primitive, new_this, new_args);
 }
 
-JSValue js_array_constructor(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_array_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     int i = 0;
     while (argValues != NULL) {
         object_set_property(this.as.object,
@@ -727,35 +736,35 @@ JSValue js_array_constructor(JSEnv* env, JSValue this, List argValues, Dict bind
     return this;
 }
 
-JSValue js_number_constructor(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_number_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     this.as.object->primitive = list_head(argValues);
     return this;
 }
 
-JSValue js_number_value_of(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_number_value_of(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     return this.as.object->primitive;
 }
 
-JSValue js_number_to_string(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_number_to_string(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     return js_to_string(env, js_number_value_of(env, this, argValues, binding));
 }
 
-JSValue js_string_constructor(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_string_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     this.as.object->primitive = list_head(argValues);
     object_set_property(this.as.object, "length",
         js_get_property(env, this.as.object->primitive, js_new_string("length")));
     return this;
 }
 
-JSValue js_string_value_of(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_string_value_of(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     return this.as.object->primitive;
 }
 
-JSValue js_string_to_string(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_string_to_string(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     return js_string_value_of(env, this, argValues, binding);
 }
 
-JSValue js_string_char_at(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_string_char_at(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     int i = js_to_number(list_head(argValues)).as.number;
     this = js_to_string(env, this);
 
@@ -769,7 +778,7 @@ JSValue js_string_char_at(JSEnv* env, JSValue this, List argValues, Dict binding
     }
 }
 
-JSValue js_string_substring(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_string_substring(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     char* string = js_string_value_of(env, this, NULL, NULL).as.string;
     int from = js_to_number((JSValue) list_head(argValues)).as.number;
     int to = js_to_number((JSValue) list_head(list_tail(argValues))).as.number;
@@ -787,7 +796,7 @@ JSValue js_string_substring(JSEnv* env, JSValue this, List argValues, Dict bindi
     return js_new_string(cstr);
 }
 
-JSValue js_string_index_of(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_string_index_of(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     char *string = js_to_string(env, this).as.string;
     int i = 0, j;
     JSValue js_substring, js_position;
@@ -816,18 +825,18 @@ JSValue js_string_index_of(JSEnv* env, JSValue this, List argValues, Dict bindin
     return js_new_number(-1);
 }
 
-JSValue js_string_slice(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_string_slice(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     int start = js_to_number(list_head(argValues)).as.number;
     this = js_to_string(env, this);
     return js_new_string(this.as.string + start);
 }
 
-JSValue js_console_log(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_console_log(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     printf("%s\n", js_to_string(env, list_head(argValues)).as.string);
     return js_new_undefined();
 }
 
-JSValue js_read_file(JSEnv* env, JSValue this, List argValues, Dict binding) {
+JSValue js_read_file(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     char* file_name = js_to_string(env, list_head(argValues)).as.string;
     FILE *fp = fopen(file_name, "rb");
     if (fp == NULL) js_throw(env, js_new_string("Cannot open file"));
