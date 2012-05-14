@@ -7,8 +7,8 @@ var readFile = function (filename) {
 };
 
 var asModule = function (name, source) {
-  return "modules[\"" + name + "\"] = {};\n" +
-    "function (exports) { " + source + " }(modules[\"" + name + "\"]);\n";
+  return "global.require.available[\"" + name + "\"] = " +
+    "function (exports) { " + source + " };\n";
 };
 
 // Format of the list: parser=src/parser.js,assert=src/assert.js

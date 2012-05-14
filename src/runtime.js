@@ -223,19 +223,28 @@ global.parseInt = function (string, radix) {
   return result;
 };
 
-global.modules = {};
 global.require = function (name) {
-  if (modules[name]) {
-    return modules[name];
+  available = global.require.available;
+  loaded = global.require.loaded;
+
+  if (loaded[name]) {
+    return loaded[name];
+  } else if (available[name]) {
+    loaded[name] = {};
+    available[name](loaded[name]);
+    return loaded[name];
   } else {
     throw "Module " + name + " not found.";
   }
 };
-modules.fs = {
+global.require.available = {};
+global.require.loaded = {};
+
+global.require.loaded.fs = {
   readFileSync: global.readFileSync,
   writeFileSync: global.writeFileSync
 };
-modules.child_process = {
+global.require.loaded.child_process = {
   exec: function (command, callback) {
     var status = global.system("(" + command + ") > stdout.txt 2> stderr.txt");
     var error = null;
