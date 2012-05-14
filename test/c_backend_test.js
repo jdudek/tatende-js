@@ -221,6 +221,10 @@ tests.push(testProgram("var a = [1,2,3]; return a.map(function (x) { return x+1;
 tests.push(testProgram("return [1,2,3].reduce(function (c, x) { return c + x; }).toString();", "6"));
 tests.push(testProgram("return [1,2,3].reduce(function (c, x) { return c + x; }, 1).toString();", "7"));
 
+// Test: Array.prototype.reduceRight
+tests.push(testProgram("return [1,2,3].reduceRight(function (c, x) { return c + x; }).toString();", "6"));
+tests.push(testProgram("return [1,2,3].reduceRight(function (c, x) { return c + x; }, 1).toString();", "7"));
+
 // Test: Array.prototype.filter
 tests.push(testProgram("return [0,1,2,3].filter(function (x) { return x > 1; }).toString();", "2,3"));
 

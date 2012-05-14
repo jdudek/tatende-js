@@ -104,6 +104,9 @@ Array.prototype.reduce = function (callback, initial) {
   }
   return result;
 };
+Array.prototype.reduceRight = function () {
+  return Array.prototype.reduce.apply(this.slice(0).reverse(), arguments);
+};
 Array.prototype.reverse = function () {
   var tmp, len = this.length, i = 0;
   while (2 * i < len) {
