@@ -1,3 +1,0 @@
-export NODE_PATH=src/
-SRC='var compiler = require("compiler"); console.log(compiler.compileFile("'$1'", "'$2'"));'
-node -e "$SRC"
