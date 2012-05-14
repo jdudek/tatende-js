@@ -13,7 +13,6 @@ Array.prototype.concat = function () {
     }
     j++;
   }
-  result.length = i;  // FIXME
   return result;
 };
 Array.prototype.filter = function (callback) {
@@ -25,7 +24,6 @@ Array.prototype.filter = function (callback) {
     }
     i++;
   }
-  result.length = j;  // FIXME
   return result;
 };
 Array.prototype.forEach = function (callback) {
@@ -64,7 +62,6 @@ Array.prototype.map = function (callback) {
     arr[i] = callback(this[i]);
     i++;
   }
-  arr.length = length; // FIXME
   return arr;
 };
 Array.prototype.toString = function () {
@@ -82,11 +79,10 @@ Array.prototype.indexOf = function (value) {
     }
     i = i + 1;
   }
-  return 1 - 2; // FIXME: lack of unary minus
+  return -1;
 };
 Array.prototype.push = function (value) {
   this[this.length] = value;
-  this.length++;
 };
 Array.prototype.reduce = function (callback, initial) {
   var i = 0;
@@ -136,7 +132,6 @@ Array.prototype.slice = function (start, end) {
   }
   var arr = [];
   var i = 0;
-  arr.length = end - start; // FIXME: array should autoupdate its length
   while (start + i < end) {
     arr[i] = this[start + i];
     i = i + 1;

@@ -39,7 +39,13 @@ struct JSValueDictElem {
 
 typedef struct JSValueDictElem* JSValueDict;
 
+enum JSObjectClass {
+    ClassObject,
+    ClassArray
+};
+
 typedef struct TJSObject {
+    enum JSObjectClass class;
     JSValueDict properties;
     struct TJSObject* prototype;
     struct TJSValue primitive;
@@ -65,6 +71,7 @@ void js_throw(JSEnv* env, JSValue exception);
 JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args);
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args);
 
+static JSObject* object_new(JSObject* prototype);
 static JSValueDict object_find_property(JSObject* object, char* key);
 static JSValueDict object_find_own_property(JSObject* object, char* key);
 static JSValue object_get_own_property(JSObject* object, char* key);
@@ -102,9 +109,7 @@ JSValue js_new_boolean(char i) {
 JSValue js_new_bare_object() {
     JSValue v;
     v.type = TypeObject;
-    v.as.object = malloc(sizeof(JSObject));
-    v.as.object->properties = NULL;
-    v.as.object->prototype = NULL;
+    v.as.object = object_new(NULL);
     return v;
 }
 
@@ -131,8 +136,7 @@ JSValue js_new_function(JSEnv* env, JSValue (*function_ptr)(), JSObject* binding
     JSValue v = js_new_bare_function(function_ptr, binding);
 
     // function is also an object, initialize properties dictionary
-    v.as.function.as_object = malloc(sizeof(JSObject));
-    v.as.function.as_object->properties = NULL;
+    v.as.function.as_object = object_new(NULL);
     v.as.function.as_object->prototype =
         js_get_property(env, js_get_global(env, "Function"), js_new_string("prototype")).as.object;
     v.as.function.as_object->primitive = v;
@@ -535,6 +539,7 @@ static JSObject* object_new(JSObject* prototype) {
     JSObject* object = malloc(sizeof(JSObject));
     object->properties = NULL;
     object->prototype = prototype;
+    object->class = ClassObject;
     return object;
 }
 
@@ -642,7 +647,16 @@ JSValue js_get_property(JSEnv* env, JSValue value, JSValue key) {
 }
 
 JSValue js_set_property(JSEnv* env, JSValue object, JSValue key, JSValue value) {
-    object_set_property(js_to_object(env, object).as.object, js_to_string(env, key).as.string, value);
+    object = js_to_object(env, object);
+    object_set_property(object.as.object, js_to_string(env, key).as.string, value);
+
+    if (object.as.object->class == ClassArray && key.type == TypeNumber) {
+        int length = js_to_number(object_get_property(object.as.object, "length")).as.number;
+        if (key.as.number >= length) {
+            object_set_property(object.as.object, "length", js_new_number(key.as.number + 1));
+        }
+    }
+
     return value;
 }
 
@@ -728,6 +742,7 @@ JSValue js_array_constructor(JSEnv* env, JSValue this, List argValues, JSObject*
         i++;
     }
     object_set_property(this.as.object, "length", js_new_number(i));
+    this.as.object->class = ClassArray;
     return this;
 }
 
@@ -868,16 +883,13 @@ void js_create_native_objects(JSEnv* env) {
 
     JSValue object_prototype = js_new_bare_object();
     JSValue object_constructor = js_new_bare_function(&js_object_constructor, NULL);
-    object_constructor.as.function.as_object = malloc(sizeof(JSObject));
-    object_constructor.as.function.as_object->properties = NULL;
-    object_constructor.as.function.as_object->prototype = NULL;
+    object_constructor.as.function.as_object = object_new(NULL);
     js_set_property(env, object_constructor, js_new_string("prototype"), object_prototype);
     js_set_property(env, global, js_new_string("Object"), object_constructor);
 
     JSValue function_constructor = js_new_bare_function(&js_function_constructor, NULL);
     JSValue function_prototype = js_new_object(env);
-    function_constructor.as.function.as_object = malloc(sizeof(JSObject));
-    function_constructor.as.function.as_object->properties = NULL;
+    function_constructor.as.function.as_object = object_new(NULL);
     function_constructor.as.function.as_object->prototype = js_get_property(env,
         js_get_property(env, global, js_new_string("Object")), js_new_string("prototype")).as.object;
     js_set_property(env, function_constructor, js_new_string("prototype"), function_prototype);
