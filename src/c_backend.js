@@ -7,7 +7,7 @@ exports.compile = function (ast) {
   var unique = function () {
     var i = 1;
     return function () {
-      return ++i;
+      return i++;
     };
   }();
 
@@ -70,7 +70,6 @@ exports.compile = function (ast) {
         return "goto " + breakLabel + ";";
 
       default:
-        console.log(node);
         throw "Incorrect AST";
     }
   };
