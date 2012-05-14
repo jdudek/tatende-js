@@ -179,9 +179,7 @@ String.prototype.split = function (separator, limit) {
         i++;
       }
     }
-    if (from < this.length) {
-      results.push(this.substring(from, this.length));
-    }
+    results.push(this.substring(from, this.length));
   }
   return results;
 };

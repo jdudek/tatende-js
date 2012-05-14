@@ -167,6 +167,7 @@ tests.push(testProgram("var s = 'abc'; return s.slice(1);", "bc"));
 tests.push(testProgram("var s = 'abc'; return s.split('').toString();", "a,b,c"));
 tests.push(testProgram("var s = 'aXbXc'; return s.split('X').toString();", "a,b,c"));
 tests.push(testProgram("var s = 'aXbXc'; return s.replace('X', 'Y');", "aYbYc"));
+tests.push(testProgram("var s = 'X'; return s.replace('X', 'Y');", "Y"));
 
 // Test: Error objects
 tests.push(testProgram("var e = new Error('msg'); return e.name;", "Error"));
