@@ -145,6 +145,9 @@ Object.keys = function (obj) {
   return result;
 };
 
+String.prototype.replace = function (pattern, replacement) {
+  return this.split(pattern).join(replacement);
+};
 String.prototype.split = function (separator, limit) {
   // FIXME: limit is not supported
 
