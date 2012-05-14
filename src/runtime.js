@@ -236,7 +236,10 @@ global.require = function (name) {
     throw "Module " + name + " not found.";
   }
 };
-modules.fs = { readFileSync: global.readFileSync };
+modules.fs = {
+  readFileSync: global.readFileSync,
+  writeFileSync: global.writeFileSync
+};
 modules.child_process = {
   exec: function (command, callback) {
     var status = global.system("(" + command + ") > stdout.txt 2> stderr.txt");

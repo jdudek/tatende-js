@@ -852,6 +852,16 @@ JSValue js_read_file(JSEnv* env, JSValue this, List argValues, JSObject* binding
     return js_new_string(contents);
 }
 
+JSValue js_write_file(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+    char* file_name = js_to_string(env, list_head(argValues)).as.string;
+    char* contents = js_to_string(env, list_head(list_tail(argValues))).as.string;
+    FILE *fp = fopen(file_name, "wb");
+    if (fp == NULL) js_throw(env, js_new_string("Cannot open file"));
+    fwrite(contents, 1, strlen(contents), fp);
+    fclose(fp);
+    return js_new_undefined();
+}
+
 JSValue js_system(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     char* command = js_to_string(env, list_head(argValues)).as.string;
     return js_new_number(system(command));
@@ -911,5 +921,6 @@ void js_create_native_objects(JSEnv* env) {
     js_set_property(env, global, js_new_string("console"), console);
 
     js_set_property(env, global, js_new_string("readFileSync"), js_new_function(env, &js_read_file, NULL));
+    js_set_property(env, global, js_new_string("writeFileSync"), js_new_function(env, &js_write_file, NULL));
     js_set_property(env, global, js_new_string("system"), js_new_function(env, &js_system, NULL));
 }
