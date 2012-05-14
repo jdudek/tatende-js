@@ -35,7 +35,7 @@ exports.compile = function (ast) {
       case AST.ForStatement:
         return [
           node.initial(),
-          AST.WhileStatement(node.condition(), node.statements().concat(node.finalize()))
+          AST.WhileStatement(node.condition(), node.statements().concat([node.finalize()]))
         ].map(statement).join("");
 
       case AST.ForInStatement:
