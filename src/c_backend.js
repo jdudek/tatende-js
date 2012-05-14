@@ -533,11 +533,12 @@ exports.compile = function (ast) {
       '#include <stdio.h>\n' +
       '#include "src/js.c"\n' +
       functions.join("\n") + "\n" +
-      'int main() {\n' +
+      'int main(int argc, char** argv) {\n' +
       '  JSEnv* env = malloc(sizeof(JSEnv));\n' +
       '  env->exceptions_count = 0;\n' +
       '  env->global = js_new_bare_object();\n' +
       '  js_create_native_objects(env);\n' +
+      '  js_create_argv(env, argc, argv);\n' +
       '  JSObject* binding = NULL;\n' +
       '  js_dump_value(' + program + ');\n' +
       '  return 0;\n' +

@@ -924,3 +924,14 @@ void js_create_native_objects(JSEnv* env) {
     js_set_property(env, global, js_new_string("writeFileSync"), js_new_function(env, &js_write_file, NULL));
     js_set_property(env, global, js_new_string("system"), js_new_function(env, &js_system, NULL));
 }
+
+void js_create_argv(JSEnv* env, int argc, char** argv) {
+    List list = NULL;
+    int i;
+    for (i = argc - 1; i >= 0; i--) {
+        list = list_insert(list, js_new_string(argv[i]));
+    }
+    JSValue js_argv = js_invoke_constructor(env, js_get_global(env, "Array"), list);
+    js_set_property(env, env->global, js_new_string("argv"), js_argv);
+    list_free(list);
+}
