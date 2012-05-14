@@ -522,10 +522,10 @@ void js_throw(JSEnv* env, JSValue value) {
 
 // FNV-1a hash, see http://isthe.com/chongo/tech/comp/fnv/
 static JSStringHash hash_string(char* string) {
-    unsigned int result = 2166136261;
+    unsigned int result = 2166136261u;
     while (*string) {
         result ^= *string;
-        result *= 16777619;
+        result *= 16777619u;
         string++;
     }
     return result;
