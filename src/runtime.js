@@ -29,7 +29,7 @@ Array.prototype.filter = function (callback) {
 Array.prototype.forEach = function (callback) {
   var i = 0;
   while (i < this.length) {
-    callback(this[i]);
+    callback(this[i], i);
     i = i + 1;
   }
 };
