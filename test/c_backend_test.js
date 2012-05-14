@@ -244,6 +244,10 @@ tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X
 tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X(); x.z = 1; return x.hasOwnProperty('z');", "true"));
 tests.push(testProgram("var X = function () {}; X.prototype.y = 2; var x = new X(); return x.hasOwnProperty('1');", "false"));
 
+// Test: Object.keys
+tests.push(testProgram("var x = {}; return Object.keys(x).toString();", ""));
+tests.push(testProgram("var x = { a: 1, b: 2 }; return Object.keys(x).toString();", "b,a"));
+
 // Test: global parseInt function
 tests.push(testProgram("return parseInt('2');", "2"));
 tests.push(testProgram("return parseInt('123');", "123"));

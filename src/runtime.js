@@ -121,6 +121,17 @@ Array.prototype.slice = function (start, end) {
   return arr;
 };
 
+Object.keys = function (obj) {
+  var key;
+  var result = [];
+  for (key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      result.push(key);
+    }
+  }
+  return result;
+};
+
 String.prototype.split = function (separator, limit) {
   // FIXME: only empty separators are supported
   // FIXME: limit is not supported
