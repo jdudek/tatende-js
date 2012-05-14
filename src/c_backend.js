@@ -503,10 +503,10 @@ exports.compile = function (ast) {
         return "js_new_boolean(! js_to_boolean(" + expression(node.expression()) + ").as.boolean)";
 
       case "+":
-        return "js_new_number(js_to_number(" + expression(node.expression()) + ").as.number)";
+        return "js_new_number(js_to_number(env, " + expression(node.expression()) + ").as.number)";
 
       case "-":
-        return "js_new_number(-1 * js_to_number(" + expression(node.expression()) + ").as.number)";
+        return "js_new_number(-1 * js_to_number(env, " + expression(node.expression()) + ").as.number)";
 
       default:
         throw "Unsupported operator: " + node.operator();

@@ -196,13 +196,13 @@ JSValue js_to_string(JSEnv* env, JSValue v) {
     }
 }
 
-JSValue js_to_number(JSValue v) {
+JSValue js_to_number(JSEnv* env, JSValue v) {
     if (v.type == TypeNumber) {
         return v;
     } else if (v.type == TypeBoolean) {
         return js_new_number(v.as.boolean);
     } else {
-        fprintf(stderr, "Cannot convert to number");
+        fprintf(stderr, "Cannot convert to number: %s\n", js_to_string(env, v).as.string);
         exit(1);
     }
 }
@@ -314,12 +314,12 @@ JSValue js_add(JSEnv* env, JSValue v1, JSValue v2) {
         strcat(new_string, str2);
         return js_new_string(new_string);
     } else {
-        return js_new_number(js_to_number(v1).as.number + js_to_number(v2).as.number);
+        return js_new_number(js_to_number(env, v1).as.number + js_to_number(env, v2).as.number);
     }
 }
 
 JSValue js_sub(JSEnv* env, JSValue v1, JSValue v2) {
-    return js_new_number(js_to_number(v1).as.number - js_to_number(v2).as.number);
+    return js_new_number(js_to_number(env, v1).as.number - js_to_number(env, v2).as.number);
 }
 
 JSValue js_mult(JSEnv* env, JSValue v1, JSValue v2) {
@@ -360,23 +360,23 @@ JSValue js_neq(JSEnv* env, JSValue v1, JSValue v2) {
 }
 
 JSValue js_lt(JSEnv* env, JSValue v1, JSValue v2) {
-    return js_new_boolean(js_to_number(v1).as.number < js_to_number(v2).as.number);
+    return js_new_boolean(js_to_number(env, v1).as.number < js_to_number(env, v2).as.number);
 }
 
 JSValue js_gt(JSEnv* env, JSValue v1, JSValue v2) {
-    return js_new_boolean(js_to_number(v1).as.number > js_to_number(v2).as.number);
+    return js_new_boolean(js_to_number(env, v1).as.number > js_to_number(env, v2).as.number);
 }
 
 JSValue js_binary_and(JSEnv* env, JSValue v1, JSValue v2) {
-    return js_new_number(js_to_number(v1).as.number & js_to_number(v2).as.number);
+    return js_new_number(js_to_number(env, v1).as.number & js_to_number(env, v2).as.number);
 }
 
 JSValue js_binary_xor(JSEnv* env, JSValue v1, JSValue v2) {
-    return js_new_number(js_to_number(v1).as.number ^ js_to_number(v2).as.number);
+    return js_new_number(js_to_number(env, v1).as.number ^ js_to_number(env, v2).as.number);
 }
 
 JSValue js_binary_or(JSEnv* env, JSValue v1, JSValue v2) {
-    return js_new_number(js_to_number(v1).as.number | js_to_number(v2).as.number);
+    return js_new_number(js_to_number(env, v1).as.number | js_to_number(env, v2).as.number);
 }
 
 JSValue js_logical_and(JSEnv* env, JSValue v1, JSValue v2) {
@@ -651,7 +651,7 @@ JSValue js_set_property(JSEnv* env, JSValue object, JSValue key, JSValue value) 
     object_set_property(object.as.object, js_to_string(env, key).as.string, value);
 
     if (object.as.object->class == ClassArray && key.type == TypeNumber) {
-        int length = js_to_number(object_get_property(object.as.object, "length")).as.number;
+        int length = js_to_number(env, object_get_property(object.as.object, "length")).as.number;
         if (key.as.number >= length) {
             object_set_property(object.as.object, "length", js_new_number(key.as.number + 1));
         }
@@ -775,7 +775,7 @@ JSValue js_string_to_string(JSEnv* env, JSValue this, List argValues, JSObject* 
 }
 
 JSValue js_string_char_at(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    int i = js_to_number(list_head(argValues)).as.number;
+    int i = js_to_number(env, list_head(argValues)).as.number;
     this = js_to_string(env, this);
 
     if (i < 0 || i >= strlen(this.as.string)) {
@@ -790,8 +790,8 @@ JSValue js_string_char_at(JSEnv* env, JSValue this, List argValues, JSObject* bi
 
 JSValue js_string_substring(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
     char* string = js_string_value_of(env, this, NULL, NULL).as.string;
-    int from = js_to_number((JSValue) list_head(argValues)).as.number;
-    int to = js_to_number((JSValue) list_head(list_tail(argValues))).as.number;
+    int from = js_to_number(env, (JSValue) list_head(argValues)).as.number;
+    int to = js_to_number(env, (JSValue) list_head(list_tail(argValues))).as.number;
     int len = strlen(string);
 
     if (to > len) {
@@ -820,7 +820,7 @@ JSValue js_string_index_of(JSEnv* env, JSValue this, List argValues, JSObject* b
         js_position = js_new_undefined();
     } else {
         js_position = list_head(argValues);
-        i = js_to_number(js_position).as.number;
+        i = js_to_number(env, js_position).as.number;
     }
     char *substring = js_to_string(env, js_substring).as.string;
     int string_len = strlen(string);
@@ -836,7 +836,7 @@ JSValue js_string_index_of(JSEnv* env, JSValue this, List argValues, JSObject* b
 }
 
 JSValue js_string_slice(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    int start = js_to_number(list_head(argValues)).as.number;
+    int start = js_to_number(env, list_head(argValues)).as.number;
     this = js_to_string(env, this);
     return js_new_string(this.as.string + start);
 }
