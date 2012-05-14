@@ -8,7 +8,7 @@ var tests = [];
 // Runs each function from tests array serially.
 var runTests = function () {
   tests.reduceRight(function (tail, fn) {
-    return function () { fn(tail) };
+    return function () { fn(tail); };
   }, function () {})();
 };
 
@@ -18,15 +18,16 @@ var runTests = function () {
 // it's done.
 var testProgram = function (program, expectedOutput) {
   return function (callback) {
-    var compiled = compiler.compile(program);
+    var compiled = compiler.compile("console.log(function () { " + program + "}());");
     fs.writeFileSync("program.c", compiled);
 
     childProcess.exec("gcc program.c && ./a.out", function (error, stdout, stderr) {
+      console.log(program);
       assert.strictEqual(stderr, "");
       if (typeof expectedOutput !== "undefined") {
-        assert.strictEqual(stdout, expectedOutput);
+        assert.strictEqual(stdout, expectedOutput + "\n");
       }
-      assert.ok(! error);
+      assert.equal(null, error);
       callback();
     });
   };
@@ -140,12 +141,12 @@ tests.push(testProgram("x = 2; return x;", "2"));
 tests.push(testProgram("x = 2; return global.x;", "2"));
 
 // Test: Number constructor
-tests.push(testProgram("return new Number(2);", "[object]"));
+tests.push(testProgram("return typeof (new Number(2));", "object"));
 tests.push(testProgram("return (new Number(2)).valueOf();", "2"));
 tests.push(testProgram("return (new Number(2)).toString();", "2"));
 
 // Test: String constructor
-tests.push(testProgram("return new String('xx');", "[object]"));
+tests.push(testProgram("return typeof (new String('xx'));", "object"));
 tests.push(testProgram("return (new String('xx')).valueOf();", "xx"));
 tests.push(testProgram("return (new String('xx')).toString();", "xx"));
 

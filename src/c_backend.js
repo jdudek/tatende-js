@@ -540,7 +540,7 @@ exports.compile = function (ast) {
       '  js_create_native_objects(env);\n' +
       '  js_create_argv(env, argc, argv);\n' +
       '  JSObject* binding = NULL;\n' +
-      '  js_dump_value(' + program + ');\n' +
+      '  ' + program + ';\n' +
       '  return 0;\n' +
       '}\n';
   };

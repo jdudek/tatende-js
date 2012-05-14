@@ -73,38 +73,6 @@ JSValue js_set_property(JSEnv* env, JSValue object, JSValue key, JSValue value);
 JSValue js_get_global(JSEnv* env, char* key);
 
 
-// TODO remove
-void js_dump_value(JSValue v)
-{
-    switch (v.type) {
-        case TypeNumber:
-            printf("%d", v.as.number);
-            break;
-        case TypeString:
-            printf("%s", v.as.string);
-            break;
-        case TypeBoolean:
-            if (v.as.boolean) {
-                printf("true");
-            } else {
-                printf("false");
-            }
-            break;
-        case TypeObject:
-            printf("[object]");
-            break;
-        case TypeFunction:
-            printf("[function]");
-            break;
-        case TypeUndefined:
-            printf("[undefined]");
-            break;
-        default:
-            printf("cannot dump value");
-            break;
-    }
-}
-
 // --- constructors for values ------------------------------------------------
 
 JSValue js_new_number(int n) {
@@ -190,28 +158,34 @@ JSValue js_new_null() {
 // --- conversions ------------------------------------------------------------
 
 JSValue js_to_string(JSEnv* env, JSValue v) {
-    if (v.type == TypeString) {
-        return v;
-    } else if (v.type == TypeNumber) {
-        char len = 1;
-        int a = v.as.number;
-        if (a < 0) { a = -a; len++; }
-        do { len++; a = a / 10; } while (a > 0);
-        char* s = malloc(sizeof(char) * len);
-        snprintf(s, len, "%d", v.as.number);
-        return js_new_string(s);
-    } else if (v.type == TypeObject) {
-        JSValue to_string = object_get_property(v.as.object, "toString");
-        if (to_string.type == TypeFunction) {
-            return js_call_method(env, v, js_new_string("toString"), list_create());
-        } else {
-            return js_new_string("[object]");
-        }
-    } else if (v.type == TypeFunction) {
-        return js_new_string("[function]");
-    } else {
-        fprintf(stderr, "Cannot convert to string");
-        exit(1);
+    switch (v.type) {
+        case TypeNumber:;
+            char len = 1;
+            int a = v.as.number;
+            if (a < 0) { a = -a; len++; }
+            do { len++; a = a / 10; } while (a > 0);
+            char* s = malloc(sizeof(char) * len);
+            snprintf(s, len, "%d", v.as.number);
+            return js_new_string(s);
+        case TypeString:
+            return v;
+        case TypeBoolean:
+            if (v.as.boolean) {
+                return js_new_string("true");
+            } else {
+                return js_new_string("false");
+            }
+        case TypeObject:;
+            JSValue to_string = object_get_property(v.as.object, "toString");
+            if (to_string.type == TypeFunction) {
+                return js_call_method(env, v, js_new_string("toString"), list_create());
+            } else {
+                return js_new_string("[object]");
+            }
+        case TypeFunction:
+            return js_new_string("[function]");
+        case TypeUndefined:
+            return js_new_string("[undefined]");
     }
 }
 
