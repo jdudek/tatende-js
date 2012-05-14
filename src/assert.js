@@ -17,6 +17,11 @@ assert.equal = function (actual, expected) {
     throw new AssertionError("Expected " + actual.toString() + " to equal " + expected.toString());
   }
 };
+assert.strictEqual = function (actual, expected) {
+  if (actual !== expected) {
+    throw new AssertionError("Expected " + actual.toString() + " to strictly equal " + expected.toString());
+  }
+};
 
 assert.deepEqual = function (actual, expected) {
   var fail = function () {
