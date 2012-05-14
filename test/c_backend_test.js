@@ -234,6 +234,10 @@ tests.push(testProgram("return [0,1,2,3].filter(function (x) { return x > 1; }).
 tests.push(testProgram("var a = [1,2]; a.reverse(); return a.toString();", "2,1"));
 tests.push(testProgram("var a = [1,2,3]; a.reverse(); return a.toString();", "3,2,1"));
 
+// Test: Array.prototype.some
+tests.push(testProgram("var a = [1,2]; return a.some(function (x) { return x > 1; });", "true"));
+tests.push(testProgram("var a = [1,2]; return a.some(function (x) { return x > 2; });", "false"));
+
 // Test: arguments object
 tests.push(testProgram("var f = function () { return arguments[0]; }; return f(13);", "13"));
 tests.push(testProgram("var f = function () { return arguments[1]; }; return f(13);", "[undefined]"));

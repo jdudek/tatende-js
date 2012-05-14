@@ -117,6 +117,16 @@ Array.prototype.reverse = function () {
   }
   return this;
 };
+Array.prototype.some = function (callback) {
+  var i = 0;
+  while (i < this.length) {
+    if (callback(this[i])) {
+      return true;
+    }
+    i++;
+  }
+  return false;
+};
 Array.prototype.slice = function (start, end) {
   if (typeof start === "undefined") {
     start = 0;
