@@ -104,6 +104,16 @@ Array.prototype.reduce = function (callback, initial) {
   }
   return result;
 };
+Array.prototype.reverse = function () {
+  var tmp, len = this.length, i = 0;
+  while (2 * i < len) {
+    tmp = this[len - i - 1];
+    this[len - i - 1] = this[i];
+    this[i] = tmp;
+    i++;
+  }
+  return this;
+};
 Array.prototype.slice = function (start, end) {
   if (typeof start === "undefined") {
     start = 0;
