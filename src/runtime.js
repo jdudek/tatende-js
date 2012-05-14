@@ -146,22 +146,36 @@ Object.keys = function (obj) {
 };
 
 String.prototype.split = function (separator, limit) {
-  // FIXME: only empty separators are supported
   // FIXME: limit is not supported
 
-  if (typeof separator !== "undefined" && separator.length > 0) {
-    throw "String.prototype.split not yet implemented for non-empty separators";
-  }
+  var results = [];
+  var separatorLength = separator.length;
+  var i = 0, j = 0, from = 0;
 
-  var arr = [];
-  var i = 0;
-  while (i < this.length) {
-    arr[i] = this.charAt(i);
-    i++;
+  if (separatorLength == 0) {
+    while (i < this.length) {
+      results.push(this.charAt(i));
+      i++;
+    }
+  } else {
+    while (i < this.length) {
+      j = 0;
+      while (this.charAt(i+j) == separator.charAt(j) && j < separatorLength) {
+        j++;
+      }
+      if (j == separatorLength) {
+        results.push(this.substring(from, i));
+        i += j;
+        from = i;
+      } else {
+        i++;
+      }
+    }
+    if (from < this.length) {
+      results.push(this.substring(from, this.length));
+    }
   }
-  arr.length = this.length;
-
-  return arr;
+  return results;
 };
 
 global.Error = function (message) { this.message = message; };
