@@ -50,9 +50,12 @@ typedef struct TJSObject {
     struct TJSValue primitive;
 } JSObject;
 
+#define JS_CALL_STACK_SIZE 8192
 #define JS_EXCEPTION_STACK_SIZE 1024
 
-#include "list.c"
+#define JS_CALL_STACK_ITEM(i) (env->call_stack[env->call_stack_count - stack_count + (i)])
+#define JS_CALL_STACK_PUSH(x) (env->call_stack[env->call_stack_count++] = (x))
+#define JS_CALL_STACK_POP     (env->call_stack_count -= stack_count)
 
 typedef struct {
     jmp_buf jmp;
@@ -61,14 +64,17 @@ typedef struct {
 
 typedef struct {
     JSValue global;
+    JSValue call_stack[JS_CALL_STACK_SIZE];
+    unsigned int call_stack_count;
     JSException exceptions[JS_EXCEPTION_STACK_SIZE];
     unsigned int exceptions_count;
 } JSEnv;
 
 JSValue js_new_bare_function(JSValue (*function_ptr)(), JSObject* binding);
 void js_throw(JSEnv* env, JSValue exception);
-JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args);
-JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args);
+JSValue js_call_function(JSEnv* env, JSValue v, JSValue this, int stack_count);
+JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, int stack_count);
+JSValue js_invoke_constructor(JSEnv* env, JSValue function, int stack_count);
 
 static JSObject* object_new(JSObject* prototype);
 static JSProperty* object_find_property(JSObject* object, char* key);
@@ -184,7 +190,7 @@ JSValue js_to_string(JSEnv* env, JSValue v) {
         case TypeObject:;
             JSValue to_string = object_get_property(v.as.object, "toString");
             if (to_string.type == TypeFunction) {
-                return js_call_method(env, v, js_new_string("toString"), list_create());
+                return js_call_method(env, v, js_new_string("toString"), 0);
             } else {
                 return js_new_string("[object]");
             }
@@ -232,11 +238,11 @@ JSValue js_to_object(JSEnv* env, JSValue v) {
         v2.as.object = v.as.function.as_object;
         return v2;
     } else if (v.type == TypeNumber) {
-        return js_invoke_constructor(env, js_get_global(env, "Number"),
-            list_insert(list_create(), v));
+        JS_CALL_STACK_PUSH(v);
+        return js_invoke_constructor(env, js_get_global(env, "Number"), 1);
     } else if (v.type == TypeString) {
-        return js_invoke_constructor(env, js_get_global(env, "String"),
-            list_insert(list_create(), v));
+        JS_CALL_STACK_PUSH(v);
+        return js_invoke_constructor(env, js_get_global(env, "String"), 1);
     } else {
         fprintf(stderr, "Cannot convert to object");
         exit(1);
@@ -396,18 +402,18 @@ JSValue js_logical_or(JSEnv* env, JSValue v1, JSValue v2) {
 
 // --- function calls ---------------------------------------------------------
 
-JSValue js_call_function(JSEnv* env, JSValue v, JSValue this, List args) {
+JSValue js_call_function(JSEnv* env, JSValue v, JSValue this, int stack_count) {
     if (v.type == TypeFunction) {
-        return (v.as.function.function)(env, this, args, v.as.function.binding);
+        return (v.as.function.function)(env, this, stack_count, v.as.function.binding);
     } else {
         JSValue message = js_add(env, js_typeof(v), js_new_string(" is not a function."));
-        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"),
-            list_insert(list_create(), message));
+        JS_CALL_STACK_PUSH(message);
+        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"), 1);
         js_throw(env, exception);
     }
 }
 
-JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args) {
+JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, int stack_count) {
     object = js_to_object(env, object);
     JSValue function = js_get_property(env, object, key);
     if (function.type == TypeUndefined) {
@@ -420,8 +426,8 @@ JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args) {
                     )
                 )
             );
-        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"),
-            list_insert(list_create(), message));
+        JS_CALL_STACK_PUSH(message);
+        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"), 1);
         js_throw(env, exception);
     }
     if (function.type != TypeFunction) {
@@ -434,14 +440,14 @@ JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args) {
                     )
                 )
             );
-        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"),
-            list_insert(list_create(), message));
+        JS_CALL_STACK_PUSH(message);
+        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"), 1);
         js_throw(env, exception);
     }
-    return js_call_function(env, function, object, args);
+    return js_call_function(env, function, object, stack_count);
 }
 
-JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args) {
+JSValue js_invoke_constructor(JSEnv* env, JSValue function, int stack_count) {
     JSValue this = js_new_object(env);
     JSValue constructor_prototype = object_get_property(function.as.function.as_object, "prototype");
     if (constructor_prototype.type == TypeObject) {
@@ -450,11 +456,23 @@ JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args) {
         this.as.object = js_get_property(env, js_get_global(env, "Object"),
             js_new_string("prototype")).as.object;
     }
-    JSValue ret = js_call_function(env, function, this, args);
+    JSValue ret = js_call_function(env, function, this, stack_count);
     if (ret.type == TypeObject) {
         return ret;
     } else {
         return this;
+    }
+}
+
+void js_call_stack_push(JSEnv* env, JSValue value) {
+    // env->call_stack_count++;
+    env->call_stack[env->call_stack_count++] = value;
+}
+
+void js_check_call_stack_overflow(JSEnv* env, int n) {
+    if (env->call_stack_count + n >= JS_CALL_STACK_SIZE) {
+        fprintf(stderr, "Call stack overflow: %d\n", env->call_stack_count + n);
+        exit(1);
     }
 }
 
@@ -480,8 +498,8 @@ JSValue js_get_variable_rvalue(JSEnv* env, JSObject* binding, char* name) {
             return global_property->value;
         } else {
             JSValue message = js_add(env, js_new_string(name), js_new_string(" is not defined."));
-            JSValue exception = js_invoke_constructor(env, js_get_global(env, "ReferenceError"),
-                list_insert(list_create(), message));
+            JS_CALL_STACK_PUSH(message);
+            JSValue exception = js_invoke_constructor(env, js_get_global(env, "ReferenceError"), 1);
             js_throw(env, exception);
         }
     }
@@ -633,8 +651,8 @@ JSValue js_get_property(JSEnv* env, JSValue value, JSValue key) {
                 JSValue message =
                     js_add(env, js_new_string("Cannot read property '"),
                         js_add(env, key, js_new_string("' of undefined")));
-                JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"),
-                    list_insert(list_create(), message));
+                JS_CALL_STACK_PUSH(message);
+                JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"), 1);
                 js_throw(env, exception);
             }
             break;
@@ -680,13 +698,15 @@ JSValue js_get_global(JSEnv* env, char* key) {
 
 // --- built-in objects -------------------------------------------------------
 
-JSValue js_object_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+JSValue js_object_constructor(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
     return js_new_object(env);
 }
 
-JSValue js_object_is_prototype_of(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    if (list_is_empty(argValues)) return js_new_boolean(0);
-    JSValue object_value = list_head(argValues);
+JSValue js_object_is_prototype_of(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    if (stack_count == 0) return js_new_boolean(0);
+    JSValue object_value = JS_CALL_STACK_ITEM(0);
+    JS_CALL_STACK_POP;
+
     if (object_value.type != TypeObject) return js_new_boolean(0);
     JSObject* object = object_value.as.object;
     this = js_to_object(env, this);
@@ -700,92 +720,106 @@ JSValue js_object_is_prototype_of(JSEnv* env, JSValue this, List argValues, JSOb
     return js_new_boolean(0);
 }
 
-JSValue js_object_has_own_property(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    JSValue key = js_to_string(env, (JSValue) list_head(argValues));
+JSValue js_object_has_own_property(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    JSValue key = js_to_string(env, JS_CALL_STACK_ITEM(0));
+    JS_CALL_STACK_POP;
+
     this = js_to_object(env, this);
     return js_new_boolean(object_has_own_property(this.as.object, key.as.string));
 }
 
-JSValue js_function_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+JSValue js_function_constructor(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
     js_throw(env, js_new_string("Cannot use Function constructor in compiled code."));
 }
 
-JSValue js_function_prototype_call(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+JSValue js_function_prototype_call(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
     JSValue new_this;
-    if (list_is_empty(argValues)) {
+    if (stack_count == 0) {
         new_this = js_new_undefined();
     } else {
-        new_this = list_head(argValues);
+        new_this = JS_CALL_STACK_ITEM(0);
     }
-    return js_call_function(env, this.as.object->primitive, new_this, list_tail(argValues));
+    JSValue ret = js_call_function(env, this.as.object->primitive, new_this, stack_count - 1);
+    env->call_stack_count--;
+    return ret;
 }
 
-JSValue js_function_prototype_apply(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+JSValue js_function_prototype_apply(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
     JSValue new_this;
-    if (list_is_empty(argValues)) {
+    int length = 0;
+    if (stack_count == 0) {
         new_this = js_new_undefined();
     } else {
-        new_this = list_head(argValues);
+        new_this = JS_CALL_STACK_ITEM(0);
     }
-    List new_args = list_create();
-    if (list_tail(argValues)) {
-        JSValue args_obj = (JSValue) list_head(list_tail(argValues));
+    if (stack_count > 1) {
+        JSValue args_obj = JS_CALL_STACK_ITEM(1);
+        JS_CALL_STACK_POP;
+
         if (args_obj.type == TypeObject) {
             // FIXME will fail if "length" does not exist or is not number
-            int i, length = object_get_property(args_obj.as.object, "length").as.number;
-            for (i = length - 1; i >= 0; i--) {
-                JSValue arg_value = js_get_property(env, args_obj, js_new_number(i));
-                new_args = list_insert(new_args, arg_value);
+            int i;
+            length = object_get_property(args_obj.as.object, "length").as.number;
+            for (i = 0; i < length; i++) {
+                JS_CALL_STACK_PUSH(js_get_property(env, args_obj, js_new_number(i)));
             }
         }
+    } else {
+        JS_CALL_STACK_POP;
     }
-    return js_call_function(env, this.as.object->primitive, new_this, new_args);
+    return js_call_function(env, this.as.object->primitive, new_this, length);
 }
 
-JSValue js_array_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+JSValue js_array_constructor(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
     int i = 0;
-    while (argValues != NULL) {
+    while (i < stack_count) {
         object_set_property(this.as.object,
-            js_to_string(env, js_new_number(i)).as.string, list_head(argValues));
-        argValues = list_tail(argValues);
+            js_to_string(env, js_new_number(i)).as.string, JS_CALL_STACK_ITEM(i));
         i++;
     }
     object_set_property(this.as.object, "length", js_new_number(i));
     this.as.object->class = ClassArray;
+    JS_CALL_STACK_POP;
     return this;
 }
 
-JSValue js_number_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    this.as.object->primitive = list_head(argValues);
+JSValue js_number_constructor(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    this.as.object->primitive = JS_CALL_STACK_ITEM(0);
+    JS_CALL_STACK_POP;
     return this;
 }
 
-JSValue js_number_value_of(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+JSValue js_number_value_of(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    JS_CALL_STACK_POP;
     return this.as.object->primitive;
 }
 
-JSValue js_number_to_string(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    return js_to_string(env, js_number_value_of(env, this, argValues, binding));
+JSValue js_number_to_string(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    return js_to_string(env, js_number_value_of(env, this, stack_count, binding));
 }
 
-JSValue js_string_constructor(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    this.as.object->primitive = list_head(argValues);
+JSValue js_string_constructor(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    this.as.object->primitive = JS_CALL_STACK_ITEM(0);
+    JS_CALL_STACK_POP;
     object_set_property(this.as.object, "length",
         js_get_property(env, this.as.object->primitive, js_new_string("length")));
     return this;
 }
 
-JSValue js_string_value_of(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+JSValue js_string_value_of(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    JS_CALL_STACK_POP;
     return this.as.object->primitive;
 }
 
-JSValue js_string_to_string(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    return js_string_value_of(env, this, argValues, binding);
+JSValue js_string_to_string(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    JS_CALL_STACK_POP;
+    return js_string_value_of(env, this, 0, binding);
 }
 
-JSValue js_string_char_at(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    int i = js_to_number(env, list_head(argValues)).as.number;
+JSValue js_string_char_at(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    int i = js_to_number(env, JS_CALL_STACK_ITEM(0)).as.number;
     this = js_to_string(env, this);
+    JS_CALL_STACK_POP;
 
     if (i < 0 || i >= strlen(this.as.string)) {
         return js_new_undefined();
@@ -797,11 +831,12 @@ JSValue js_string_char_at(JSEnv* env, JSValue this, List argValues, JSObject* bi
     }
 }
 
-JSValue js_string_substring(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    char* string = js_string_value_of(env, this, NULL, NULL).as.string;
-    int from = js_to_number(env, (JSValue) list_head(argValues)).as.number;
-    int to = js_to_number(env, (JSValue) list_head(list_tail(argValues))).as.number;
+JSValue js_string_substring(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    char* string = js_string_value_of(env, this, 0, NULL).as.string;
+    int from = js_to_number(env, (JSValue) JS_CALL_STACK_ITEM(0)).as.number;
+    int to = js_to_number(env, (JSValue) JS_CALL_STACK_ITEM(1)).as.number;
     int len = strlen(string);
+    JS_CALL_STACK_POP;
 
     if (to > len) {
         to = len;
@@ -815,22 +850,23 @@ JSValue js_string_substring(JSEnv* env, JSValue this, List argValues, JSObject* 
     return js_new_string(cstr);
 }
 
-JSValue js_string_index_of(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
+JSValue js_string_index_of(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
     char *string = js_to_string(env, this).as.string;
     int i = 0, j;
     JSValue js_substring, js_position;
-    if (list_is_empty(argValues)) {
+    if (stack_count == 0) {
         js_substring = js_new_undefined();
     } else {
-        js_substring = list_head(argValues);
-        argValues = list_tail(argValues);
+        js_substring = JS_CALL_STACK_ITEM(0);
     }
-    if (list_is_empty(argValues)) {
+    if (stack_count == 1) {
         js_position = js_new_undefined();
     } else {
-        js_position = list_head(argValues);
+        js_position = JS_CALL_STACK_ITEM(1);
         i = js_to_number(env, js_position).as.number;
     }
+    JS_CALL_STACK_POP;
+
     char *substring = js_to_string(env, js_substring).as.string;
     int string_len = strlen(string);
     int substring_len = strlen(substring);
@@ -844,19 +880,22 @@ JSValue js_string_index_of(JSEnv* env, JSValue this, List argValues, JSObject* b
     return js_new_number(-1);
 }
 
-JSValue js_string_slice(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    int start = js_to_number(env, list_head(argValues)).as.number;
+JSValue js_string_slice(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    int start = js_to_number(env, JS_CALL_STACK_ITEM(0)).as.number;
+    JS_CALL_STACK_POP;
     this = js_to_string(env, this);
     return js_new_string(this.as.string + start);
 }
 
-JSValue js_console_log(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    printf("%s\n", js_to_string(env, list_head(argValues)).as.string);
+JSValue js_console_log(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    printf("%s\n", js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string);
+    JS_CALL_STACK_POP;
     return js_new_undefined();
 }
 
-JSValue js_read_file(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    char* file_name = js_to_string(env, list_head(argValues)).as.string;
+JSValue js_read_file(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    char* file_name = js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string;
+    JS_CALL_STACK_POP;
     FILE *fp = fopen(file_name, "rb");
     if (fp == NULL) js_throw(env, js_new_string("Cannot open file"));
 
@@ -871,9 +910,10 @@ JSValue js_read_file(JSEnv* env, JSValue this, List argValues, JSObject* binding
     return js_new_string(contents);
 }
 
-JSValue js_write_file(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    char* file_name = js_to_string(env, list_head(argValues)).as.string;
-    char* contents = js_to_string(env, list_head(list_tail(argValues))).as.string;
+JSValue js_write_file(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    char* file_name = js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string;
+    char* contents = js_to_string(env, JS_CALL_STACK_ITEM(1)).as.string;
+    JS_CALL_STACK_POP;
     FILE *fp = fopen(file_name, "wb");
     if (fp == NULL) js_throw(env, js_new_string("Cannot open file"));
     fwrite(contents, 1, strlen(contents), fp);
@@ -881,8 +921,9 @@ JSValue js_write_file(JSEnv* env, JSValue this, List argValues, JSObject* bindin
     return js_new_undefined();
 }
 
-JSValue js_system(JSEnv* env, JSValue this, List argValues, JSObject* binding) {
-    char* command = js_to_string(env, list_head(argValues)).as.string;
+JSValue js_system(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    char* command = js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string;
+    JS_CALL_STACK_POP;
     return js_new_number(system(command));
 }
 
@@ -942,12 +983,10 @@ void js_create_native_objects(JSEnv* env) {
 }
 
 void js_create_argv(JSEnv* env, int argc, char** argv) {
-    List list = NULL;
     int i;
-    for (i = argc - 1; i >= 0; i--) {
-        list = list_insert(list, js_new_string(argv[i]));
+    for (i = 0; i < argc; i++) {
+        JS_CALL_STACK_PUSH(js_new_string(argv[i]));
     }
-    JSValue js_argv = js_invoke_constructor(env, js_get_global(env, "Array"), list);
+    JSValue js_argv = js_invoke_constructor(env, js_get_global(env, "Array"), argc);
     js_set_property(env, env->global, js_new_string("argv"), js_argv);
-    list_free(list);
 }

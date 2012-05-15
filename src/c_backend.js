@@ -249,25 +249,25 @@ exports.compile = function (ast) {
       argumentsObjectDefinition = "object_add_property(binding, \"arguments\", " +
         "js_invoke_constructor(env, "+
           "js_get_property(env, env->global, js_new_string(\"Array\")), "+
-          "arg_values)"+
-        ");";
+          "stack_count)"+
+        "); env->call_stack_count += stack_count;";
     }
 
-    var argumentsDefinition = node.args().map(function (argName) {
-      return "if (arg_values) { " +
-          "object_add_property(binding, " + quotes(argName) + ", list_head(arg_values));" +
-          "arg_values = list_tail(arg_values);" +
+    var argumentsDefinition = node.args().map(function (argName, i) {
+      return "if (stack_count > " + i + ") { " +
+          "object_add_property(binding, " + quotes(argName) + ", JS_CALL_STACK_ITEM(" + i + "));" +
+          // "object_add_property(binding, " + quotes(argName) + ", env->call_stack[env->call_stack_count - stack_count + " + i + "]);" +
         "} else { " +
           "object_add_property(binding, " + quotes(argName) + ", js_new_undefined());" +
         "}";
-    }).join("\n");
+    }).join("\n") + "\nJS_CALL_STACK_POP;";
 
     var localDeclarations = node.localVariables().map(function (identifier) {
       return "object_add_property(binding, " + quotes(identifier) + ", js_new_undefined());";
     }).join("\n");
 
     var cFunction =
-      "JSValue " + name + "(JSEnv* env, JSValue this, List arg_values, JSObject* parent_binding) {\n" +
+      "JSValue " + name + "(JSEnv* env, JSValue this, int stack_count, JSObject* parent_binding) {\n" +
         "JSObject* binding = object_new(parent_binding);\n" +
         argumentsObjectDefinition + "\n" +
         argumentsDefinition + "\n" +
@@ -275,7 +275,6 @@ exports.compile = function (ast) {
         "JSValue ret = js_new_undefined();\n" +
         body +
         "end:\n" +
-        "list_free(arg_values);\n" +
         "return ret;\n" +
       "}\n";
     functions.push(cFunction);
@@ -436,15 +435,30 @@ exports.compile = function (ast) {
     }
   };
 
+  var withStackArgs = function (args, invocation) {
+    var parts = [];
+    parts.push("js_check_call_stack_overflow(env, " + args.length + ")");
+    args.forEach(function (arg) {
+      parts.push("js_call_stack_push(env, " + arg + ")");
+    });
+    parts.push(invocation);
+    return "(" + parts.join(", ") + ")";
+  };
+
   var invocation = function (node) {
-    var argValues = toCList(node.args().map(expression));
+    var args = node.args().map(expression);
     if (node.expression() instanceof AST.Refinement) {
       var object = node.expression().expression();
       var key = node.expression().key();
-      return "js_call_method(env, " + expression(object) + ", " +
-        expression(key) + ", " + argValues + ")";
+      return withStackArgs(args,
+        "js_call_method(env, " + expression(object) + ", " +
+        expression(key) + ", " + args.length + ")"
+      );
     } else {
-      return "js_call_function(env, " + expression(node.expression()) + ", env->global, " + argValues + ")";
+      return withStackArgs(args,
+        "js_call_function(env, " + expression(node.expression()) +
+        ", env->global, " + args.length + ")"
+      );
     }
   };
 
@@ -515,16 +529,18 @@ exports.compile = function (ast) {
 
   var newExpression = function (node) {
     var fun;
-    var argValues;
+    var args;
 
     if (node instanceof AST.Invocation) {
       fun = node.expression();
-      argValues = toCList(node.args().map(expression));
+      args = node.args().map(expression);
     } else {
       fun = node;
-      argValues = "NULL";
+      args = [];
     }
-    return "js_invoke_constructor(env, " + expression(fun) + "," + argValues + ")";
+    return withStackArgs(args,
+      "js_invoke_constructor(env, " + expression(fun) + "," + args.length + ")"
+    );
   };
 
   var addTemplate = function (program) {
@@ -534,6 +550,7 @@ exports.compile = function (ast) {
       functions.join("\n") + "\n" +
       'int main(int argc, char** argv) {\n' +
       '  JSEnv* env = malloc(sizeof(JSEnv));\n' +
+      '  env->call_stack_count = 0;\n' +
       '  env->exceptions_count = 0;\n' +
       '  env->global = js_new_bare_object();\n' +
       '  js_create_native_objects(env);\n' +
