@@ -42,12 +42,12 @@ exports.compile = function (ast) {
         return "{" +
             "JSObject* object = js_to_object(env, " + expression(node.object()) + ").as.object;\n" +
             "while (object) {\n"+
-              "JSValueDict property = object->properties;\n" +
-              "while (property) {\n" +
+              "int i = 0;\n" +
+              "while (i < object->properties_count) {\n" +
                 "js_assign_variable(env, binding, " + quotes(node.identifier()) +
-                  ", js_new_string(property->key));\n" +
+                  ", js_new_string(object->properties[i].key));\n" +
                 node.statements().map(statement).join("") +
-                "property = property->next;\n" +
+                "i++;\n" +
               "}\n" +
               "object = object->prototype;\n" +
             "}" +

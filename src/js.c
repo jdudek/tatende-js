@@ -30,14 +30,11 @@ typedef struct TJSValue {
 
 typedef unsigned int JSStringHash;
 
-struct JSValueDictElem {
+typedef struct {
     char* key;
     JSStringHash key_hash;
     JSValue value;
-    struct JSValueDictElem* next;
-};
-
-typedef struct JSValueDictElem* JSValueDict;
+} JSProperty;
 
 enum JSObjectClass {
     ClassObject,
@@ -46,7 +43,9 @@ enum JSObjectClass {
 
 typedef struct TJSObject {
     enum JSObjectClass class;
-    JSValueDict properties;
+    JSProperty* properties;
+    unsigned short properties_count;
+    unsigned short properties_size;
     struct TJSObject* prototype;
     struct TJSValue primitive;
 } JSObject;
@@ -72,8 +71,8 @@ JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, List args);
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args);
 
 static JSObject* object_new(JSObject* prototype);
-static JSValueDict object_find_property(JSObject* object, char* key);
-static JSValueDict object_find_own_property(JSObject* object, char* key);
+static JSProperty* object_find_property(JSObject* object, char* key);
+static JSProperty* object_find_own_property(JSObject* object, char* key);
 static JSValue object_get_own_property(JSObject* object, char* key);
 static JSValue object_get_property(JSObject* object, char* key);
 static void object_set_property(JSObject* object, char* key, JSValue value);
@@ -462,7 +461,7 @@ JSValue js_invoke_constructor(JSEnv* env, JSValue function, List args) {
 // --- variables --------------------------------------------------------------
 
 JSValue js_assign_variable(JSEnv* env, JSObject* binding, char* name, JSValue value) {
-    JSValueDict property = object_find_property(binding, name);
+    JSProperty* property = object_find_property(binding, name);
     if (property != NULL) {
         property->value = value;
     } else {
@@ -472,11 +471,11 @@ JSValue js_assign_variable(JSEnv* env, JSObject* binding, char* name, JSValue va
 }
 
 JSValue js_get_variable_rvalue(JSEnv* env, JSObject* binding, char* name) {
-    JSValueDict property = object_find_property(binding, name);
+    JSProperty* property = object_find_property(binding, name);
     if (property != NULL) {
         return property->value;
     } else {
-        JSValueDict global_property = object_find_own_property(env->global.as.object, name);
+        JSProperty* global_property = object_find_own_property(env->global.as.object, name);
         if (global_property) {
             return global_property->value;
         } else {
@@ -538,34 +537,37 @@ static JSStringHash hash_string(char* string) {
 static JSObject* object_new(JSObject* prototype) {
     JSObject* object = malloc(sizeof(JSObject));
     object->properties = NULL;
+    object->properties_count = 0;
+    object->properties_size = 0;
     object->prototype = prototype;
     object->class = ClassObject;
     return object;
 }
 
-static JSValueDict object_find_own_property_with_hash(JSObject* object, char* key, JSStringHash key_hash) {
-    JSValueDict dict = object->properties;
-    while (dict != NULL) {
-        if (dict->key_hash == key_hash && strcmp(dict->key, key) == 0) {
-            return dict;
+static JSProperty* object_find_own_property_with_hash(JSObject* object, char* key, JSStringHash key_hash) {
+    int i = 0;
+    while (i < object->properties_count) {
+        JSProperty* prop = object->properties + i;
+        if (prop->key_hash == key_hash && strcmp(prop->key, key) == 0) {
+            return prop;
         } else {
-            dict = dict->next;
+            i++;
         }
     }
     return NULL;
 }
 
-static JSValueDict object_find_own_property(JSObject* object, char* key) {
+static JSProperty* object_find_own_property(JSObject* object, char* key) {
     return object_find_own_property_with_hash(object, key, hash_string(key));
 }
 
-static JSValueDict object_find_property(JSObject* object, char* key) {
+static JSProperty* object_find_property(JSObject* object, char* key) {
     JSStringHash key_hash = hash_string(key);
 
     while (object != NULL) {
-        JSValueDict dict = object_find_own_property_with_hash(object, key, key_hash);
-        if (dict != NULL) {
-            return dict;
+        JSProperty* prop = object_find_own_property_with_hash(object, key, key_hash);
+        if (prop != NULL) {
+            return prop;
         } else {
             object = object->prototype;
         }
@@ -578,18 +580,18 @@ static int object_has_own_property(JSObject* object, char* key) {
 }
 
 static JSValue object_get_own_property(JSObject* object, char* key) {
-    JSValueDict dict = object_find_own_property(object, key);
-    if (dict != NULL) {
-        return dict->value;
+    JSProperty* prop = object_find_own_property(object, key);
+    if (prop != NULL) {
+        return prop->value;
     } else {
         return js_new_undefined();
     }
 }
 
 static JSValue object_get_property(JSObject* object, char* key) {
-    JSValueDict dict = object_find_property(object, key);
-    if (dict != NULL) {
-        return dict->value;
+    JSProperty* prop = object_find_property(object, key);
+    if (prop != NULL) {
+        return prop->value;
     } else {
         return js_new_undefined();
     }
@@ -597,18 +599,25 @@ static JSValue object_get_property(JSObject* object, char* key) {
 
 // Faster than object_set_property, because it doesn't check whether property exists.
 static void object_add_property(JSObject* object, char* key, JSValue value) {
-    struct JSValueDictElem* new_dict = malloc(sizeof(struct JSValueDictElem));
-    new_dict->key = key;
-    new_dict->key_hash = hash_string(key);
-    new_dict->value = value;
-    new_dict->next = object->properties;
-    object->properties = new_dict;
+    if (object->properties_count >= object->properties_size) {
+        if (object->properties_size == 0) {
+            object->properties_size = 1;
+        } else {
+            object->properties_size *= 2;
+        }
+        object->properties = realloc(object->properties, sizeof(JSProperty) * object->properties_size);
+    }
+    JSProperty* prop = &object->properties[object->properties_count];
+    prop->key = key;
+    prop->key_hash = hash_string(key);
+    prop->value = value;
+    object->properties_count++;
 }
 
 static void object_set_property(JSObject* object, char* key, JSValue value) {
-    JSValueDict dict = object_find_own_property(object, key);
-    if (dict != NULL) {
-        dict->value = value;
+    JSProperty* prop = object_find_own_property(object, key);
+    if (prop != NULL) {
+        prop->value = value;
         return;
     } else {
         object_add_property(object, key, value);
