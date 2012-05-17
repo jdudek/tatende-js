@@ -59,7 +59,7 @@ Array.prototype.join = function (separator) {
 Array.prototype.map = function (callback) {
   var arr = [], i = 0, length = this.length;
   while (i < length) {
-    arr[i] = callback(this[i]);
+    arr[i] = callback(this[i], i);
     i++;
   }
   return arr;
