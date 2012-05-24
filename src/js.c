@@ -83,6 +83,7 @@ JSValue js_invoke_constructor(JSEnv* env, JSValue function, int stack_count);
 
 static JSString string_from_cstring(char* cstring);
 static char* string_to_cstring(JSString string);
+static JSString string_char_at(JSString string, int index);
 static int string_cmp(JSString s1, JSString s2);
 static JSStringHash string_to_hash(JSString string);
 
@@ -582,6 +583,13 @@ static char* string_to_cstring(JSString string) {
     }
 }
 
+static JSString string_char_at(JSString string, int index) {
+    JSString new_string;
+    new_string.cstring = string.cstring + index;
+    new_string.length = 1;
+    return new_string;
+}
+
 static int string_cmp(JSString s1, JSString s2) {
     int min_length = s1.length < s2.length ? s1.length : s2.length;
     int result = memcmp(s1.cstring, s2.cstring, min_length);
@@ -699,33 +707,40 @@ static void object_set_property(JSObject* object, JSString key, JSValue value) {
 // --- properties -------------------------------------------------------------
 
 JSValue js_get_property(JSEnv* env, JSValue value, JSValue key) {
-    key = js_to_string(env, key);
     switch (value.type) {
         case TypeUndefined:
             // TypeError: Cannot read property '#{key}' of undefined
             {
                 JSValue message =
                     js_add(env, js_string_value_from_cstring("Cannot read property '"),
-                        js_add(env, key, js_string_value_from_cstring("' of undefined")));
+                        js_add(env, js_to_string(env, key), js_string_value_from_cstring("' of undefined")));
                 JS_CALL_STACK_PUSH(message);
                 JSValue exception = js_invoke_constructor(env, js_get_global(env, string_from_cstring("TypeError")), 1);
                 js_throw(env, exception);
             }
             break;
         case TypeNumber:
-            return js_get_property(env, js_to_object(env, value), key);
+            return js_get_property(env, js_to_object(env, value), js_to_string(env, key));
         case TypeString:
-            if (strcmp(string_to_cstring(key.as.string), "length") == 0) {
+            if (key.type == TypeNumber && key.as.number >= 0) {
+                if (key.as.number >= value.as.string.length) {
+                    return js_new_undefined();
+                } else {
+                    return js_string_value_from_string(string_char_at(value.as.string, key.as.number));
+                }
+            }
+            key = js_to_string(env, key);
+            if (string_cmp(key.as.string, string_from_cstring("length")) == 0) {
                 return js_new_number(value.as.string.length);
             } else {
                 return js_get_property(env, js_to_object(env, value), key);
             }
         case TypeBoolean:
-            return js_get_property(env, js_to_object(env, value), key);
+            return js_get_property(env, js_to_object(env, value), js_to_string(env, key));
         case TypeObject:
-            return object_get_property(value.as.object, key.as.string);
+            return object_get_property(value.as.object, js_to_string(env, key).as.string);
         case TypeFunction:
-            return object_get_property(value.as.function.as_object, key.as.string);
+            return object_get_property(value.as.function.as_object, js_to_string(env, key).as.string);
     }
 }
 
@@ -886,10 +901,7 @@ JSValue js_string_char_at(JSEnv* env, JSValue this, int stack_count, JSObject* b
     if (i < 0 || i >= this.as.string.length) {
         return js_new_undefined();
     } else {
-        JSString new_string;
-        new_string.cstring = this.as.string.cstring + i;
-        new_string.length = 1;
-        return js_string_value_from_string(new_string);
+        return js_string_value_from_string(string_char_at(this.as.string, i));
     }
 }
 

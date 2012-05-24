@@ -158,6 +158,9 @@ tests.push(testProgram("return ('xx').z;", "[undefined]"));
 // Test: String length
 tests.push(testProgram("return 'abc'.length;", "3"));
 
+// Test: String characters access
+tests.push(testProgram("var s = 'abc'; return s[1];", "b"));
+
 // Test: String methods
 tests.push(testProgram("return ('abc').substring(1,3);", "bc"));
 tests.push(testProgram("return ('abc').indexOf('a');", "0"));
