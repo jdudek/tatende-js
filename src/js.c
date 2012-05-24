@@ -967,6 +967,12 @@ JSValue js_console_log(JSEnv* env, JSValue this, int stack_count, JSObject* bind
     return js_new_undefined();
 }
 
+JSValue js_console_error(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
+    fprintf(stderr, "%s\n", string_to_cstring(js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string));
+    JS_CALL_STACK_POP;
+    return js_new_undefined();
+}
+
 JSValue js_read_file(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
     char* file_name = string_to_cstring(js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string);
     JS_CALL_STACK_POP;
@@ -1048,6 +1054,7 @@ void js_create_native_objects(JSEnv* env) {
 
     JSValue console = js_new_object(env);
     js_set_property(env, console, js_string_value_from_cstring("log"), js_new_function(env, &js_console_log, NULL));
+    js_set_property(env, console, js_string_value_from_cstring("error"), js_new_function(env, &js_console_error, NULL));
     js_set_property(env, global, js_string_value_from_cstring("console"), console);
 
     js_set_property(env, global, js_string_value_from_cstring("readFileSync"), js_new_function(env, &js_read_file, NULL));
