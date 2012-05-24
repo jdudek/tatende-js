@@ -44,8 +44,8 @@ exports.compile = function (ast) {
             "while (object) {\n"+
               "int i = 0;\n" +
               "while (i < object->properties_count) {\n" +
-                "js_assign_variable(env, binding, " + quotes(node.identifier()) +
-                  ", js_new_string(object->properties[i].key));\n" +
+                "js_assign_variable(env, binding, string_from_cstring(" + quotes(node.identifier()) + ")," +
+                  "js_string_value_from_string(object->properties[i].key));\n" +
                 node.statements().map(statement).join("") +
                 "i++;\n" +
               "}\n" +
@@ -111,7 +111,7 @@ exports.compile = function (ast) {
       "} else {\n" +
         "int returned = 1, finally_returned = 0;\n" +
         "JSObject* catch_binding = object_new(binding);\n" +
-        "object_add_property(catch_binding, " + quotes(catchIdentifier) + ", exc->value);\n" +
+        "object_add_property(catch_binding, string_from_cstring(" + quotes(catchIdentifier) + "), exc->value);\n" +
         "js_pop_exception(env);\n" +
         "JSValue inner_ret = " + catchFunc + "(env, this, catch_binding, &returned);\n" +
         finallyFunc + "(env, this, binding, &finally_returned);\n" +
@@ -164,7 +164,7 @@ exports.compile = function (ast) {
         return "js_new_number(" + node.number().toString() + ")";
 
       case AST.StringLiteral:
-        return "js_new_string(" + quotes(escapeCString(node.string())) + ")";
+        return "js_string_value_from_cstring(" + quotes(escapeCString(node.string())) + ")";
 
       case AST.BooleanLiteral:
         if (node.value()) {
@@ -189,7 +189,7 @@ exports.compile = function (ast) {
         return "js_new_null()";
 
       case AST.Variable:
-        return "js_get_variable_rvalue(env, binding, " + quotes(node.identifier()) + ")";
+        return "js_get_variable_rvalue(env, binding, string_from_cstring(" + quotes(node.identifier()) + "))";
 
       case AST.ThisVariable:
         return "this";
@@ -224,7 +224,7 @@ exports.compile = function (ast) {
 
   var objectLiteral = function (node) {
     return node.pairs().reduce(function (acc, property) {
-      return "js_add_property(env, " + acc + ", js_new_string(\"" + property[0] + "\"), " + expression(property[1]) + ")";
+      return "js_add_property(env, " + acc + ", js_string_value_from_cstring(" + quotes(property[0]) + "), " + expression(property[1]) + ")";
     }, "js_new_object(env)");
   };
 
@@ -246,24 +246,23 @@ exports.compile = function (ast) {
 
     var argumentsObjectDefinition = "";
     if (node.statements().some(needsArgumentsObject)) {
-      argumentsObjectDefinition = "object_add_property(binding, \"arguments\", " +
+      argumentsObjectDefinition = "object_add_property(binding, string_from_cstring(\"arguments\"), " +
         "js_invoke_constructor(env, "+
-          "js_get_property(env, env->global, js_new_string(\"Array\")), "+
+          "js_get_property(env, env->global, js_string_value_from_cstring(\"Array\")), "+
           "stack_count)"+
         "); env->call_stack_count += stack_count;";
     }
 
     var argumentsDefinition = node.args().map(function (argName, i) {
       return "if (stack_count > " + i + ") { " +
-          "object_add_property(binding, " + quotes(argName) + ", JS_CALL_STACK_ITEM(" + i + "));" +
-          // "object_add_property(binding, " + quotes(argName) + ", env->call_stack[env->call_stack_count - stack_count + " + i + "]);" +
+          "object_add_property(binding, string_from_cstring(" + quotes(argName) + "), JS_CALL_STACK_ITEM(" + i + "));" +
         "} else { " +
-          "object_add_property(binding, " + quotes(argName) + ", js_new_undefined());" +
+          "object_add_property(binding, string_from_cstring(" + quotes(argName) + "), js_new_undefined());" +
         "}";
     }).join("\n") + "\nJS_CALL_STACK_POP;";
 
     var localDeclarations = node.localVariables().map(function (identifier) {
-      return "object_add_property(binding, " + quotes(identifier) + ", js_new_undefined());";
+      return "object_add_property(binding, string_from_cstring(" + quotes(identifier) + "), js_new_undefined());";
     }).join("\n");
 
     var cFunction =
@@ -476,7 +475,7 @@ exports.compile = function (ast) {
     if (node.operator() === "=") {
       if (node.leftExpr() instanceof AST.Variable) {
         return "js_assign_variable(env, binding, " +
-          quotes(node.leftExpr().identifier()) + ", " +
+          "string_from_cstring(" + quotes(node.leftExpr().identifier()) + "), " +
           expression(node.rightExpr()) +
         ")";
       } else if (node.leftExpr() instanceof AST.Refinement) {

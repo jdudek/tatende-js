@@ -17,11 +17,16 @@ typedef struct TJSClosure {
     struct TJSObject* as_object;
 } JSClosure;
 
+typedef struct {
+    char* cstring;
+    unsigned int length;
+} JSString;
+
 typedef struct TJSValue {
     enum JSType type;
     union {
         int number;
-        char* string;
+        JSString string;
         char boolean;
         struct TJSObject* object;
         JSClosure function;
@@ -31,7 +36,7 @@ typedef struct TJSValue {
 typedef unsigned int JSStringHash;
 
 typedef struct {
-    char* key;
+    JSString key;
     JSStringHash key_hash;
     JSValue value;
 } JSProperty;
@@ -76,16 +81,21 @@ JSValue js_call_function(JSEnv* env, JSValue v, JSValue this, int stack_count);
 JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, int stack_count);
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, int stack_count);
 
+static JSString string_from_cstring(char* cstring);
+static char* string_to_cstring(JSString string);
+static int string_cmp(JSString s1, JSString s2);
+static JSStringHash string_to_hash(JSString string);
+
 static JSObject* object_new(JSObject* prototype);
-static JSProperty* object_find_property(JSObject* object, char* key);
-static JSProperty* object_find_own_property(JSObject* object, char* key);
-static JSValue object_get_own_property(JSObject* object, char* key);
-static JSValue object_get_property(JSObject* object, char* key);
-static void object_set_property(JSObject* object, char* key, JSValue value);
+static JSProperty* object_find_property(JSObject* object, JSString key);
+static JSProperty* object_find_own_property(JSObject* object, JSString key);
+static JSValue object_get_own_property(JSObject* object, JSString key);
+static JSValue object_get_property(JSObject* object, JSString key);
+static void object_set_property(JSObject* object, JSString key, JSValue value);
 
 JSValue js_get_property(JSEnv* env, JSValue value, JSValue key);
 JSValue js_set_property(JSEnv* env, JSValue object, JSValue key, JSValue value);
-JSValue js_get_global(JSEnv* env, char* key);
+JSValue js_get_global(JSEnv* env, JSString key);
 
 
 // --- constructors for values ------------------------------------------------
@@ -97,11 +107,15 @@ JSValue js_new_number(int n) {
     return v;
 }
 
-JSValue js_new_string(char* s) {
+JSValue js_string_value_from_string(JSString string) {
     JSValue v;
     v.type = TypeString;
-    v.as.string = s;
+    v.as.string = string;
     return v;
+}
+
+JSValue js_string_value_from_cstring(char* cstring) {
+    return js_string_value_from_string(string_from_cstring(cstring));
 }
 
 JSValue js_new_boolean(char i) {
@@ -122,7 +136,9 @@ JSValue js_new_object(JSEnv* env) {
     JSValue v = js_new_bare_object();
     v.as.object->properties = NULL;
     v.as.object->prototype =
-        js_get_property(env, js_get_global(env, "Object"), js_new_string("prototype")).as.object;
+        js_get_property(env, js_get_global(env, string_from_cstring("Object")),
+            js_string_value_from_cstring("prototype")
+        ).as.object;
     return v;
 }
 
@@ -143,13 +159,14 @@ JSValue js_new_function(JSEnv* env, JSValue (*function_ptr)(), JSObject* binding
     // function is also an object, initialize properties dictionary
     v.as.function.as_object = object_new(NULL);
     v.as.function.as_object->prototype =
-        js_get_property(env, js_get_global(env, "Function"), js_new_string("prototype")).as.object;
+        js_get_property(env, js_get_global(env, string_from_cstring("Function")),
+            js_string_value_from_cstring("prototype")).as.object;
     v.as.function.as_object->primitive = v;
 
     // every function has a prototype object for instances
     JSValue prototype = js_new_object(env);
-    object_set_property(prototype.as.object, "constructor", v);
-    object_set_property(v.as.function.as_object, "prototype", prototype);
+    object_set_property(prototype.as.object, string_from_cstring("constructor"), v);
+    object_set_property(v.as.function.as_object, string_from_cstring("prototype"), prototype);
 
     return v;
 }
@@ -172,32 +189,33 @@ JSValue js_new_null() {
 JSValue js_to_string(JSEnv* env, JSValue v) {
     switch (v.type) {
         case TypeNumber:;
+            // TODO move to separate function
             char len = 1;
             int a = v.as.number;
             if (a < 0) { a = -a; len++; }
             do { len++; a = a / 10; } while (a > 0);
             char* s = malloc(sizeof(char) * len);
             snprintf(s, len, "%d", v.as.number);
-            return js_new_string(s);
+            return js_string_value_from_cstring(s);
         case TypeString:
             return v;
         case TypeBoolean:
             if (v.as.boolean) {
-                return js_new_string("true");
+                return js_string_value_from_cstring("true");
             } else {
-                return js_new_string("false");
+                return js_string_value_from_cstring("false");
             }
         case TypeObject:;
-            JSValue to_string = object_get_property(v.as.object, "toString");
+            JSValue to_string = object_get_property(v.as.object, string_from_cstring("toString"));
             if (to_string.type == TypeFunction) {
-                return js_call_method(env, v, js_new_string("toString"), 0);
+                return js_call_method(env, v, js_string_value_from_cstring("toString"), 0);
             } else {
-                return js_new_string("[object]");
+                return js_string_value_from_cstring("[object]");
             }
         case TypeFunction:
-            return js_new_string("[function]");
+            return js_string_value_from_cstring("[function]");
         case TypeUndefined:
-            return js_new_string("[undefined]");
+            return js_string_value_from_cstring("[undefined]");
     }
 }
 
@@ -207,7 +225,7 @@ JSValue js_to_number(JSEnv* env, JSValue v) {
     } else if (v.type == TypeBoolean) {
         return js_new_number(v.as.boolean);
     } else {
-        fprintf(stderr, "Cannot convert to number: %s\n", js_to_string(env, v).as.string);
+        fprintf(stderr, "Cannot convert to number: %s\n", string_to_cstring(js_to_string(env, v).as.string));
         exit(1);
     }
 }
@@ -217,7 +235,7 @@ JSValue js_to_boolean(JSValue v) {
         case TypeNumber:
             return js_new_boolean(v.as.number != 0);
         case TypeString:
-            return js_new_boolean(strlen(v.as.string) > 0);
+            return js_new_boolean(v.as.string.length > 0);
         case TypeBoolean:
             return v;
         case TypeObject:
@@ -239,10 +257,10 @@ JSValue js_to_object(JSEnv* env, JSValue v) {
         return v2;
     } else if (v.type == TypeNumber) {
         JS_CALL_STACK_PUSH(v);
-        return js_invoke_constructor(env, js_get_global(env, "Number"), 1);
+        return js_invoke_constructor(env, js_get_global(env, string_from_cstring("Number")), 1);
     } else if (v.type == TypeString) {
         JS_CALL_STACK_PUSH(v);
-        return js_invoke_constructor(env, js_get_global(env, "String"), 1);
+        return js_invoke_constructor(env, js_get_global(env, string_from_cstring("String")), 1);
     } else {
         fprintf(stderr, "Cannot convert to object");
         exit(1);
@@ -255,7 +273,7 @@ int js_is_truthy(JSValue v) {
         case TypeNumber:
             return v.as.number != 0;
         case TypeString:
-            return strlen(v.as.string) > 0;
+            return v.as.string.length > 0;
         case TypeBoolean:
             return v.as.boolean;
         case TypeObject:
@@ -272,17 +290,17 @@ int js_is_truthy(JSValue v) {
 JSValue js_typeof(JSValue v) {
     switch (v.type) {
         case TypeNumber:
-            return js_new_string("number");
+            return js_string_value_from_cstring("number");
         case TypeString:
-            return js_new_string("string");
+            return js_string_value_from_cstring("string");
         case TypeBoolean:
-            return js_new_string("boolean");
+            return js_string_value_from_cstring("boolean");
         case TypeObject:
-            return js_new_string("object");
+            return js_string_value_from_cstring("object");
         case TypeFunction:
-            return js_new_string("function");
+            return js_string_value_from_cstring("function");
         case TypeUndefined:
-            return js_new_string("undefined");
+            return js_string_value_from_cstring("undefined");
     }
 }
 
@@ -291,11 +309,11 @@ JSValue js_instanceof(JSEnv* env, JSValue left, JSValue right) {
         return js_new_boolean(0);
     }
     if (right.type != TypeFunction) {
-        js_throw(env, js_new_string("TypeError"));
+        js_throw(env, js_string_value_from_cstring("TypeError"));
     }
-    JSValue constructor_prototype = object_get_property(right.as.function.as_object, "prototype");
+    JSValue constructor_prototype = object_get_property(right.as.function.as_object, string_from_cstring("prototype"));
     if (constructor_prototype.type != TypeObject) {
-        js_throw(env, js_new_string("TypeError"));
+        js_throw(env, js_string_value_from_cstring("TypeError"));
     }
     JSObject* object = left.as.object;
 
@@ -311,13 +329,15 @@ JSValue js_instanceof(JSEnv* env, JSValue left, JSValue right) {
 
 JSValue js_add(JSEnv* env, JSValue v1, JSValue v2) {
     if (v1.type == TypeString || v2.type == TypeString) {
-        char* str1 = js_to_string(env, v1).as.string;
-        char* str2 = js_to_string(env, v2).as.string;
+        v1 = js_to_string(env, v1);
+        v2 = js_to_string(env, v2);
 
-        char* new_string = malloc(sizeof(char) * (strlen(str1) + strlen(str2) + 1));
-        strcpy(new_string, str1);
-        strcat(new_string, str2);
-        return js_new_string(new_string);
+        // TODO js_string_concat
+        char* new_cstring = malloc(sizeof(char) * (v1.as.string.length + v2.as.string.length + 1));
+        memcpy(new_cstring, v1.as.string.cstring, v1.as.string.length);
+        memcpy(new_cstring + v1.as.string.length, v2.as.string.cstring, v2.as.string.length);
+        new_cstring[v1.as.string.length + v2.as.string.length] = '\0';
+        return js_string_value_from_cstring(new_cstring);
     } else {
         return js_new_number(js_to_number(env, v1).as.number + js_to_number(env, v2).as.number);
     }
@@ -339,7 +359,10 @@ JSValue js_strict_eq(JSEnv* env, JSValue v1, JSValue v2) {
         case TypeNumber:
             return js_new_boolean(v1.as.number == v2.as.number);
         case TypeString:
-            return js_new_boolean(strcmp(v1.as.string, v2.as.string) == 0);
+            return js_new_boolean(
+                (v1.as.string.length == v2.as.string.length) &&
+                (memcmp(v1.as.string.cstring, v2.as.string.cstring, v1.as.string.length) == 0)
+            );
         case TypeBoolean:
             return js_new_boolean(v1.as.boolean == v2.as.boolean);
         case TypeObject:
@@ -406,9 +429,9 @@ JSValue js_call_function(JSEnv* env, JSValue v, JSValue this, int stack_count) {
     if (v.type == TypeFunction) {
         return (v.as.function.function)(env, this, stack_count, v.as.function.binding);
     } else {
-        JSValue message = js_add(env, js_typeof(v), js_new_string(" is not a function."));
+        JSValue message = js_add(env, js_typeof(v), js_string_value_from_cstring(" is not a function."));
         JS_CALL_STACK_PUSH(message);
-        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"), 1);
+        JSValue exception = js_invoke_constructor(env, js_get_global(env, string_from_cstring("TypeError")), 1);
         js_throw(env, exception);
     }
 }
@@ -419,29 +442,29 @@ JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, int stack_count)
     if (function.type == TypeUndefined) {
         // TypeError: Object #{object} has no method '#{key}'
         JSValue message =
-            js_add(env, js_new_string("Object "),
+            js_add(env, js_string_value_from_cstring("Object "),
                 js_add(env, js_to_string(env, object),
-                    js_add(env, js_new_string(" has no method '"),
-                        js_add(env, js_to_string(env, key), js_new_string("'"))
+                    js_add(env, js_string_value_from_cstring(" has no method '"),
+                        js_add(env, js_to_string(env, key), js_string_value_from_cstring("'"))
                     )
                 )
             );
         JS_CALL_STACK_PUSH(message);
-        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"), 1);
+        JSValue exception = js_invoke_constructor(env, js_get_global(env, string_from_cstring("TypeError")), 1);
         js_throw(env, exception);
     }
     if (function.type != TypeFunction) {
         // TypeError: Property 'wtf' of object #<Object> is not a function
         JSValue message =
-            js_add(env, js_new_string("Property '"),
+            js_add(env, js_string_value_from_cstring("Property '"),
                 js_add(env, js_to_string(env, key),
-                    js_add(env, js_new_string("' of object "),
-                        js_add(env, js_to_string(env, object), js_new_string(" is not a function"))
+                    js_add(env, js_string_value_from_cstring("' of object "),
+                        js_add(env, js_to_string(env, object), js_string_value_from_cstring(" is not a function"))
                     )
                 )
             );
         JS_CALL_STACK_PUSH(message);
-        JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"), 1);
+        JSValue exception = js_invoke_constructor(env, js_get_global(env, string_from_cstring("TypeError")), 1);
         js_throw(env, exception);
     }
     return js_call_function(env, function, object, stack_count);
@@ -449,12 +472,12 @@ JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, int stack_count)
 
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, int stack_count) {
     JSValue this = js_new_object(env);
-    JSValue constructor_prototype = object_get_property(function.as.function.as_object, "prototype");
+    JSValue constructor_prototype = object_get_property(function.as.function.as_object, string_from_cstring("prototype"));
     if (constructor_prototype.type == TypeObject) {
         this.as.object->prototype = constructor_prototype.as.object;
     } else {
-        this.as.object = js_get_property(env, js_get_global(env, "Object"),
-            js_new_string("prototype")).as.object;
+        this.as.object = js_get_property(env, js_get_global(env, string_from_cstring("Object")),
+            js_string_value_from_cstring("prototype")).as.object;
     }
     JSValue ret = js_call_function(env, function, this, stack_count);
     if (ret.type == TypeObject) {
@@ -478,7 +501,7 @@ void js_check_call_stack_overflow(JSEnv* env, int n) {
 
 // --- variables --------------------------------------------------------------
 
-JSValue js_assign_variable(JSEnv* env, JSObject* binding, char* name, JSValue value) {
+JSValue js_assign_variable(JSEnv* env, JSObject* binding, JSString name, JSValue value) {
     JSProperty* property = object_find_property(binding, name);
     if (property != NULL) {
         property->value = value;
@@ -488,7 +511,7 @@ JSValue js_assign_variable(JSEnv* env, JSObject* binding, char* name, JSValue va
     return value;
 }
 
-JSValue js_get_variable_rvalue(JSEnv* env, JSObject* binding, char* name) {
+JSValue js_get_variable_rvalue(JSEnv* env, JSObject* binding, JSString name) {
     JSProperty* property = object_find_property(binding, name);
     if (property != NULL) {
         return property->value;
@@ -497,9 +520,9 @@ JSValue js_get_variable_rvalue(JSEnv* env, JSObject* binding, char* name) {
         if (global_property) {
             return global_property->value;
         } else {
-            JSValue message = js_add(env, js_new_string(name), js_new_string(" is not defined."));
+            JSValue message = js_add(env, js_string_value_from_string(name), js_string_value_from_cstring(" is not defined."));
             JS_CALL_STACK_PUSH(message);
-            JSValue exception = js_invoke_constructor(env, js_get_global(env, "ReferenceError"), 1);
+            JSValue exception = js_invoke_constructor(env, js_get_global(env, string_from_cstring("ReferenceError")), 1);
             js_throw(env, exception);
         }
     }
@@ -539,18 +562,49 @@ void js_throw(JSEnv* env, JSValue value) {
     longjmp(exc->jmp, 1);
 }
 
-// --- objects' properties ----------------------------------------------------
+// --- strings ----------------------------------------------------------------
+
+static JSString string_from_cstring(char* cstring) {
+    JSString string;
+    string.cstring = cstring;
+    string.length = strlen(cstring);
+    return string;
+}
+
+static char* string_to_cstring(JSString string) {
+    if (string.cstring[string.length] == '\0') {
+        return string.cstring;
+    } else {
+        char* new_cstring = malloc(sizeof(char) * (string.length + 1));
+        memcpy(new_cstring, string.cstring, string.length);
+        new_cstring[string.length] = '\0';
+        return new_cstring;
+    }
+}
+
+static int string_cmp(JSString s1, JSString s2) {
+    int min_length = s1.length < s2.length ? s1.length : s2.length;
+    int result = memcmp(s1.cstring, s2.cstring, min_length);
+    if (result == 0) {
+        return s1.length - s2.length;
+    } else {
+        return result;
+    }
+}
 
 // FNV-1a hash, see http://isthe.com/chongo/tech/comp/fnv/
-static JSStringHash hash_string(char* string) {
+static JSStringHash string_to_hash(JSString string) {
+    int i = 0;
     unsigned int result = 2166136261u;
-    while (*string) {
-        result ^= *string;
+    while (i < string.length) {
+        result ^= string.cstring[i];
         result *= 16777619u;
-        string++;
+        i++;
     }
     return result;
 }
+
+// --- objects ----------------------------------------------------------------
 
 static JSObject* object_new(JSObject* prototype) {
     JSObject* object = malloc(sizeof(JSObject));
@@ -562,11 +616,11 @@ static JSObject* object_new(JSObject* prototype) {
     return object;
 }
 
-static JSProperty* object_find_own_property_with_hash(JSObject* object, char* key, JSStringHash key_hash) {
+static JSProperty* object_find_own_property_with_hash(JSObject* object, JSString key, JSStringHash key_hash) {
     int i = 0;
     while (i < object->properties_count) {
         JSProperty* prop = object->properties + i;
-        if (prop->key_hash == key_hash && strcmp(prop->key, key) == 0) {
+        if (prop->key_hash == key_hash && string_cmp(prop->key, key) == 0) {
             return prop;
         } else {
             i++;
@@ -575,12 +629,12 @@ static JSProperty* object_find_own_property_with_hash(JSObject* object, char* ke
     return NULL;
 }
 
-static JSProperty* object_find_own_property(JSObject* object, char* key) {
-    return object_find_own_property_with_hash(object, key, hash_string(key));
+static JSProperty* object_find_own_property(JSObject* object, JSString key) {
+    return object_find_own_property_with_hash(object, key, string_to_hash(key));
 }
 
-static JSProperty* object_find_property(JSObject* object, char* key) {
-    JSStringHash key_hash = hash_string(key);
+static JSProperty* object_find_property(JSObject* object, JSString key) {
+    JSStringHash key_hash = string_to_hash(key);
 
     while (object != NULL) {
         JSProperty* prop = object_find_own_property_with_hash(object, key, key_hash);
@@ -593,11 +647,11 @@ static JSProperty* object_find_property(JSObject* object, char* key) {
     return NULL;
 }
 
-static int object_has_own_property(JSObject* object, char* key) {
+static int object_has_own_property(JSObject* object, JSString key) {
     return !! object_find_own_property(object, key);
 }
 
-static JSValue object_get_own_property(JSObject* object, char* key) {
+static JSValue object_get_own_property(JSObject* object, JSString key) {
     JSProperty* prop = object_find_own_property(object, key);
     if (prop != NULL) {
         return prop->value;
@@ -606,7 +660,7 @@ static JSValue object_get_own_property(JSObject* object, char* key) {
     }
 }
 
-static JSValue object_get_property(JSObject* object, char* key) {
+static JSValue object_get_property(JSObject* object, JSString key) {
     JSProperty* prop = object_find_property(object, key);
     if (prop != NULL) {
         return prop->value;
@@ -616,7 +670,7 @@ static JSValue object_get_property(JSObject* object, char* key) {
 }
 
 // Faster than object_set_property, because it doesn't check whether property exists.
-static void object_add_property(JSObject* object, char* key, JSValue value) {
+static void object_add_property(JSObject* object, JSString key, JSValue value) {
     if (object->properties_count >= object->properties_size) {
         if (object->properties_size == 0) {
             object->properties_size = 1;
@@ -627,12 +681,12 @@ static void object_add_property(JSObject* object, char* key, JSValue value) {
     }
     JSProperty* prop = &object->properties[object->properties_count];
     prop->key = key;
-    prop->key_hash = hash_string(key);
+    prop->key_hash = string_to_hash(key);
     prop->value = value;
     object->properties_count++;
 }
 
-static void object_set_property(JSObject* object, char* key, JSValue value) {
+static void object_set_property(JSObject* object, JSString key, JSValue value) {
     JSProperty* prop = object_find_own_property(object, key);
     if (prop != NULL) {
         prop->value = value;
@@ -642,6 +696,8 @@ static void object_set_property(JSObject* object, char* key, JSValue value) {
     }
 }
 
+// --- properties -------------------------------------------------------------
+
 JSValue js_get_property(JSEnv* env, JSValue value, JSValue key) {
     key = js_to_string(env, key);
     switch (value.type) {
@@ -649,18 +705,18 @@ JSValue js_get_property(JSEnv* env, JSValue value, JSValue key) {
             // TypeError: Cannot read property '#{key}' of undefined
             {
                 JSValue message =
-                    js_add(env, js_new_string("Cannot read property '"),
-                        js_add(env, key, js_new_string("' of undefined")));
+                    js_add(env, js_string_value_from_cstring("Cannot read property '"),
+                        js_add(env, key, js_string_value_from_cstring("' of undefined")));
                 JS_CALL_STACK_PUSH(message);
-                JSValue exception = js_invoke_constructor(env, js_get_global(env, "TypeError"), 1);
+                JSValue exception = js_invoke_constructor(env, js_get_global(env, string_from_cstring("TypeError")), 1);
                 js_throw(env, exception);
             }
             break;
         case TypeNumber:
             return js_get_property(env, js_to_object(env, value), key);
         case TypeString:
-            if (strcmp(key.as.string, "length") == 0) {
-                return js_new_number(strlen(value.as.string));
+            if (strcmp(string_to_cstring(key.as.string), "length") == 0) {
+                return js_new_number(value.as.string.length);
             } else {
                 return js_get_property(env, js_to_object(env, value), key);
             }
@@ -678,9 +734,10 @@ JSValue js_set_property(JSEnv* env, JSValue object, JSValue key, JSValue value) 
     object_set_property(object.as.object, js_to_string(env, key).as.string, value);
 
     if (object.as.object->class == ClassArray && key.type == TypeNumber) {
-        int length = js_to_number(env, object_get_property(object.as.object, "length")).as.number;
+        int length = js_to_number(env, object_get_property(object.as.object,
+            string_from_cstring("length"))).as.number;
         if (key.as.number >= length) {
-            object_set_property(object.as.object, "length", js_new_number(key.as.number + 1));
+            object_set_property(object.as.object, string_from_cstring("length"), js_new_number(key.as.number + 1));
         }
     }
 
@@ -692,7 +749,7 @@ JSValue js_add_property(JSEnv* env, JSValue object, JSValue key, JSValue value) 
     return object;
 }
 
-JSValue js_get_global(JSEnv* env, char* key) {
+JSValue js_get_global(JSEnv* env, JSString key) {
     return object_get_property(env->global.as.object, key);
 }
 
@@ -729,7 +786,7 @@ JSValue js_object_has_own_property(JSEnv* env, JSValue this, int stack_count, JS
 }
 
 JSValue js_function_constructor(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
-    js_throw(env, js_new_string("Cannot use Function constructor in compiled code."));
+    js_throw(env, js_string_value_from_cstring("Cannot use Function constructor in compiled code."));
 }
 
 JSValue js_function_prototype_call(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
@@ -759,7 +816,7 @@ JSValue js_function_prototype_apply(JSEnv* env, JSValue this, int stack_count, J
         if (args_obj.type == TypeObject) {
             // FIXME will fail if "length" does not exist or is not number
             int i;
-            length = object_get_property(args_obj.as.object, "length").as.number;
+            length = object_get_property(args_obj.as.object, string_from_cstring("length")).as.number;
             for (i = 0; i < length; i++) {
                 JS_CALL_STACK_PUSH(js_get_property(env, args_obj, js_new_number(i)));
             }
@@ -777,7 +834,7 @@ JSValue js_array_constructor(JSEnv* env, JSValue this, int stack_count, JSObject
             js_to_string(env, js_new_number(i)).as.string, JS_CALL_STACK_ITEM(i));
         i++;
     }
-    object_set_property(this.as.object, "length", js_new_number(i));
+    object_set_property(this.as.object, string_from_cstring("length"), js_new_number(i));
     this.as.object->class = ClassArray;
     JS_CALL_STACK_POP;
     return this;
@@ -799,10 +856,15 @@ JSValue js_number_to_string(JSEnv* env, JSValue this, int stack_count, JSObject*
 }
 
 JSValue js_string_constructor(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
-    this.as.object->primitive = JS_CALL_STACK_ITEM(0);
+    JSValue primitive;
+    primitive = JS_CALL_STACK_ITEM(0);
     JS_CALL_STACK_POP;
-    object_set_property(this.as.object, "length",
-        js_get_property(env, this.as.object->primitive, js_new_string("length")));
+
+    primitive = js_to_string(env, primitive);
+    this.as.object->primitive = primitive;
+    object_set_property(this.as.object, string_from_cstring("length"),
+        js_new_number(primitive.as.string.length));
+
     return this;
 }
 
@@ -821,37 +883,34 @@ JSValue js_string_char_at(JSEnv* env, JSValue this, int stack_count, JSObject* b
     this = js_to_string(env, this);
     JS_CALL_STACK_POP;
 
-    if (i < 0 || i >= strlen(this.as.string)) {
+    if (i < 0 || i >= this.as.string.length) {
         return js_new_undefined();
     } else {
-        char* s = malloc(sizeof(char) * 2);
-        s[0] = this.as.string[i];
-        s[1] = '\0';
-        return js_new_string(s);
+        JSString new_string;
+        new_string.cstring = this.as.string.cstring + i;
+        new_string.length = 1;
+        return js_string_value_from_string(new_string);
     }
 }
 
 JSValue js_string_substring(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
-    char* string = js_string_value_of(env, this, 0, NULL).as.string;
+    JSString string = js_string_value_of(env, this, 0, NULL).as.string;
     int from = js_to_number(env, (JSValue) JS_CALL_STACK_ITEM(0)).as.number;
     int to = js_to_number(env, (JSValue) JS_CALL_STACK_ITEM(1)).as.number;
-    int len = strlen(string);
     JS_CALL_STACK_POP;
 
-    if (to > len) {
-        to = len;
+    if (to > string.length) {
+        to = string.length;
     }
+    JSString new_string;
+    new_string.cstring = string.cstring + from;
+    new_string.length = to - from;
 
-    int new_len = to - from;
-    char* cstr = malloc(sizeof(char) * (new_len + 1));
-    memcpy(cstr, string + from, new_len);
-    cstr[new_len] = '\0';
-
-    return js_new_string(cstr);
+    return js_string_value_from_string(new_string);
 }
 
 JSValue js_string_index_of(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
-    char *string = js_to_string(env, this).as.string;
+    char *string = js_to_string(env, this).as.string.cstring;
     int i = 0, j;
     JSValue js_substring, js_position;
     if (stack_count == 0) {
@@ -867,7 +926,7 @@ JSValue js_string_index_of(JSEnv* env, JSValue this, int stack_count, JSObject* 
     }
     JS_CALL_STACK_POP;
 
-    char *substring = js_to_string(env, js_substring).as.string;
+    char *substring = js_to_string(env, js_substring).as.string.cstring;
     int string_len = strlen(string);
     int substring_len = strlen(substring);
 
@@ -884,20 +943,23 @@ JSValue js_string_slice(JSEnv* env, JSValue this, int stack_count, JSObject* bin
     int start = js_to_number(env, JS_CALL_STACK_ITEM(0)).as.number;
     JS_CALL_STACK_POP;
     this = js_to_string(env, this);
-    return js_new_string(this.as.string + start);
+    JSString string;
+    string.cstring = this.as.string.cstring + start;
+    string.length = this.as.string.length - start;
+    return js_string_value_from_string(string);
 }
 
 JSValue js_console_log(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
-    printf("%s\n", js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string);
+    printf("%s\n", string_to_cstring(js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string));
     JS_CALL_STACK_POP;
     return js_new_undefined();
 }
 
 JSValue js_read_file(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
-    char* file_name = js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string;
+    char* file_name = string_to_cstring(js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string);
     JS_CALL_STACK_POP;
     FILE *fp = fopen(file_name, "rb");
-    if (fp == NULL) js_throw(env, js_new_string("Cannot open file"));
+    if (fp == NULL) js_throw(env, js_string_value_from_cstring("Cannot open file"));
 
     fseek(fp, 0, SEEK_END);
     int size = ftell(fp);
@@ -907,86 +969,85 @@ JSValue js_read_file(JSEnv* env, JSValue this, int stack_count, JSObject* bindin
     fread(contents, 1, size, fp);
     fclose(fp);
     contents[size] = '\0';
-    return js_new_string(contents);
+    return js_string_value_from_cstring(contents);
 }
 
 JSValue js_write_file(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
-    char* file_name = js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string;
-    char* contents = js_to_string(env, JS_CALL_STACK_ITEM(1)).as.string;
+    char* file_name = string_to_cstring(js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string);
+    char* contents = string_to_cstring(js_to_string(env, JS_CALL_STACK_ITEM(1)).as.string);
     JS_CALL_STACK_POP;
     FILE *fp = fopen(file_name, "wb");
-    if (fp == NULL) js_throw(env, js_new_string("Cannot open file"));
+    if (fp == NULL) js_throw(env, js_string_value_from_cstring("Cannot open file"));
     fwrite(contents, 1, strlen(contents), fp);
     fclose(fp);
     return js_new_undefined();
 }
 
 JSValue js_system(JSEnv* env, JSValue this, int stack_count, JSObject* binding) {
-    char* command = js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string;
+    char* command = string_to_cstring(js_to_string(env, JS_CALL_STACK_ITEM(0)).as.string);
     JS_CALL_STACK_POP;
     return js_new_number(system(command));
 }
 
 void js_create_native_objects(JSEnv* env) {
     JSValue global = env->global;
-    js_set_property(env, global, js_new_string("global"), global);
+    js_set_property(env, global, js_string_value_from_cstring("global"), global);
 
     JSValue object_prototype = js_new_bare_object();
     JSValue object_constructor = js_new_bare_function(&js_object_constructor, NULL);
     object_constructor.as.function.as_object = object_new(NULL);
-    js_set_property(env, object_constructor, js_new_string("prototype"), object_prototype);
-    js_set_property(env, global, js_new_string("Object"), object_constructor);
+    js_set_property(env, object_constructor, js_string_value_from_cstring("prototype"), object_prototype);
+    js_set_property(env, global, js_string_value_from_cstring("Object"), object_constructor);
 
     JSValue function_constructor = js_new_bare_function(&js_function_constructor, NULL);
     JSValue function_prototype = js_new_object(env);
     function_constructor.as.function.as_object = object_new(NULL);
-    function_constructor.as.function.as_object->prototype = js_get_property(env,
-        js_get_property(env, global, js_new_string("Object")), js_new_string("prototype")).as.object;
-    js_set_property(env, function_constructor, js_new_string("prototype"), function_prototype);
-    js_set_property(env, global, js_new_string("Function"), function_constructor);
-    js_set_property(env, function_prototype, js_new_string("call"),
+    function_constructor.as.function.as_object->prototype = object_prototype.as.object;
+    js_set_property(env, function_constructor, js_string_value_from_cstring("prototype"), function_prototype);
+    js_set_property(env, global, js_string_value_from_cstring("Function"), function_constructor);
+    js_set_property(env, function_prototype, js_string_value_from_cstring("call"),
         js_new_function(env, &js_function_prototype_call, NULL));
-    js_set_property(env, function_prototype, js_new_string("apply"),
+    js_set_property(env, function_prototype, js_string_value_from_cstring("apply"),
         js_new_function(env, &js_function_prototype_apply, NULL));
 
-    js_set_property(env, object_prototype, js_new_string("isPrototypeOf"),
+    js_set_property(env, object_prototype, js_string_value_from_cstring("isPrototypeOf"),
         js_new_function(env, &js_object_is_prototype_of, NULL));
-    js_set_property(env, object_prototype, js_new_string("hasOwnProperty"),
+    js_set_property(env, object_prototype, js_string_value_from_cstring("hasOwnProperty"),
         js_new_function(env, &js_object_has_own_property, NULL));
 
     JSValue array_constructor = js_new_function(env, &js_array_constructor, NULL);
-    js_set_property(env, global, js_new_string("Array"), array_constructor);
+    js_set_property(env, global, js_string_value_from_cstring("Array"), array_constructor);
 
     JSValue number_constructor = js_new_function(env, &js_number_constructor, NULL);
-    JSValue number_prototype = js_get_property(env, number_constructor, js_new_string("prototype"));
-    js_set_property(env, global, js_new_string("Number"), number_constructor);
-    js_set_property(env, number_prototype, js_new_string("valueOf"), js_new_function(env, &js_number_value_of, NULL));
-    js_set_property(env, number_prototype, js_new_string("toString"), js_new_function(env, &js_number_to_string, NULL));
+    JSValue number_prototype = js_get_property(env, number_constructor, js_string_value_from_cstring("prototype"));
+    js_set_property(env, global, js_string_value_from_cstring("Number"), number_constructor);
+    js_set_property(env, number_prototype, js_string_value_from_cstring("valueOf"), js_new_function(env, &js_number_value_of, NULL));
+    js_set_property(env, number_prototype, js_string_value_from_cstring("toString"), js_new_function(env, &js_number_to_string, NULL));
 
     JSValue string_constructor = js_new_function(env, &js_string_constructor, NULL);
-    JSValue string_prototype = js_get_property(env, string_constructor, js_new_string("prototype"));
-    js_set_property(env, global, js_new_string("String"), string_constructor);
-    js_set_property(env, string_prototype, js_new_string("valueOf"), js_new_function(env, &js_string_value_of, NULL));
-    js_set_property(env, string_prototype, js_new_string("toString"), js_new_function(env, &js_string_to_string, NULL));
-    js_set_property(env, string_prototype, js_new_string("charAt"), js_new_function(env, &js_string_char_at, NULL));
-    js_set_property(env, string_prototype, js_new_string("substring"), js_new_function(env, &js_string_substring, NULL));
-    js_set_property(env, string_prototype, js_new_string("indexOf"), js_new_function(env, &js_string_index_of, NULL));
-    js_set_property(env, string_prototype, js_new_string("slice"), js_new_function(env, &js_string_slice, NULL));
+    JSValue string_prototype = js_get_property(env, string_constructor, js_string_value_from_cstring("prototype"));
+    js_set_property(env, global, js_string_value_from_cstring("String"), string_constructor);
+    js_set_property(env, string_prototype, js_string_value_from_cstring("valueOf"), js_new_function(env, &js_string_value_of, NULL));
+    js_set_property(env, string_prototype, js_string_value_from_cstring("toString"), js_new_function(env, &js_string_to_string, NULL));
+    js_set_property(env, string_prototype, js_string_value_from_cstring("charAt"), js_new_function(env, &js_string_char_at, NULL));
+    js_set_property(env, string_prototype, js_string_value_from_cstring("substring"), js_new_function(env, &js_string_substring, NULL));
+    js_set_property(env, string_prototype, js_string_value_from_cstring("indexOf"), js_new_function(env, &js_string_index_of, NULL));
+    js_set_property(env, string_prototype, js_string_value_from_cstring("slice"), js_new_function(env, &js_string_slice, NULL));
 
     JSValue console = js_new_object(env);
-    js_set_property(env, console, js_new_string("log"), js_new_function(env, &js_console_log, NULL));
-    js_set_property(env, global, js_new_string("console"), console);
+    js_set_property(env, console, js_string_value_from_cstring("log"), js_new_function(env, &js_console_log, NULL));
+    js_set_property(env, global, js_string_value_from_cstring("console"), console);
 
-    js_set_property(env, global, js_new_string("readFileSync"), js_new_function(env, &js_read_file, NULL));
-    js_set_property(env, global, js_new_string("writeFileSync"), js_new_function(env, &js_write_file, NULL));
-    js_set_property(env, global, js_new_string("system"), js_new_function(env, &js_system, NULL));
+    js_set_property(env, global, js_string_value_from_cstring("readFileSync"), js_new_function(env, &js_read_file, NULL));
+    js_set_property(env, global, js_string_value_from_cstring("writeFileSync"), js_new_function(env, &js_write_file, NULL));
+    js_set_property(env, global, js_string_value_from_cstring("system"), js_new_function(env, &js_system, NULL));
 }
 
 void js_create_argv(JSEnv* env, int argc, char** argv) {
     int i;
     for (i = 0; i < argc; i++) {
-        JS_CALL_STACK_PUSH(js_new_string(argv[i]));
+        JS_CALL_STACK_PUSH(js_string_value_from_cstring(argv[i]));
     }
-    JSValue js_argv = js_invoke_constructor(env, js_get_global(env, "Array"), argc);
-    js_set_property(env, env->global, js_new_string("argv"), js_argv);
+    JSValue js_argv = js_invoke_constructor(env, js_get_global(env, string_from_cstring("Array")), argc);
+    js_set_property(env, env->global, js_string_value_from_cstring("argv"), js_argv);
 }
