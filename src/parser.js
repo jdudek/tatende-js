@@ -226,10 +226,8 @@ var debug = function(parser) {
 // The result is just the parsed character.
 var character = function (expected) {
   return function (input) {
-    var actual = input.charAt(0);
-    if (actual === expected) {
-      input = input.slice(1);
-      return [[actual, input]];
+    if (input[0] === expected) {
+      return [[expected, input.slice(1)]];
     } else {
       return [];
     }
@@ -239,7 +237,7 @@ var character = function (expected) {
 // This parser accepts any char and returns it.
 var anyChar = function (input) {
   if (input.length > 0) {
-    return [[input.charAt(0), input.slice(1)]];
+    return [[input[0], input.slice(1)]];
   } else {
     return [];
   }
@@ -248,8 +246,8 @@ var anyChar = function (input) {
 // This parser accepts any char from given list of allowed chars.
 var anyCharOf = function (allowed) {
   return function (input) {
-    if (allowed.indexOf(input.charAt(0)) !== -1) {
-      return [[input.charAt(0), input.slice(1)]];
+    if (allowed.indexOf(input[0]) !== -1) {
+      return [[input[0], input.slice(1)]];
     } else {
       return [];
     }
@@ -259,8 +257,8 @@ var anyCharOf = function (allowed) {
 // This parser accepts any char other than those from given list.
 var otherThanChars = function (disallowed) {
   return function (input) {
-    if (disallowed.indexOf(input.charAt(0)) === -1) {
-      return [[input.charAt(0), input.slice(1)]];
+    if (disallowed.indexOf(input[0]) === -1) {
+      return [[input[0], input.slice(1)]];
     } else {
       return [];
     }
