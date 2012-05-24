@@ -273,9 +273,14 @@ var otherThanChar = function (disallowedChar) {
 
 // For given string, returns a parser that will accept and return that string.
 var string = function (str) {
-  var parsers = str.split("").map(character);
-  var join = function () { return Array.prototype.join.call(arguments, ""); };
-  return sequence(parsers, join);
+  var length = str.length;
+  return function (input) {
+    if (input.substring(0, length) === str) {
+      return [[str, input.slice(length)]];
+    } else {
+      return [];
+    }
+  };
 };
 
 // Below are some simple parsers for single characters.
