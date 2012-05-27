@@ -225,7 +225,7 @@ exports.compile = function (ast) {
   var objectLiteral = function (node) {
     return node.pairs().reduce(function (acc, property) {
       return "js_add_property(env, " + acc + ", js_string_value_from_cstring(" + quotes(property[0]) + "), " + expression(property[1]) + ")";
-    }, "js_new_object(env)");
+    }, "js_construct_object_value(env)");
   };
 
   var arrayLiteral = function (node) {
@@ -277,7 +277,7 @@ exports.compile = function (ast) {
         "return ret;\n" +
       "}\n";
     functions.push(cFunction);
-    return "js_new_function(env, &" + name + ", binding)";
+    return "js_construct_function_object_value(env, &" + name + ", binding)";
   };
 
   // Traverse function statements and move all declared variables to node's
@@ -551,7 +551,7 @@ exports.compile = function (ast) {
       '  JSEnv* env = malloc(sizeof(JSEnv));\n' +
       '  env->call_stack_count = 0;\n' +
       '  env->exceptions_count = 0;\n' +
-      '  env->global = js_new_bare_object();\n' +
+      '  env->global = js_object_value_from_object(object_new(NULL));\n' +
       '  js_create_native_objects(env);\n' +
       '  js_create_argv(env, argc, argv);\n' +
       '  JSObject* binding = NULL;\n' +
