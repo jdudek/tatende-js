@@ -268,12 +268,24 @@ exports.compile = function (ast) {
     var cFunction =
       "JSValue " + name + "(JSEnv* env, JSValue this, int stack_count, JSObject* parent_binding) {\n" +
         "JSObject* binding = object_new(parent_binding);\n" +
+        "js_gc_save_object(env, binding);\n" +
         argumentsObjectDefinition + "\n" +
         argumentsDefinition + "\n" +
         localDeclarations + "\n" +
         "JSValue ret = js_new_undefined();\n" +
         body +
         "end:\n" +
+        "if (js_gc_should_run(env)) {\n" +
+          "if (this.type == TypeObject && ret.type == TypeObject) {" +
+            "js_gc_run(env, env->global.as.object, parent_binding, this.as.object, ret.as.object, NULL);\n" +
+          "} else if (this.type == TypeObject) { " +
+            "js_gc_run(env, env->global.as.object, parent_binding, this.as.object, NULL);\n" +
+          "} else if (ret.type == TypeObject) { " +
+            "js_gc_run(env, env->global.as.object, parent_binding, ret.as.object, NULL);\n" +
+          "} else { " +
+            "js_gc_run(env, env->global.as.object, parent_binding, NULL);\n" +
+          "}" +
+        "}\n" +
         "return ret;\n" +
       "}\n";
     functions.push(cFunction);
@@ -436,12 +448,14 @@ exports.compile = function (ast) {
 
   var withStackArgs = function (args, invocation) {
     var parts = [];
-    parts.push("js_check_call_stack_overflow(env, " + args.length + ")");
+    parts.push("js_check_call_stack_overflow(env, " + (1 + args.length) + ")");
+    parts.push("js_call_stack_push(env, js_object_value_from_object(binding))");
+    parts.push("js_call_stack_push(env, this)");
     args.forEach(function (arg) {
       parts.push("js_call_stack_push(env, " + arg + ")");
     });
     parts.push(invocation);
-    return "(" + parts.join(", ") + ")";
+    return "js_call_stack_pop_and_return(env, js_call_stack_pop_and_return(env, (" + parts.join(", ") + ")))";
   };
 
   var invocation = function (node) {
@@ -552,9 +566,12 @@ exports.compile = function (ast) {
       '  env->call_stack_count = 0;\n' +
       '  env->exceptions_count = 0;\n' +
       '  env->global = js_object_value_from_object(object_new(NULL));\n' +
+      '  js_gc_setup(env);\n' +
+      '  js_gc_save_object(env, env->global.as.object);\n' +
       '  js_create_native_objects(env);\n' +
       '  js_create_argv(env, argc, argv);\n' +
       '  JSObject* binding = NULL;\n' +
+      '  JSValue this = js_new_undefined();\n' +
       '  ' + program + ';\n' +
       '  return 0;\n' +
       '}\n';

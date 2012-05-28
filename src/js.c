@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <setjmp.h>
+#include <stdarg.h>
 
 enum JSType {
     TypeUndefined,
@@ -46,6 +47,7 @@ typedef struct TJSObject {
     unsigned short properties_size;
     struct TJSObject* prototype;
     struct TJSValue primitive;
+    char gc_mark;
 } JSObject;
 
 typedef struct {
@@ -56,6 +58,8 @@ typedef struct {
 
 #define JS_CALL_STACK_SIZE 8192
 #define JS_EXCEPTION_STACK_SIZE 1024
+#define JS_GC_THRESHOLD 65536
+#define JS_GC_STACK_DEPTH 4096
 
 #define JS_CALL_STACK_ITEM(i) (env->call_stack[env->call_stack_count - stack_count + (i)])
 #define JS_CALL_STACK_PUSH(x) (env->call_stack[env->call_stack_count++] = (x))
@@ -74,12 +78,21 @@ typedef struct {
     unsigned int call_stack_count;
     JSException exceptions[JS_EXCEPTION_STACK_SIZE];
     unsigned int exceptions_count;
+    JSObject** objects;
+    unsigned int objects_count;
+    unsigned int objects_size;
+    unsigned int gc_last_objects_count;
 } JSEnv;
 
 void js_throw(JSEnv* env, JSValue exception);
 JSValue js_call_function(JSEnv* env, JSValue v, JSValue this, int stack_count);
 JSValue js_call_method(JSEnv* env, JSValue object, JSValue key, int stack_count);
 JSValue js_invoke_constructor(JSEnv* env, JSValue function, int stack_count);
+
+void js_call_stack_push(JSEnv* env, JSValue value);
+void js_call_stack_pop(JSEnv* env);
+JSValue js_call_stack_pop_and_return(JSEnv* env, JSValue value);
+void js_check_call_stack_overflow(JSEnv* env, int n);
 
 static JSString string_from_cstring(char* cstring);
 static char* string_to_cstring(JSString string);
@@ -100,6 +113,10 @@ JSValue js_get_property(JSEnv* env, JSValue value, JSValue key);
 JSValue js_set_property(JSEnv* env, JSValue object, JSValue key, JSValue value);
 JSValue js_get_global(JSEnv* env, JSString key);
 
+void js_gc_setup(JSEnv* env);
+void js_gc_save_object(JSEnv* env, JSObject* object);
+int js_gc_should_run(JSEnv* env);
+void js_gc_run(JSEnv* env, ...);
 
 // --- constructors for values ------------------------------------------------
 
@@ -138,6 +155,7 @@ JSValue js_object_value_from_object(JSObject* object) {
 
 JSObject* js_construct_object(JSEnv* env) {
     JSObject* object = object_new(NULL);
+    js_gc_save_object(env, object);
     object->prototype =
         js_get_property(env, js_get_global(env, string_from_cstring("Object")),
             js_string_value_from_cstring("prototype")).as.object;
@@ -154,6 +172,7 @@ JSFunctionObject* js_construct_function_object(JSEnv* env, JSValue (*function_pt
             js_string_value_from_cstring("prototype")).as.object;
 
     JSFunctionObject* function_object = function_object_new(function_object_prototype, function_ptr, binding);
+    js_gc_save_object(env, (JSObject*) function_object);
 
     // every function has a prototype object for constructed instances
     JSObject* instances_prototype = js_construct_object(env);
@@ -469,7 +488,7 @@ JSValue js_invoke_constructor(JSEnv* env, JSValue function, int stack_count) {
     if (constructor_prototype.type == TypeObject) {
         this.as.object->prototype = constructor_prototype.as.object;
     } else {
-        this.as.object = js_get_property(env, js_get_global(env, string_from_cstring("Object")),
+        this.as.object->prototype = js_get_property(env, js_get_global(env, string_from_cstring("Object")),
             js_string_value_from_cstring("prototype")).as.object;
     }
     JSValue ret = js_call_function(env, function, this, stack_count);
@@ -483,6 +502,15 @@ JSValue js_invoke_constructor(JSEnv* env, JSValue function, int stack_count) {
 void js_call_stack_push(JSEnv* env, JSValue value) {
     // env->call_stack_count++;
     env->call_stack[env->call_stack_count++] = value;
+}
+
+void js_call_stack_pop(JSEnv* env) {
+    env->call_stack_count--;
+}
+
+JSValue js_call_stack_pop_and_return(JSEnv* env, JSValue value) {
+    env->call_stack_count--;
+    return value;
 }
 
 void js_check_call_stack_overflow(JSEnv* env, int n) {
@@ -610,6 +638,13 @@ static JSObject* object_alloc() {
     return malloc(sizeof(JSObject));
 }
 
+static void object_destroy(JSObject* object) {
+    if (object->properties) {
+        free(object->properties);
+    }
+    free(object);
+}
+
 static JSObject* object_init(JSObject* object, JSObject* prototype) {
     object->properties = NULL;
     object->properties_count = 0;
@@ -618,6 +653,7 @@ static JSObject* object_init(JSObject* object, JSObject* prototype) {
     object->class = ClassObject;
     return object;
 }
+
 static JSObject* object_new(JSObject* prototype) {
     return object_init(object_alloc(), prototype);
 }
@@ -777,6 +813,119 @@ JSValue js_add_property(JSEnv* env, JSValue object, JSValue key, JSValue value) 
 
 JSValue js_get_global(JSEnv* env, JSString key) {
     return object_get_property(env->global.as.object, key);
+}
+
+// --- garbage collection -----------------------------------------------------
+
+void js_gc_setup(JSEnv* env) {
+    env->objects = malloc(sizeof(JSObject*) * 1024);
+    env->objects_size = 1024;
+    env->objects_count = 0;
+    env->gc_last_objects_count = 0;
+}
+
+void js_gc_save_object(JSEnv* env, JSObject* object) {
+    if (env->objects_count >= env->objects_size) {
+        env->objects_size *= 2;
+        env->objects = realloc(env->objects, sizeof(JSObject) * env->objects_size);
+    }
+    env->objects[env->objects_count] = object;
+    env->objects_count++;
+}
+
+static void gc_stack_push(JSObject* stack[], int* stack_counter, JSObject* object) {
+    if (object == NULL) return;
+    if (object->gc_mark) return;
+    if (*stack_counter >= JS_GC_STACK_DEPTH) {
+        fprintf(stderr, "GC failed: stack overflow\n");
+        exit(0);
+    }
+    stack[*stack_counter] = object;
+    // *stack_counter = *stack_counter + 1;
+    (*stack_counter)++;
+    object->gc_mark = 1;
+    return;
+}
+
+static JSObject* gc_stack_pop(JSObject* stack[], int* stack_counter) {
+    // *stack_counter = *stack_counter - 1;
+    (*stack_counter)--;
+    JSObject* object = stack[*stack_counter];
+    return object;
+}
+
+static JSObject* gc_run(JSEnv* env, va_list args) {
+    int i, j;
+
+#ifdef JS_GC_VERBOSE
+    fprintf(stderr, "gc start: %d\n", env->objects_count);
+#endif
+
+    for (i = 0; i < env->objects_count; i++) {
+        env->objects[i]->gc_mark = 0;
+    }
+
+    JSObject* stack[JS_GC_STACK_DEPTH];
+    int stack_ptr = 0;
+
+    JSObject* object = NULL;
+    do {
+        object = va_arg(args, JSObject*);
+        gc_stack_push(stack, &stack_ptr, object);
+    } while (object != NULL);
+
+    for (i = 0; i < env->call_stack_count; i++) {
+        JSValue value = env->call_stack[i];
+        if (value.type == TypeObject) {
+            gc_stack_push(stack, &stack_ptr, value.as.object);
+        }
+    }
+
+    while (stack_ptr > 0) {
+        JSObject* object = gc_stack_pop(stack, &stack_ptr);
+        for (j = 0; j < object->properties_count; j++) {
+            JSValue value = object->properties[j].value;
+            if (value.type == TypeObject) {
+                gc_stack_push(stack, &stack_ptr, value.as.object);
+            }
+        }
+        gc_stack_push(stack, &stack_ptr, object->prototype);
+        if (object->class == ClassFunction) {
+            gc_stack_push(stack, &stack_ptr, ((JSFunctionObject*) object)->binding);
+        }
+    }
+
+    for (i = 0; i < env->objects_count; i++) {
+        if (env->objects[i]->gc_mark == 0) {
+            object_destroy(env->objects[i]);
+            env->objects[i] = NULL;
+        }
+    }
+
+    j = 0;
+    for (i = 0; i < env->objects_count; i++) {
+        if (env->objects[i] != NULL) {
+            env->objects[j] = env->objects[i];
+            j++;
+        }
+    }
+    env->objects_count = j;
+    env->gc_last_objects_count = env->objects_count;
+
+#ifdef JS_GC_VERBOSE
+    fprintf(stderr, "gc end: %d\n", env->objects_count);
+#endif
+}
+
+int js_gc_should_run(JSEnv* env) {
+    return env->objects_count > JS_GC_THRESHOLD && env->objects_count > 2 * env->gc_last_objects_count;
+}
+
+void js_gc_run(JSEnv* env, ...) {
+    va_list args;
+    va_start(args, env);
+    gc_run(env, args);
+    va_end(args);
 }
 
 // --- built-in objects -------------------------------------------------------
@@ -1026,6 +1175,8 @@ void js_create_native_objects(JSEnv* env) {
     JSValue object_constructor =
         js_object_value_from_object(
             (JSObject*) function_object_new(NULL, &js_object_constructor, NULL));
+    js_gc_save_object(env, object_prototype.as.object);
+    js_gc_save_object(env, object_constructor.as.object);
     js_set_property(env, object_constructor, js_string_value_from_cstring("prototype"), object_prototype);
     js_set_property(env, object_prototype, js_string_value_from_cstring("constructor"), object_constructor);
     js_set_property(env, global, js_string_value_from_cstring("Object"), object_constructor);
@@ -1034,6 +1185,7 @@ void js_create_native_objects(JSEnv* env) {
         js_object_value_from_object(
             (JSObject*) function_object_new(object_prototype.as.object, &js_function_constructor, NULL));
     JSValue function_prototype = js_construct_object_value(env);
+    js_gc_save_object(env, function_constructor.as.object);
     js_set_property(env, function_constructor, js_string_value_from_cstring("prototype"), function_prototype);
     js_set_property(env, global, js_string_value_from_cstring("Function"), function_constructor);
     js_set_property(env, function_prototype, js_string_value_from_cstring("call"),
