@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <title>Progress</title>
+    <style type="text/css" media="screen">
+      table { margin: 0 auto; border-collapse: collapse; }
+      table td { border: solid 1px #888; }
+      table td.level { text-align: center; }
+      table td.full { background: #6EF409; }
+      table td.part { background: #F1FF06; }
+      table td.none { background: #FF3506; }
+    </style>
+  </head>
+  <body>
+    <p>Na podstawie: <a href="http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-262.pdf">http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-262.pdf</a></p>
+    <table>
+      <col width="500" />
+      <col width="100" />
+      <col width="300" />
+      <tr>
+        <th>Chapter</th>
+        <th>Completeness</th>
+        <th class="comment">Comment</th>
+      </tr>
+      <!-- <tr><td>1 Scope</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>2 Conformance</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>3 Normative references</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>4 Overview</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>4.1 Web Scripting</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>4.2 Language Overview</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>4.2.1 Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>4.2.2 The Strict Variant of ECMAScript</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>4.3 Terms and definitions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5 Notational Conventions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5.1 Syntactic and Lexical Grammars</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5.1.1 Context-Free Grammars</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5.1.2 The Lexical and RegExp Grammars</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5.1.3 The Numeric String Grammar</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5.1.4 The Syntactic Grammar</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5.1.5 The JSON Grammar</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5.1.6 Grammar Notation</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>5.2 Algorithm Conventions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>6 Source Text</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>7 Lexical Conventions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>7.1 Unicode Format-Control Characters</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>7.2 White Space</td> <td class="level part">~</td> <td class="comment">Brak wsparcia Unicode</td></tr>
+      <tr><td>7.3 Line Terminators</td> <td class="level part">~</td> <td class="comment">Tylko \n</td></tr>
+      <tr><td>7.4 Comments</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>7.5 Tokens</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>7.6 Identifier Names and Identifiers</td> <td class="level part">~</td> <td class="comment">Brak wsparcia Unicode</td></tr>
+      <tr><td>7.6.1 Reserved Words</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>7.6.1.1 Keywords</td> <td class="level part">~</td> <td class="comment">Niektóre traktowane jak identyfikatory</td></tr>
+      <tr><td>7.6.1.2 Future Reserved Words</td> <td class="level part">~</td> <td class="comment">Traktowane jak identyfikatory</td></tr>
+      <tr><td>7.7 Punctuators</td> <td class="level part">~</td> <td class="comment">Brak niektórych operatorów</td></tr>
+      <tr><td>7.8 Literals</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>7.8.1 Null Literals</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>7.8.2 Boolean Literals</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>7.8.3 Numeric Literals</td> <td class="level part">~</td> <td class="comment">Tylko całkowite</td></tr>
+      <tr><td>7.8.4 String Literals</td> <td class="level part">~</td> <td class="comment">Nie wszystkie escape sequences</td></tr>
+      <tr><td>7.8.5 Regular Expression Literals</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>7.9 Automatic Semicolon Insertion</td> <td class="level none">✗</td> <td class="comment">Parser akceptuje tylko programy ze średnikami</td></tr>
+      <tr><td>7.9.1 Rules of Automatic Semicolon Insertion</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>7.9.2 Examples of Automatic Semicolon Insertion</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>8 Types</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.1 The Undefined Type</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>8.2 The Null Type</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>8.3 The Boolean Type</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>8.4 The String Type</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>8.5 The Number Type</td> <td class="level part">~</td> <td class="comment">Tylko całkowite</td></tr>
+      <tr><td>8.6 The Object Type</td> <td class="level part">~</td> <td class="comment"></td></tr>
+      <tr><td>8.6.1 Property Attributes</td> <td class="level none">✗</td> <td class="comment">Brak atrybutów pól (writable, enumerable, itp.)</td></tr>
+      <tr><td>8.6.2 Object Internal Properties and Methods</td> <td class="level"></td> <td class="comment"><i>Internal properties exist purely for specification purposes</i></td></tr>
+      <tr><td>8.7 The Reference Specification Type</td> <td class="level"></td> <td class="comment"></td></tr>
+      <!-- <tr><td>8.7.1 GetValue (V)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.7.2 PutValue (V, W)</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>8.8 The List Specification Type</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.9 The Completion Specification Type</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.10  The Property Descriptor and Property Identifier Specification Types</td> <td class="level"></td> <td class="comment"></td></tr>
+      <!-- <tr><td>8.10.1 IsAccessorDescriptor ( Desc )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.10.2 IsDataDescriptor ( Desc )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.10.3 IsGenericDescriptor ( Desc )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.10.4 FromPropertyDescriptor ( Desc )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.10.5 ToPropertyDescriptor ( Obj )</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>8.11 The Lexical Environment and Environment Record Specification Types</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12 Algorithms for Object Internal Methods</td> <td class="level"></td> <td class="comment"></td></tr>
+      <!-- <tr><td>8.12.1 [[GetOwnProperty]] (P)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12.2 [[GetProperty]] (P)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12.3 [[Get]] (P)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12.4 [[CanPut]] (P)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12.5 [[Put]] ( P, V, Throw )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12.6 [[HasProperty]] (P)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12.7 [[Delete]] (P, Throw)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12.8 [[DefaultValue]] (hint)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>8.12.9 [[DefineOwnProperty]] (P, Desc, Throw)</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>9 Type Conversion and Testing</td> <td class="level"></td> <td class="comment"></td></tr>
+      <!-- <tr><td>9.1 ToPrimitive</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.2 ToBoolean</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.3 ToNumber</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.3.1 ToNumber Applied to the String Type</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.4 ToInteger</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.5 ToInt32: (Signed 32 Bit Integer)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.6 ToUint32: (Unsigned 32 Bit Integer)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.7 ToUint16: (Unsigned 16 Bit Integer)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.8 ToString</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.8.1 ToString Applied to the Number Type</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.9 ToObject</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.10 CheckObjectCoercible</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.11 IsCallable</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>9.12 The SameValue Algorithm</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>10 Executable Code and Execution Contexts</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.1 Types of Executable Code</td> <td class="level"></td> <td class="comment"></td></tr>
+      <!-- <tr><td>10.1.1 Strict Mode Code</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>10.2 Lexical Environments</td> <td class="level"></td> <td class="comment"></td></tr>
+      <!-- <tr><td>10.2.1 Environment Records</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1 Declarative Environment Records</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1.1 HasBinding(N)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1.2 CreateMutableBinding (N, D)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1.3 SetMutableBinding (N,V,S)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1.4 GetBindingValue(N,S)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1.5 DeleteBinding (N)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1.6 ImplicitThisValue()</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1.7 CreateImmutableBinding (N)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.1.8 InitializeImmutableBinding (N,V)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.2 Object Environment Records</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.2.1 HasBinding(N)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.2.2 CreateMutableBinding (N, D)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.2.3 SetMutableBinding (N,V,S)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.2.4 GetBindingValue(N,S)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.2.5 DeleteBinding (N)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.1.2.6 ImplicitThisValue()</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.2 Lexical Environment Operations</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.2.1 GetIdentifierReference (lex, name, strict)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.2.2 NewDeclarativeEnvironment (E)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.2.3 NewObjectEnvironment (O, E)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.2.3 The Global Environment</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>10.3 Execution Contexts</td> <td class="level"></td> <td class="comment"></td></tr>
+      <!-- <tr><td>10.3.1 Identifier Resolution</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>10.4 Establishing an Execution Context</td> <td class="level"></td> <td class="comment"></td></tr>
+      <!-- <tr><td>10.4.1 Entering Global Code</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.4.1.1 Initial Global Execution Context</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.4.2 Entering Eval Code</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.4.2.1 Strict Mode Restrictions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.4.3 Entering Function Code</td> <td class="level"></td> <td class="comment"></td></tr> -->
+      <tr><td>10.5 Declaration Binding Instantiation</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>10.6 Arguments Object</td> <td class="level part">~</td> <td class="comment">Zaimplementowany jako tablica</td></tr>
+      <tr><td>11 Expressions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.1 Primary Expressions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.1.1 The this Keyword</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.1.2 Identifier Reference</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.1.3 Literal Reference</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.1.4 Array Initialiser</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.1.5 Object Initialiser</td> <td class="level part">~</td> <td class="comment">Brak funkcji akcesorów pól: get/set</td></tr>
+      <tr><td>11.1.6 The Grouping Operator</td> <td class="level full">✓</td> <td class="comment">To po prostu nawiasy</td></tr>
+      <tr><td>11.2 Left-Hand-Side Expressions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.2.1 Property Accessors</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.2.2 The new Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.2.3 Function Calls</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.2.4 Argument Lists</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.2.5 Function Expressions</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.3 Postfix Expressions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.3.1 Postfix Increment Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.3.2 Postfix Decrement Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.4 Unary Operators</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.4.1 The delete Operator</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.4.2 The void Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.4.3 The typeof Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.4.4 Prefix Increment Operator</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.4.5 Prefix Decrement Operator</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.4.6 Unary + Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.4.7 Unary - Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.4.8 Bitwise NOT Operator ( ~ )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.4.9 Logical NOT Operator ( ! )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.5 Multiplicative Operators</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.5.1 Applying the * Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.5.2 Applying the / Operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.5.3 Applying the % Operator</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.6 Additive Operators</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.6.1 The Addition operator ( + )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.6.2 The Subtraction Operator ( - )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.6.3 Applying the Additive Operators to Numbers</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.7 Bitwise Shift Operators</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.7.1 The Left Shift Operator ( &lt;&lt; )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.7.2 The Signed Right Shift Operator ( &gt;&gt; )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.7.3 The Unsigned Right Shift Operator ( &gt;&gt;&gt; )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.8 Relational Operators</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.8.1 The Less-than Operator ( &lt; )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.8.2 The Greater-than Operator ( &gt; )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.8.3 The Less-than-or-equal Operator ( &lt;= )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.8.4 The Greater-than-or-equal Operator ( &gt;= )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.8.5 The Abstract Relational Comparison Algorithm</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.8.6 The instanceof operator</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.8.7 The in operator</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.9 Equality Operators</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.9.1 The Equals Operator ( == )</td> <td class="level part">~</td> <td class="comment">Działa jak strict equality ===, a powinien wykonywać konwersję typów</td></tr>
+      <tr><td>11.9.2 The Does-not-equals Operator ( != )</td> <td class="level part">~</td> <td class="comment">j.w.</td></tr>
+      <tr><td>11.9.3 The Abstract Equality Comparison Algorithm</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.9.4 The Strict Equals Operator ( === )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.9.5 The Strict Does-not-equal Operator ( !== )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.9.6 The Strict Equality Comparison Algorithm</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.10 Binary Bitwise Operators</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.11 Binary Logical Operators</td> <td class="level part">~</td> <td class="comment">Nie są leniwe, a powinny</td></tr>
+      <tr><td>11.12 Conditional Operator ( ? : )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>11.13 Assignment Operators</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>11.13.1 Simple Assignment ( = )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.13.2 Compound Assignment ( op= )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>11.14 Comma Operator ( , )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12 Statements</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>12.1 Block</td> <td class="level none">✗</td> <td class="comment">Bloki dozwolone tylko przy instrukcjach, jak if, for itp.; powinny być dozwolone wszędzie</td></tr>
+      <tr><td>12.2 Variable Statement</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12.2.1 Strict Mode Restrictions</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>12.3 Empty Statement</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12.4 Expression Statement</td> <td class="level part">~</td> <td class="comment">Nie rozróżnia function declaration od function expression</td></tr>
+      <tr><td>12.5 The if Statement</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12.6 Iteration Statements</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>12.6.1 The do-while Statement</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>12.6.2 The while Statement</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12.6.3 The for Statement</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12.6.4 The for-in Statement</td> <td class="level part">~</td> <td class="comment">Nie pozwala na konstrukcję for (var x in o) {}</td></tr>
+      <tr><td>12.7 The continue Statement</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>12.8 The break Statement</td> <td class="level part">~</td> <td class="comment">Tylko wewnątrz switch () {}</td></tr>
+      <tr><td>12.9 The return Statement</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12.10 The with Statement</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>12.10.1 Strict Mode Restrictions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>12.11 The switch Statement</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12.12 Labelled Statements</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>12.13 The throw Statement</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>12.14 The try Statement</td> <td class="level part">~</td> <td class="comment">Problem z throw wewnątrz catch</td></tr>
+      <tr><td>12.14.1 Strict Mode Restrictions</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>12.15 The debugger statement</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>13 Function Definition</td> <td class="level part">~</td> <td class="comment">Brak rozróżnienia function declaration od function expression</td></tr>
+      <tr><td>13.1 Strict Mode Restrictions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>13.2 Creating Function Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>13.2.1 [[Call]]</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>13.2.2 [[Construct]]</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>13.2.3 The [[ThrowTypeError]] Function Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>14 Program</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>14.1 Directive Prologues and the Use Strict Directive</td> <td class="level none">✗</td> <td class="comment">Brak strict mode</td></tr>
+      <tr><td>15 Standard Built-in ECMAScript Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.1 The Global Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.1.1 Value Properties of the Global Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.1.1.1 NaN</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.1.2 Infinity</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.1.3 undefined</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.2 Function Properties of the Global Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.1.2.1 eval (x)</td> <td class="level none">✗</td> <td class="comment">Celowo pominięte</td></tr>
+      <tr><td>15.1.2.1.1 Direct Call to Eval</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.1.2.2 parseInt (string , radix)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.2.3 parseFloat (string)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.2.4 isNaN (number)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.2.5 isFinite (number)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.3 URI Handling Function Properties</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.1.3.1 decodeURI (encodedURI)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.3.2 decodeURIComponent (encodedURIComponent)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.3.3 encodeURI (uri)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.3.4 encodeURIComponent (uriComponent)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4 Constructor Properties of the Global Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.1 Object ( . . . )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.2 Function ( . . . )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.3 Array ( . . . )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.4 String ( . . . )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.5 Boolean ( . . . )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.6 Number ( . . . )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.7 Date ( . . . )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.8 RegExp ( . . . )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.9 Error ( . . . )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.10 EvalError ( . . . )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.11 RangeError ( . . . )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.12 ReferenceError ( . . . )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.13 SyntaxError ( . . . )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.14 TypeError ( . . . )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.1.4.15 URIError ( . . . )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.5 Other Properties of the Global Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.1.5.1 Math</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.1.5.2 JSON</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2 Object Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.2.1 The Object Constructor Called as a Function</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.1.1 Object ( [ value ] )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.2.2 The Object Constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.2.2.1 new Object ( [ value ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3 Properties of the Object Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.1 Object.prototype</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.2 Object.getPrototypeOf ( O )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.3 Object.getOwnPropertyDescriptor ( O, P )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.4 Object.getOwnPropertyNames ( O )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.5 Object.create ( O [, Properties] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.6 Object.defineProperty ( O, P, Attributes )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.7 Object.defineProperties ( O, Properties )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.8 Object.seal ( O )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.9 Object.freeze ( O )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.10 Object.preventExtensions ( O )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.11 Object.isSealed ( O )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.12 Object.isFrozen ( O )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.13 Object.isExtensible ( O )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.3.14 Object.keys ( O )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.2.4 Properties of the Object Prototype Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.2.4.1 Object.prototype.constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.2.4.2 Object.prototype.toString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.4.3 Object.prototype.toLocaleString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.4.4 Object.prototype.valueOf ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.4.5 Object.prototype.hasOwnProperty (V)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.2.4.6 Object.prototype.isPrototypeOf (V)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.2.4.7 Object.prototype.propertyIsEnumerable (V)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.2.5 Properties of Object Instances</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3 Function Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.1 The Function Constructor Called as a Function</td> <td class="level none">✗</td> <td class="comment">Celowo pominięte - podobnie jak eval</td></tr>
+      <tr><td>15.3.1.1 Function (p1, p2, &#8230; , pn, body)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.2 The Function Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.2.1 new Function (p1, p2, &#8230; , pn, body)</td> <td class="level none">✗</td> <td class="comment">Celowo podobnie - podobnie jak eval</td></tr>
+      <tr><td>15.3.3 Properties of the Function Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.3.1 Function.prototype</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.3.3.2 Function.length</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.3.4 Properties of the Function Prototype Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.4.1 Function.prototype.constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.3.4.2 Function.prototype.toString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.3.4.3 Function.prototype.apply (thisArg, argArray)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.3.4.4 Function.prototype.call (thisArg [ , arg1 [ , arg2, &#8230; ] ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.3.4.5 Function.prototype.bind (thisArg [, arg1 [, arg2, &#8230;]])</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.3.4.5.1 [[Call]]</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.4.5.2 [[Construct]]</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.4.5.3 [[HasInstance]] (V)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.5 Properties of Function Instances</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.5.1 length</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.3.5.2 prototype</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.3.5.3 [[HasInstance]] (V)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.3.5.4 [[Get]] (P)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.4 Array Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.4.1 The Array Constructor Called as a Function</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.1.1 Array ( [ item1 [ , item2 [ , &#8230; ] ] ] )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.4.2 The Array Constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.2.1 new Array ( [ item0 [ , item1 [ , &#8230; ] ] ] )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.4.2.2 new Array (len)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.3 Properties of the Array Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.4.3.1 Array.prototype</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.3.2 Array.isArray ( arg )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4 Properties of the Array Prototype Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.1 Array.prototype.constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.2 Array.prototype.toString ( )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.3 Array.prototype.toLocaleString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.4 Array.prototype.concat ( [ item1 [ , item2 [ , &#8230; ] ] ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.5 Array.prototype.join (separator)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.6 Array.prototype.pop ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.7 Array.prototype.push ( [ item1 [ , item2 [ , &#8230; ] ] ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.8 Array.prototype.reverse ( )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.9 Array.prototype.shift ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.10 Array.prototype.slice (start, end)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.11 Array.prototype.sort (comparefn)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.12 Array.prototype.splice (start, deleteCount [ , item1 [ , item2 [ , &#8230; ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.13 Array.prototype.unshift ( [ item1 [ , item2 [ , &#8230; ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.14 Array.prototype.indexOf ( searchElement [ , fromIndex ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.15 Array.prototype.lastIndexOf ( searchElement [ , fromIndex ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.16 Array.prototype.every ( callbackfn [ , thisArg ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.17 Array.prototype.some ( callbackfn [ , thisArg ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.18 Array.prototype.forEach ( callbackfn [ , thisArg ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.19 Array.prototype.map ( callbackfn [ , thisArg ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.20 Array.prototype.filter ( callbackfn [ , thisArg ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.21 Array.prototype.reduce ( callbackfn [ , initialValue ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.4.22 Array.prototype.reduceRight ( callbackfn [ , initialValue ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.4.5 Properties of Array Instances</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.4.5.1 [[DefineOwnProperty]] ( P, Desc, Throw )</td> <td class="level full">✓</td> <td class="comment">Automatycznie aktualizuje length, jeśli P jest liczbą</td></tr>
+      <tr><td>15.4.5.2 length</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5 String Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.5.1 The String Constructor Called as a Function</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.1.1 String ( [ value ] )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.5.2 The String Constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.2.1 new String ( [ value ] )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.5.3 Properties of the String Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.5.3.1 String.prototype</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.3.2 String.fromCharCode ( [ char0 [ , char1 [ , &#8230; ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4 Properties of the String Prototype Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.1 String.prototype.constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.2 String.prototype.toString ( )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.3 String.prototype.valueOf ( )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.4 String.prototype.charAt (pos)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.5 String.prototype.charCodeAt (pos)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.6 String.prototype.concat ( [ string1 [ , string2 [ , &#8230; ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.7 String.prototype.indexOf (searchString, position)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.8 String.prototype.lastIndexOf (searchString, position)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.9 String.prototype.localeCompare (that)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.10 String.prototype.match (regexp)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.11 String.prototype.replace (searchValue, replaceValue)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.12 String.prototype.search (regexp)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.13 String.prototype.slice (start, end)</td> <td class="level part">~</td> <td class="comment">Brak obsługi parametru end</td></tr>
+      <tr><td>15.5.4.14 String.prototype.split (separator, limit)</td> <td class="level part">~</td> <td class="comment">Brak obsługi parametru limit</td></tr>
+      <tr><td>15.5.4.15 String.prototype.substring (start, end)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.16 String.prototype.toLowerCase ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.17 String.prototype.toLocaleLowerCase ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.18 String.prototype.toUpperCase ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.19 String.prototype.toLocaleUpperCase ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.4.20 String.prototype.trim ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.5.5 Properties of String Instances</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.5.5.1 length</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.5.5.2 [[GetOwnProperty]] ( P )</td> <td class="level none">✗</td> <td class="comment">Dostęp do znaków za pomocą [indeks]</td></tr>
+      <tr><td>15.6 Boolean Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.6.1 The Boolean Constructor Called as a Function</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.6.1.1 Boolean (value)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.6.2 The Boolean Constructor</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.6.2.1 new Boolean (value)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.6.3 Properties of the Boolean Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.6.3.1 Boolean.prototype</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.6.4 Properties of the Boolean Prototype Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.6.4.1 Boolean.prototype.constructor</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.6.4.2 Boolean.prototype.toString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.6.4.3 Boolean.prototype.valueOf ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.6.5 Properties of Boolean Instances</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.7 Number Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.7.1 The Number Constructor Called as a Function</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.1.1 Number ( [ value ] )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.7.2 The Number Constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.7.2.1 new Number ( [ value ] )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.7.3 Properties of the Number Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.7.3.1 Number.prototype</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.7.3.2 Number.MAX_VALUE</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.3.3 Number.MIN_VALUE</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.3.4 Number.NaN</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.3.5 Number.NEGATIVE_INFINITY</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.3.6 Number.POSITIVE_INFINITY</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.4 Properties of the Number Prototype Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.7.4.1 Number.prototype.constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.7.4.2 Number.prototype.toString ( [ radix ] )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.7.4.3 Number.prototype.toLocaleString()</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.4.4 Number.prototype.valueOf ( )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.7.4.5 Number.prototype.toFixed (fractionDigits)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.4.6 Number.prototype.toExponential (fractionDigits)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.4.7 Number.prototype.toPrecision (precision)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.7.5 Properties of Number Instances</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.8 The Math Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.8.1 Value Properties of the Math Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.8.1.1 E</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.1.2 LN10</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.1.3 LN2</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.1.4 LOG2E</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.1.5 LOG10E</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.1.6 PI</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.1.7 SQRT1_2</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.1.8 SQRT2</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2 Function Properties of the Math Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.1 abs (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.2 acos (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.3 asin (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.4 atan (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.5 atan2 (y, x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.6 ceil (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.7 cos (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.8 exp (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.9 floor (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.10 log (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.11 max ( [ value1 [ , value2 [ , &#8230; ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.12 min ( [ value1 [ , value2 [ , &#8230; ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.13 pow (x, y)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.14 random ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.15 round (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.16 sin (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.17 sqrt (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.8.2.18 tan (x)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9 Date Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.9.1 Overview of Date Objects and Definitions of Abstract Operators</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.1 Time Values and Time Range</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.2 Day Number and Time within Day</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.3 Year Number</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.4 Month Number</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.5 Date Number</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.6 Week Day</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.7 Local Time Zone Adjustment</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.8 Daylight Saving Time Adjustment</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.9 Local Time</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.10 Hours, Minutes, Second, and Milliseconds</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.11 MakeTime (hour, min, sec, ms)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.12 MakeDay (year, month, date)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.13 MakeDate (day, time)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.14 TimeClip (time)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.15 Date Time String Format</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.1.15.1 Extended years</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.2 The Date Constructor Called as a Function</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.9.2.1 Date ( [ year [, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.3 The Date Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.9.3.1 new Date (year, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.3.2 new Date (value)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.3.3 new Date ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.4 Properties of the Date Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.9.4.1 Date.prototype</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.4.2 Date.parse (string)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.4.3 Date.UTC (year, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.4.4 Date.now ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5 Properties of the Date Prototype Object</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.1 Date.prototype.constructor</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.2 Date.prototype.toString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.3 Date.prototype.toDateString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.4 Date.prototype.toTimeString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.5 Date.prototype.toLocaleString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.6 Date.prototype.toLocaleDateString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.7 Date.prototype.toLocaleTimeString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.8 Date.prototype.valueOf ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.9 Date.prototype.getTime ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.10 Date.prototype.getFullYear ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.11 Date.prototype.getUTCFullYear ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.12 Date.prototype.getMonth ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.13 Date.prototype.getUTCMonth ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.14 Date.prototype.getDate ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.15 Date.prototype.getUTCDate ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.16 Date.prototype.getDay ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.17 Date.prototype.getUTCDay ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.18 Date.prototype.getHours ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.19 Date.prototype.getUTCHours ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.20 Date.prototype.getMinutes ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.21 Date.prototype.getUTCMinutes ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.22 Date.prototype.getSeconds ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.23 Date.prototype.getUTCSeconds ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.24 Date.prototype.getMilliseconds ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.25 Date.prototype.getUTCMilliseconds ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.26 Date.prototype.getTimezoneOffset ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.27 Date.prototype.setTime (time)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.28 Date.prototype.setMilliseconds (ms)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.29 Date.prototype.setUTCMilliseconds (ms)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.30 Date.prototype.setSeconds (sec [, ms ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.31 Date.prototype.setUTCSeconds (sec [, ms ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.32 Date.prototype.setMinutes (min [, sec [, ms ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.33 Date.prototype.setUTCMinutes (min [, sec [, ms ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.34 Date.prototype.setHours (hour [, min [, sec [, ms ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.35 Date.prototype.setUTCHours (hour [, min [, sec [, ms ] ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.36 Date.prototype.setDate (date)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.37 Date.prototype.setUTCDate (date)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.38 Date.prototype.setMonth (month [, date ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.39 Date.prototype.setUTCMonth (month [, date ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.40 Date.prototype.setFullYear (year [, month [, date ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.41 Date.prototype.setUTCFullYear (year [, month [, date ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.42 Date.prototype.toUTCString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.43 Date.prototype.toISOString ( )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.5.44 Date.prototype.toJSON ( key )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.9.6 Properties of Date Instances</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10 RegExp (Regular Expression) Objects</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.1 Patterns</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2 Pattern Semantics</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.1 Notation</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.2 Pattern</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.3 Disjunction</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.4 Alternative</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.5 Term</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.6 Assertion</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.7 Quantifier</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.8 Atom</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.9 AtomEscape</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.10 CharacterEscape</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.11 DecimalEscape</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.12 CharacterClassEscape</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.13 CharacterClass</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.14 ClassRanges</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.15 NonemptyClassRanges</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.16 NonemptyClassRangesNoDash</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.17 ClassAtom</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.18 ClassAtomNoDash</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.2.19 ClassEscape</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.3 The RegExp Constructor Called as a Function</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.3.1 RegExp(pattern, flags)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.4 The RegExp Constructor</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.4.1 new RegExp(pattern, flags)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.5 Properties of the RegExp Constructor</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.5.1 RegExp.prototype</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.6 Properties of the RegExp Prototype Object</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.6.1 RegExp.prototype.constructor</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.6.2 RegExp.prototype.exec(string)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.6.3 RegExp.prototype.test(string)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.6.4 RegExp.prototype.toString()</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.7 Properties of RegExp Instances</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.7.1 source</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.7.2 global</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.7.3 ignoreCase</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.7.4 multiline</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.10.7.5 lastIndex</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.11 Error Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.1 The Error Constructor Called as a Function</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.1.1 Error (message)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.11.2 The Error Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.2.1 new Error (message)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.3 Properties of the Error Constructor</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.3.1 Error.prototype</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.4 Properties of the Error Prototype Object</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.4.1 Error.prototype.constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.4.2 Error.prototype.name</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.4.3 Error.prototype.message</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.4.4 Error.prototype.toString ( )</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.5 Properties of Error Instances</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.6 Native Error Types Used in This Standard</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.6.1 EvalError</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.11.6.2 RangeError</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.11.6.3 ReferenceError</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.6.4 SyntaxError</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.11.6.5 TypeError</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.6.6 URIError</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.11.7 NativeError Object Structure</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.1 NativeError Constructors Called as Functions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.2 NativeError (message)</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.3 The NativeError Constructors</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.4 new NativeError (message)</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.5 Properties of the NativeError Constructors</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.6 NativeError.prototype</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.7 Properties of the NativeError Prototype Objects</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.8 NativeError.prototype.constructor</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.9 NativeError.prototype.name</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.10 NativeError.prototype.message</td> <td class="level full">✓</td> <td class="comment"></td></tr>
+      <tr><td>15.11.7.11 Properties of NativeError Instances</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>15.12 The JSON Object</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.12.1 The JSON Grammar</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.12.1.1 The JSON Lexical Grammar</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.12.1.2 The JSON Syntactic Grammar</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.12.2 parse ( text [ , reviver ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <tr><td>15.12.3 stringify ( value [ , replacer [ , space ] ] )</td> <td class="level none">✗</td> <td class="comment"></td></tr>
+      <!-- <tr><td>16 Errors</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>Annex A  (informative)  Grammar Summary</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.1 Lexical Grammar</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.2 Number Conversions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.3 Expressions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.4 Statements</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.5 Functions and Programs</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.6 Universal Resource Identifier Character Classes</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.7 Regular Expressions</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.8 JSON</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.8.1 JSON Lexical Grammar</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>A.8.2 JSON Syntactic Grammar</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>Annex B  (informative)  Compatibility</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.1 Additional Syntax</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.1.1 Numeric Literals</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.1.2 String Literals</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.2 Additional Properties</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.2.1 escape (string)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.2.2 unescape (string)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.2.3 String.prototype.substr (start, length)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.2.4 Date.prototype.getYear ( )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.2.5 Date.prototype.setYear (year)</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>B.2.6 Date.prototype.toGMTString ( )</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>Annex C  (informative)  The Strict Mode of ECMAScript</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>Annex D  (informative)  Corrections and Clarifications in the 5th Edition with Possible 3rd Edition Compatibility Impact</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>Annex E  (informative)  Additions and Changes in the 5th Edition that Introduce Incompatibilities with the 3rd Edition</td> <td class="level"></td> <td class="comment"></td></tr>
+      <tr><td>Annex F  (informative)  Technically Significant Corrections and Clarifications in the 5.1 Edition</td> <td class="level"></td> <td class="comment"></td></tr> -->
+    </table>
+  </body>
+</html>
