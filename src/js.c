@@ -1187,6 +1187,7 @@ void js_create_native_objects(JSEnv* env) {
     JSValue function_prototype = js_construct_object_value(env);
     js_gc_save_object(env, function_constructor.as.object);
     js_set_property(env, function_constructor, js_string_value_from_cstring("prototype"), function_prototype);
+    js_set_property(env, function_prototype, js_string_value_from_cstring("constructor"), function_constructor);
     js_set_property(env, global, js_string_value_from_cstring("Function"), function_constructor);
     js_set_property(env, function_prototype, js_string_value_from_cstring("call"),
         js_construct_function_object_value(env, &js_function_prototype_call, NULL));
