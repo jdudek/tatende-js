@@ -2,7 +2,7 @@
 
 A toy compiler for a subset of JavaScript.
 
-You can read [annotated source](http://jdudek.github.com/tatende-js/).
+You can read [annotated source](http://jdudek.github.com/tatende-js/) (incomplete).
 
 ## Requirements
 
@@ -20,12 +20,8 @@ You'll need ECMAScript test suite which is available from Mercurial repository.
 
 * Is it useful?
 
-No.
+Not really.
 
 * Does it work?
 
-Not yet.
-
-* Can I contribute?
-
-No. It's a project for a course at my Uni, so I cannot accept contributions, at least for now.
+It's able to compile itself.
