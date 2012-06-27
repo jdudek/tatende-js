@@ -2,11 +2,12 @@
 
 <span class="nx">exports</span><span class="p">.</span><span class="nx">compile</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">ast</span><span class="p">)</span> <span class="p">{</span>
   <span class="kd">var</span> <span class="nx">functions</span> <span class="o">=</span> <span class="p">[];</span>
+  <span class="kd">var</span> <span class="nx">breakLabel</span><span class="p">;</span>
 
   <span class="kd">var</span> <span class="nx">unique</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
     <span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
     <span class="k">return</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="o">++</span><span class="nx">i</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nx">i</span><span class="o">++</span><span class="p">;</span>
     <span class="p">};</span>
   <span class="p">}();</span>
 
@@ -19,15 +20,9 @@
       <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
     <span class="p">}</span>
 
-    <span class="k">switch</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">constructor</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>When we reach this place, we've already splitted var statements with assignment
-into var statement and assignment statement.</p>             </td>             <td class="code">               <div class="highlight"><pre>      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">VarStatement</span><span class="o">:</span>
-        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">declarations</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">declaration</span><span class="p">)</span> <span class="p">{</span>
-          <span class="k">return</span> <span class="s2">&quot;binding = dict_insert(binding, &quot;</span> <span class="o">+</span>
-            <span class="nx">quotes</span><span class="p">(</span><span class="nx">declaration</span><span class="p">.</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, js_create_variable(js_new_undefined()));&quot;</span><span class="p">;</span>
-        <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">);</span>
-
+    <span class="k">switch</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">constructor</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ReturnStatement</span><span class="o">:</span>
-        <span class="k">return</span> <span class="s2">&quot;return &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;;&quot;</span><span class="p">;</span>
+        <span class="k">return</span> <span class="s2">&quot;ret = &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;; goto end;&quot;</span><span class="p">;</span>
 
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ExpressionStatement</span><span class="o">:</span>
         <span class="k">return</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;;&quot;</span><span class="p">;</span>
@@ -40,20 +35,21 @@ into var statement and assignment statement.</p>             </td>             <
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ForStatement</span><span class="o">:</span>
         <span class="k">return</span> <span class="p">[</span>
           <span class="nx">node</span><span class="p">.</span><span class="nx">initial</span><span class="p">(),</span>
-          <span class="nx">AST</span><span class="p">.</span><span class="nx">WhileStatement</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">condition</span><span class="p">(),</span> <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">concat</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">finalize</span><span class="p">()))</span>
+          <span class="nx">AST</span><span class="p">.</span><span class="nx">WhileStatement</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">condition</span><span class="p">(),</span> <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">concat</span><span class="p">([</span><span class="nx">node</span><span class="p">.</span><span class="nx">finalize</span><span class="p">()]))</span>
         <span class="p">].</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">);</span>
 
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ForInStatement</span><span class="o">:</span>
         <span class="k">return</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span>
-            <span class="s2">&quot;JSValue* object = js_to_object(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">object</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;);\n&quot;</span> <span class="o">+</span>
-            <span class="s2">&quot;Dict property = NULL;\n&quot;</span> <span class="o">+</span>
-            <span class="s2">&quot;if (object-&gt;object_value) property = object-&gt;object_value-&gt;properties;\n&quot;</span> <span class="o">+</span>
-            <span class="s2">&quot;while (object &amp;&amp; object-&gt;object_value &amp;&amp; property) {\n&quot;</span><span class="o">+</span>
-              <span class="s2">&quot;js_assign_variable(env, binding, &quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span>
-                <span class="s2">&quot;, js_new_string(property-&gt;key));\n&quot;</span> <span class="o">+</span>
-              <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span>
-              <span class="s2">&quot;property = property-&gt;next;\n&quot;</span> <span class="o">+</span>
-              <span class="s2">&quot;if (property == NULL) { object = object-&gt;object_value-&gt;prototype; if (object) { property = object-&gt;object_value-&gt;properties; } };\n&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;JSObject* object = js_to_object(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">object</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;).as.object;\n&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;while (object) {\n&quot;</span><span class="o">+</span>
+              <span class="s2">&quot;int i = 0;\n&quot;</span> <span class="o">+</span>
+              <span class="s2">&quot;while (i &lt; object-&gt;properties_count) {\n&quot;</span> <span class="o">+</span>
+                <span class="s2">&quot;js_assign_variable(env, binding, string_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;),&quot;</span> <span class="o">+</span>
+                  <span class="s2">&quot;js_string_value_from_string(object-&gt;properties[i].key));\n&quot;</span> <span class="o">+</span>
+                <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span>
+                <span class="s2">&quot;i++;\n&quot;</span> <span class="o">+</span>
+              <span class="s2">&quot;}\n&quot;</span> <span class="o">+</span>
+              <span class="s2">&quot;object = object-&gt;prototype;\n&quot;</span> <span class="o">+</span>
             <span class="s2">&quot;}&quot;</span> <span class="o">+</span>
           <span class="s2">&quot;}&quot;</span><span class="p">;</span>
 
@@ -67,6 +63,12 @@ into var statement and assignment statement.</p>             </td>             <
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ThrowStatement</span><span class="o">:</span>
         <span class="k">return</span> <span class="s2">&quot;js_throw(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;);&quot;</span><span class="p">;</span>
 
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">SwitchStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">switchStatement</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">BreakStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="s2">&quot;goto &quot;</span> <span class="o">+</span> <span class="nx">breakLabel</span> <span class="o">+</span> <span class="s2">&quot;;&quot;</span><span class="p">;</span>
+
       <span class="k">default</span><span class="o">:</span>
         <span class="k">throw</span> <span class="s2">&quot;Incorrect AST&quot;</span><span class="p">;</span>
     <span class="p">}</span>
@@ -74,9 +76,12 @@ into var statement and assignment statement.</p>             </td>             <
 
   <span class="kd">var</span> <span class="nx">tryStatement</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
     <span class="kd">var</span> <span class="nx">toCFunction</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">statements</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="s2">&quot;JSValue* &quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;(JSEnv* env, JSValue* this, Dict binding) {\n&quot;</span> <span class="o">+</span>
+      <span class="k">return</span> <span class="s2">&quot;JSValue &quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;(JSEnv* env, JSValue this, JSObject* binding, int* returned) {\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;JSValue ret = js_new_undefined();\n&quot;</span> <span class="o">+</span>
         <span class="nx">statements</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">)</span> <span class="o">+</span>
-        <span class="s2">&quot;return NULL;\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;*returned = 0;\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;end:\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;return ret;\n&quot;</span> <span class="o">+</span>
         <span class="s2">&quot;}&quot;</span><span class="p">;</span>
     <span class="p">};</span>
 
@@ -98,18 +103,48 @@ into var statement and assignment statement.</p>             </td>             <
     <span class="k">return</span> <span class="s2">&quot;{\n&quot;</span> <span class="o">+</span>
       <span class="s2">&quot;JSException* exc = js_push_new_exception(env);\n&quot;</span> <span class="o">+</span>
       <span class="s2">&quot;if (!setjmp(exc-&gt;jmp)) { &quot;</span> <span class="o">+</span>
-        <span class="s2">&quot;JSValue* ret = &quot;</span> <span class="o">+</span> <span class="nx">tryFunc</span> <span class="o">+</span> <span class="s2">&quot;(env, this, binding);\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;int returned = 1, finally_returned = 0;\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;JSValue inner_ret = &quot;</span> <span class="o">+</span> <span class="nx">tryFunc</span> <span class="o">+</span> <span class="s2">&quot;(env, this, binding, &amp;returned);\n&quot;</span> <span class="o">+</span>
         <span class="s2">&quot;js_pop_exception(env);\n&quot;</span> <span class="o">+</span>
-        <span class="nx">finallyFunc</span> <span class="o">+</span> <span class="s2">&quot;(env, this, binding);\n&quot;</span> <span class="o">+</span>
-        <span class="s2">&quot;if (ret) return ret;\n&quot;</span> <span class="o">+</span>
+        <span class="nx">finallyFunc</span> <span class="o">+</span> <span class="s2">&quot;(env, this, binding, &amp;finally_returned);\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;if (returned) { ret = inner_ret; goto end; }\n&quot;</span> <span class="o">+</span>
       <span class="s2">&quot;} else {\n&quot;</span> <span class="o">+</span>
-        <span class="s2">&quot;JSVariable exc_variable = js_create_variable((JSValue *) exc-&gt;value);\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;int returned = 1, finally_returned = 0;\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;JSObject* catch_binding = object_new(binding);\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;object_add_property(catch_binding, string_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">catchIdentifier</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;), exc-&gt;value);\n&quot;</span> <span class="o">+</span>
         <span class="s2">&quot;js_pop_exception(env);\n&quot;</span> <span class="o">+</span>
-        <span class="s2">&quot;JSValue* ret = &quot;</span> <span class="o">+</span> <span class="nx">catchFunc</span> <span class="o">+</span> <span class="s2">&quot;(env, this, dict_insert(binding, &quot;</span> <span class="o">+</span>
-          <span class="nx">quotes</span><span class="p">(</span><span class="nx">catchIdentifier</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, exc_variable));\n&quot;</span> <span class="o">+</span>
-        <span class="nx">finallyFunc</span> <span class="o">+</span> <span class="s2">&quot;(env, this, binding);\n&quot;</span> <span class="o">+</span>
-        <span class="s2">&quot;if (ret) return ret;\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;JSValue inner_ret = &quot;</span> <span class="o">+</span> <span class="nx">catchFunc</span> <span class="o">+</span> <span class="s2">&quot;(env, this, catch_binding, &amp;returned);\n&quot;</span> <span class="o">+</span>
+        <span class="nx">finallyFunc</span> <span class="o">+</span> <span class="s2">&quot;(env, this, binding, &amp;finally_returned);\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;if (returned) { ret = inner_ret; goto end; }\n&quot;</span> <span class="o">+</span>
       <span class="s2">&quot;}\n}\n&quot;</span><span class="p">;</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">switchStatement</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">name</span> <span class="o">=</span> <span class="s2">&quot;switch_&quot;</span> <span class="o">+</span> <span class="nx">unique</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">switchEnd</span> <span class="o">=</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;_end&quot;</span><span class="p">;</span>
+    <span class="nx">breakLabel</span> <span class="o">=</span> <span class="nx">switchEnd</span><span class="p">;</span>
+    <span class="nx">node</span><span class="p">.</span><span class="nx">clauses</span><span class="p">().</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">clause</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span> <span class="p">{</span> <span class="nx">clause</span><span class="p">.</span><span class="nx">index</span> <span class="o">=</span> <span class="nx">i</span><span class="p">;</span> <span class="p">});</span>
+    <span class="kd">var</span> <span class="nx">conditions</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">clauses</span><span class="p">().</span><span class="nx">filter</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">clause</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="nx">clause</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">CaseClause</span><span class="p">;</span>
+    <span class="p">}).</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">clause</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s2">&quot;if (js_strict_eq(env, switch_value, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">clause</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;).as.boolean) &quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;{ goto &quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nx">clause</span><span class="p">.</span><span class="nx">index</span> <span class="o">+</span> <span class="s2">&quot;; }\n&quot;</span><span class="p">;</span>
+    <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot; else &quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; else { goto &quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;_default; }&quot;</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">statements</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">clauses</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">clause</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">var</span> <span class="nx">clauseName</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">clause</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">CaseClause</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">clauseName</span> <span class="o">=</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nx">clause</span><span class="p">.</span><span class="nx">index</span><span class="p">;</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">clauseName</span> <span class="o">=</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;_default&quot;</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="nx">clauseName</span> <span class="o">+</span> <span class="s2">&quot;:;\n&quot;</span> <span class="o">+</span> <span class="nx">clause</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\n&quot;</span><span class="p">;</span>
+    <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\n&quot;</span><span class="p">;</span>
+    <span class="k">return</span> <span class="s2">&quot;{\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;JSValue switch_value = &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;;\n&quot;</span> <span class="o">+</span>
+        <span class="nx">conditions</span> <span class="o">+</span> <span class="s2">&quot;;\n&quot;</span><span class="o">+</span>
+        <span class="nx">statements</span> <span class="o">+</span> <span class="s2">&quot;;\n&quot;</span><span class="o">+</span>
+        <span class="nx">switchEnd</span> <span class="o">+</span> <span class="s2">&quot;:;\n&quot;</span><span class="o">+</span>
+      <span class="s2">&quot;}&quot;</span><span class="p">;</span>
   <span class="p">};</span>
 
   <span class="kd">var</span> <span class="nx">escapeCString</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">str</span><span class="p">)</span> <span class="p">{</span>
@@ -129,7 +164,7 @@ into var statement and assignment statement.</p>             </td>             <
         <span class="k">return</span> <span class="s2">&quot;js_new_number(&quot;</span> <span class="o">+</span> <span class="nx">node</span><span class="p">.</span><span class="nx">number</span><span class="p">().</span><span class="nx">toString</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
 
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="o">:</span>
-        <span class="k">return</span> <span class="s2">&quot;js_new_string(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">escapeCString</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">string</span><span class="p">()))</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+        <span class="k">return</span> <span class="s2">&quot;js_string_value_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">escapeCString</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">string</span><span class="p">()))</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
 
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">BooleanLiteral</span><span class="o">:</span>
         <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">value</span><span class="p">())</span> <span class="p">{</span>
@@ -154,7 +189,7 @@ into var statement and assignment statement.</p>             </td>             <
         <span class="k">return</span> <span class="s2">&quot;js_new_null()&quot;</span><span class="p">;</span>
 
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Variable</span><span class="o">:</span>
-        <span class="k">return</span> <span class="s2">&quot;js_get_variable_rvalue(env, binding, &quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+        <span class="k">return</span> <span class="s2">&quot;js_get_variable_rvalue(env, binding, string_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;))&quot;</span><span class="p">;</span>
 
       <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ThisVariable</span><span class="o">:</span>
         <span class="k">return</span> <span class="s2">&quot;this&quot;</span><span class="p">;</span>
@@ -188,47 +223,74 @@ into var statement and assignment statement.</p>             </td>             <
   <span class="p">};</span>
 
   <span class="kd">var</span> <span class="nx">objectLiteral</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="s2">&quot;js_new_object(env, &quot;</span> <span class="o">+</span>
-      <span class="nx">node</span><span class="p">.</span><span class="nx">pairs</span><span class="p">().</span><span class="nx">reduce</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">acc</span><span class="p">,</span> <span class="nx">property</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="s2">&quot;dict_insert(&quot;</span> <span class="o">+</span> <span class="nx">acc</span> <span class="o">+</span> <span class="s2">&quot;, \&quot;&quot;</span> <span class="o">+</span> <span class="nx">property</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;\&quot;, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">property</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
-      <span class="p">},</span> <span class="s2">&quot;dict_create()&quot;</span><span class="p">)</span> <span class="o">+</span>
-    <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">pairs</span><span class="p">().</span><span class="nx">reduce</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">acc</span><span class="p">,</span> <span class="nx">property</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s2">&quot;js_add_property(env, &quot;</span> <span class="o">+</span> <span class="nx">acc</span> <span class="o">+</span> <span class="s2">&quot;, js_string_value_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">property</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;), &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">property</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+    <span class="p">},</span> <span class="s2">&quot;js_construct_object_value(env)&quot;</span><span class="p">);</span>
   <span class="p">};</span>
 
   <span class="kd">var</span> <span class="nx">arrayLiteral</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">AST</span><span class="p">.</span><span class="nx">UnaryOp</span><span class="p">(</span><span class="s2">&quot;new&quot;</span><span class="p">,</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Invocation</span><span class="p">(</span><span class="nx">AST</span><span class="p">.</span><span class="nx">Variable</span><span class="p">(</span><span class="s2">&quot;Array&quot;</span><span class="p">),</span> <span class="nx">node</span><span class="p">.</span><span class="nx">items</span><span class="p">())));</span>
-  <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Utility function to create C list from array of strings</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">toCList</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">array</span><span class="p">)</span> <span class="p">{</span>
+  <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Utility function to create C list from array of strings</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">toCList</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">array</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nx">array</span><span class="p">.</span><span class="nx">reduceRight</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">acc</span><span class="p">,</span> <span class="nx">item</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">return</span> <span class="s2">&quot;list_insert(&quot;</span> <span class="o">+</span> <span class="nx">acc</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="nx">item</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
     <span class="p">},</span> <span class="s2">&quot;list_create()&quot;</span><span class="p">);</span>
   <span class="p">};</span>
 
   <span class="kd">var</span> <span class="nx">functionLiteral</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">reorderVarStatements</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
     <span class="kd">var</span> <span class="nx">name</span> <span class="o">=</span> <span class="s2">&quot;fun_&quot;</span> <span class="o">+</span> <span class="nx">unique</span><span class="p">();</span>
-    <span class="kd">var</span> <span class="nx">body</span> <span class="o">=</span> <span class="nx">reorderVarStatements</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">()).</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">argNames</span> <span class="o">=</span> <span class="nx">toCList</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">a</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="s1">&#39;&quot;&#39;</span> <span class="o">+</span> <span class="nx">a</span> <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">;</span> <span class="p">}));</span>
-    <span class="kd">var</span> <span class="nx">buildArgumentsObject</span> <span class="o">=</span> <span class="s2">&quot;binding = dict_insert(binding, \&quot;arguments\&quot;, js_create_variable(&quot;</span> <span class="o">+</span>
-      <span class="s2">&quot;js_invoke_constructor(env, &quot;</span><span class="o">+</span>
-        <span class="s2">&quot;js_get_property(env, env-&gt;global, js_new_string(\&quot;Array\&quot;)), &quot;</span><span class="o">+</span>
-        <span class="s2">&quot;argValues)&quot;</span><span class="o">+</span>
-      <span class="s2">&quot;));&quot;</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">body</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">);</span>
+
+    <span class="kd">var</span> <span class="nx">argumentsObjectDefinition</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">))</span> <span class="p">{</span>
+      <span class="nx">argumentsObjectDefinition</span> <span class="o">=</span> <span class="s2">&quot;object_add_property(binding, string_from_cstring(\&quot;arguments\&quot;), &quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;js_invoke_constructor(env, &quot;</span><span class="o">+</span>
+          <span class="s2">&quot;js_get_property(env, env-&gt;global, js_string_value_from_cstring(\&quot;Array\&quot;)), &quot;</span><span class="o">+</span>
+          <span class="s2">&quot;stack_count)&quot;</span><span class="o">+</span>
+        <span class="s2">&quot;); env-&gt;call_stack_count += stack_count;&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kd">var</span> <span class="nx">argumentsDefinition</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">argName</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s2">&quot;if (stack_count &gt; &quot;</span> <span class="o">+</span> <span class="nx">i</span> <span class="o">+</span> <span class="s2">&quot;) { &quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;object_add_property(binding, string_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">argName</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;), JS_CALL_STACK_ITEM(&quot;</span> <span class="o">+</span> <span class="nx">i</span> <span class="o">+</span> <span class="s2">&quot;));&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;} else { &quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;object_add_property(binding, string_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">argName</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;), js_new_undefined());&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;}&quot;</span><span class="p">;</span>
+    <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\nJS_CALL_STACK_POP;&quot;</span><span class="p">;</span>
+
+    <span class="kd">var</span> <span class="nx">localDeclarations</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">localVariables</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">identifier</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s2">&quot;object_add_property(binding, string_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">identifier</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;), js_new_undefined());&quot;</span><span class="p">;</span>
+    <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">);</span>
 
     <span class="kd">var</span> <span class="nx">cFunction</span> <span class="o">=</span>
-      <span class="s2">&quot;JSValue* &quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;(JSEnv* env, JSValue* this, List argValues, Dict binding) {\n&quot;</span> <span class="o">+</span>
-        <span class="s2">&quot;List argNames = &quot;</span> <span class="o">+</span> <span class="nx">argNames</span> <span class="o">+</span> <span class="s2">&quot;;\n&quot;</span> <span class="o">+</span>
-        <span class="nx">buildArgumentsObject</span> <span class="o">+</span> <span class="s2">&quot;\n&quot;</span> <span class="o">+</span>
-        <span class="s2">&quot;binding = js_append_args_to_binding(argNames, argValues, binding);\n&quot;</span> <span class="o">+</span>
+      <span class="s2">&quot;JSValue &quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;(JSEnv* env, JSValue this, int stack_count, JSObject* parent_binding) {\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;JSObject* binding = object_new(parent_binding);\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;js_gc_save_object(env, binding);\n&quot;</span> <span class="o">+</span>
+        <span class="nx">argumentsObjectDefinition</span> <span class="o">+</span> <span class="s2">&quot;\n&quot;</span> <span class="o">+</span>
+        <span class="nx">argumentsDefinition</span> <span class="o">+</span> <span class="s2">&quot;\n&quot;</span> <span class="o">+</span>
+        <span class="nx">localDeclarations</span> <span class="o">+</span> <span class="s2">&quot;\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;JSValue ret = js_new_undefined();\n&quot;</span> <span class="o">+</span>
         <span class="nx">body</span> <span class="o">+</span>
-        <span class="s2">&quot;return js_new_undefined();\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;end:\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;if (js_gc_should_run(env)) {\n&quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;if (this.type == TypeObject &amp;&amp; ret.type == TypeObject) {&quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;js_gc_run(env, env-&gt;global.as.object, parent_binding, this.as.object, ret.as.object, NULL);\n&quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;} else if (this.type == TypeObject) { &quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;js_gc_run(env, env-&gt;global.as.object, parent_binding, this.as.object, NULL);\n&quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;} else if (ret.type == TypeObject) { &quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;js_gc_run(env, env-&gt;global.as.object, parent_binding, ret.as.object, NULL);\n&quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;} else { &quot;</span> <span class="o">+</span>
+            <span class="s2">&quot;js_gc_run(env, env-&gt;global.as.object, parent_binding, NULL);\n&quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;}&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;}\n&quot;</span> <span class="o">+</span>
+        <span class="s2">&quot;return ret;\n&quot;</span> <span class="o">+</span>
       <span class="s2">&quot;}\n&quot;</span><span class="p">;</span>
     <span class="nx">functions</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">cFunction</span><span class="p">);</span>
-    <span class="k">return</span> <span class="s2">&quot;js_new_function(env, &amp;&quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;, binding)&quot;</span><span class="p">;</span>
-  <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Traverse list of nodes and move all var statements to the top.
-When var statement also assigns value, create new assign statement,
-but still move variable declaration to the top.
-Please note this function will modify the tree in-place.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">reorderVarStatements</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nodes</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">var</span> <span class="nx">identifiers</span> <span class="o">=</span> <span class="p">[];</span>
-
+    <span class="k">return</span> <span class="s2">&quot;js_construct_function_object_value(env, &amp;&quot;</span> <span class="o">+</span> <span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;, binding)&quot;</span><span class="p">;</span>
+  <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Traverse function statements and move all declared variables to node's
+localVariables property.
+When var statement also assigns value, create new assign statement.
+Please note this function will modify the tree in-place.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">reorderVarStatements</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">functionNode</span><span class="p">)</span> <span class="p">{</span>
     <span class="kd">var</span> <span class="nx">visit</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nodes</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
         <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="nx">nodes</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
@@ -236,7 +298,7 @@ Please note this function will modify the tree in-place.</p>             </td>  
 
         <span class="kd">var</span> <span class="nx">convertVarStatement</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
           <span class="nx">node</span><span class="p">.</span><span class="nx">declarations</span><span class="p">().</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">declaration</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">identifiers</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">declaration</span><span class="p">.</span><span class="nx">identifier</span><span class="p">());</span>
+            <span class="nx">functionNode</span><span class="p">.</span><span class="nx">addLocalVariable</span><span class="p">(</span><span class="nx">declaration</span><span class="p">.</span><span class="nx">identifier</span><span class="p">());</span>
             <span class="k">if</span> <span class="p">(</span><span class="nx">declaration</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">VarWithValueDeclaration</span><span class="p">)</span> <span class="p">{</span>
               <span class="nx">assignments</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span>
                 <span class="nx">AST</span><span class="p">.</span><span class="nx">BinaryOp</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">,</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Variable</span><span class="p">(</span><span class="nx">declaration</span><span class="p">.</span><span class="nx">identifier</span><span class="p">()),</span> <span class="nx">declaration</span><span class="p">.</span><span class="nx">expression</span><span class="p">()));</span>
@@ -251,6 +313,13 @@ Please note this function will modify the tree in-place.</p>             </td>  
 
         <span class="k">if</span> <span class="p">(</span><span class="nx">node</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">VarStatement</span><span class="p">)</span> <span class="p">{</span>
           <span class="nx">nodes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="nx">convertVarStatement</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">node</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">FunctionStatement</span><span class="p">)</span> <span class="p">{</span>
+          <span class="nx">nodes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="nx">convertVarStatement</span><span class="p">(</span><span class="nx">AST</span><span class="p">.</span><span class="nx">VarStatement</span><span class="p">([</span>
+            <span class="nx">AST</span><span class="p">.</span><span class="nx">VarWithValueDeclaration</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">name</span><span class="p">(),</span>
+              <span class="nx">AST</span><span class="p">.</span><span class="nx">FunctionLiteral</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">(),</span> <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">())</span>
+            <span class="p">)</span>
+          <span class="p">]));</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="p">(</span><span class="nx">node</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">IfStatement</span><span class="p">)</span> <span class="p">{</span>
           <span class="nx">visit</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">whenTruthy</span><span class="p">());</span>
@@ -274,23 +343,129 @@ Please note this function will modify the tree in-place.</p>             </td>  
         <span class="p">}</span>
       <span class="p">}</span>
     <span class="p">};</span>
-    <span class="nx">visit</span><span class="p">(</span><span class="nx">nodes</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>A utility function that modifies array and puts items before existing array items.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="kd">var</span> <span class="nx">prepend</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">array</span><span class="p">,</span> <span class="nx">items</span><span class="p">)</span> <span class="p">{</span>
-      <span class="nb">Array</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">splice</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="nx">array</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">].</span><span class="nx">concat</span><span class="p">(</span><span class="nx">items</span><span class="p">));</span>
-    <span class="p">};</span>
+    <span class="nx">visit</span><span class="p">(</span><span class="nx">functionNode</span><span class="p">.</span><span class="nx">statements</span><span class="p">());</span>
+  <span class="p">};</span>
 
-    <span class="nx">prepend</span><span class="p">(</span><span class="nx">nodes</span><span class="p">,</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">VarStatement</span><span class="p">(</span><span class="nx">identifiers</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">AST</span><span class="p">.</span><span class="nx">VarDeclaration</span><span class="p">)));</span>
-    <span class="k">return</span> <span class="nx">nodes</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">needsArgumentsObject</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">node</span> <span class="o">===</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">constructor</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">VarStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">declarations</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ReturnStatement</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ExpressionStatement</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ThrowStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">());</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">IfStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">condition</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">whenTruthy</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">)</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">whenFalsy</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ForStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">initial</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">condition</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">finalize</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ForInStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">object</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">WhileStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">condition</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">TryStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">tryStatements</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">)</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">catchStatements</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">)</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">finallyStatements</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">SwitchStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">clauses</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">CaseClause</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">DefaultClause</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">statements</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">BreakStatement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">NumberLiteral</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">BooleanLiteral</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">FunctionLiteral</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">UndefinedLiteral</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">NullLiteral</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ThisVariable</span><span class="o">:</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ObjectLiteral</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">pairs</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">pair</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span> <span class="p">});</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">ArrayLiteral</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">items</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Variable</span><span class="o">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">identifier</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;arguments&quot;</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Refinement</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">UnaryOp</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">PostIncrement</span><span class="o">:</span>
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">PostDecrement</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">());</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Invocation</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">BinaryOp</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">())</span> <span class="o">||</span>
+          <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">rightExpr</span><span class="p">());</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Comma</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">node</span><span class="p">.</span><span class="nx">expressions</span><span class="p">().</span><span class="nx">some</span><span class="p">(</span><span class="nx">needsArgumentsObject</span><span class="p">);</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">VarDeclaration</span><span class="o">:</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+
+      <span class="k">case</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">VarWithValueDeclaration</span><span class="o">:</span>
+        <span class="k">return</span> <span class="nx">needsArgumentsObject</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">());</span>
+
+      <span class="k">default</span><span class="o">:</span>
+        <span class="k">throw</span> <span class="s2">&quot;Incorrect AST&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">};</span>
+
+  <span class="kd">var</span> <span class="nx">withStackArgs</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">args</span><span class="p">,</span> <span class="nx">invocation</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">parts</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="nx">parts</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s2">&quot;js_check_call_stack_overflow(env, &quot;</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="nx">args</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">);</span>
+    <span class="nx">parts</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s2">&quot;js_call_stack_push(env, js_object_value_from_object(binding))&quot;</span><span class="p">);</span>
+    <span class="nx">parts</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s2">&quot;js_call_stack_push(env, this)&quot;</span><span class="p">);</span>
+    <span class="nx">args</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">arg</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">parts</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s2">&quot;js_call_stack_push(env, &quot;</span> <span class="o">+</span> <span class="nx">arg</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">);</span>
+    <span class="p">});</span>
+    <span class="nx">parts</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">invocation</span><span class="p">);</span>
+    <span class="k">return</span> <span class="s2">&quot;js_call_stack_pop_and_return(env, js_call_stack_pop_and_return(env, (&quot;</span> <span class="o">+</span> <span class="nx">parts</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;)))&quot;</span><span class="p">;</span>
   <span class="p">};</span>
 
   <span class="kd">var</span> <span class="nx">invocation</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">var</span> <span class="nx">argValues</span> <span class="o">=</span> <span class="nx">toCList</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">expression</span><span class="p">));</span>
+    <span class="kd">var</span> <span class="nx">args</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">expression</span><span class="p">);</span>
     <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">()</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Refinement</span><span class="p">)</span> <span class="p">{</span>
       <span class="kd">var</span> <span class="nx">object</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">().</span><span class="nx">expression</span><span class="p">();</span>
       <span class="kd">var</span> <span class="nx">key</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">().</span><span class="nx">key</span><span class="p">();</span>
-      <span class="k">return</span> <span class="s2">&quot;js_call_method(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">object</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span>
-        <span class="nx">expression</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="nx">argValues</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nx">withStackArgs</span><span class="p">(</span><span class="nx">args</span><span class="p">,</span>
+        <span class="s2">&quot;js_call_method(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">object</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span>
+        <span class="nx">expression</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="nx">args</span><span class="p">.</span><span class="nx">length</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+      <span class="p">);</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="s2">&quot;js_call_function(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, env-&gt;global, &quot;</span> <span class="o">+</span> <span class="nx">argValues</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nx">withStackArgs</span><span class="p">(</span><span class="nx">args</span><span class="p">,</span>
+        <span class="s2">&quot;js_call_function(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span>
+        <span class="s2">&quot;, env-&gt;global, &quot;</span> <span class="o">+</span> <span class="nx">args</span><span class="p">.</span><span class="nx">length</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+      <span class="p">);</span>
     <span class="p">}</span>
   <span class="p">};</span>
 
@@ -308,11 +483,11 @@ Please note this function will modify the tree in-place.</p>             </td>  
     <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">operator</span><span class="p">()</span> <span class="o">===</span> <span class="s2">&quot;=&quot;</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">()</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Variable</span><span class="p">)</span> <span class="p">{</span>
         <span class="k">return</span> <span class="s2">&quot;js_assign_variable(env, binding, &quot;</span> <span class="o">+</span>
-          <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">().</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span>
+          <span class="s2">&quot;string_from_cstring(&quot;</span> <span class="o">+</span> <span class="nx">quotes</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">().</span><span class="nx">identifier</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;), &quot;</span> <span class="o">+</span>
           <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">rightExpr</span><span class="p">())</span> <span class="o">+</span>
         <span class="s2">&quot;)&quot;</span><span class="p">;</span>
       <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">()</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Refinement</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="s2">&quot;js_set_object_property(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">().</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span>
+        <span class="k">return</span> <span class="s2">&quot;js_set_property(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">().</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span>
           <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">leftExpr</span><span class="p">().</span><span class="nx">key</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">rightExpr</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
       <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
         <span class="k">throw</span> <span class="s2">&quot;Invalid left-hand side in assignment&quot;</span><span class="p">;</span>
@@ -342,14 +517,17 @@ Please note this function will modify the tree in-place.</p>             </td>  
       <span class="k">case</span> <span class="s2">&quot;typeof&quot;</span><span class="o">:</span>
         <span class="k">return</span> <span class="s2">&quot;js_typeof(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
 
+      <span class="k">case</span> <span class="s2">&quot;void&quot;</span><span class="o">:</span>
+        <span class="k">return</span> <span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;, js_new_undefined())&quot;</span><span class="p">;</span>
+
       <span class="k">case</span> <span class="s2">&quot;!&quot;</span><span class="o">:</span>
-        <span class="k">return</span> <span class="s2">&quot;js_new_boolean(! js_to_boolean(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)-&gt;boolean_value)&quot;</span><span class="p">;</span>
+        <span class="k">return</span> <span class="s2">&quot;js_new_boolean(! js_to_boolean(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;).as.boolean)&quot;</span><span class="p">;</span>
 
       <span class="k">case</span> <span class="s2">&quot;+&quot;</span><span class="o">:</span>
-        <span class="k">return</span> <span class="s2">&quot;js_new_number(js_to_number(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)-&gt;number_value)&quot;</span><span class="p">;</span>
+        <span class="k">return</span> <span class="s2">&quot;js_new_number(js_to_number(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;).as.number)&quot;</span><span class="p">;</span>
 
       <span class="k">case</span> <span class="s2">&quot;-&quot;</span><span class="o">:</span>
-        <span class="k">return</span> <span class="s2">&quot;js_new_number(-1 * js_to_number(&quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)-&gt;number_value)&quot;</span><span class="p">;</span>
+        <span class="k">return</span> <span class="s2">&quot;js_new_number(-1 * js_to_number(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;).as.number)&quot;</span><span class="p">;</span>
 
       <span class="k">default</span><span class="o">:</span>
         <span class="k">throw</span> <span class="s2">&quot;Unsupported operator: &quot;</span> <span class="o">+</span> <span class="nx">node</span><span class="p">.</span><span class="nx">operator</span><span class="p">();</span>
@@ -358,16 +536,18 @@ Please note this function will modify the tree in-place.</p>             </td>  
 
   <span class="kd">var</span> <span class="nx">newExpression</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
     <span class="kd">var</span> <span class="nx">fun</span><span class="p">;</span>
-    <span class="kd">var</span> <span class="nx">argValues</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">args</span><span class="p">;</span>
 
     <span class="k">if</span> <span class="p">(</span><span class="nx">node</span> <span class="k">instanceof</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Invocation</span><span class="p">)</span> <span class="p">{</span>
       <span class="nx">fun</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">expression</span><span class="p">();</span>
-      <span class="nx">argValues</span> <span class="o">=</span> <span class="nx">toCList</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">expression</span><span class="p">));</span>
+      <span class="nx">args</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">args</span><span class="p">().</span><span class="nx">map</span><span class="p">(</span><span class="nx">expression</span><span class="p">);</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
       <span class="nx">fun</span> <span class="o">=</span> <span class="nx">node</span><span class="p">;</span>
-      <span class="nx">argValues</span> <span class="o">=</span> <span class="s2">&quot;NULL&quot;</span><span class="p">;</span>
+      <span class="nx">args</span> <span class="o">=</span> <span class="p">[];</span>
     <span class="p">}</span>
-    <span class="k">return</span> <span class="s2">&quot;js_invoke_constructor(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">fun</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span> <span class="o">+</span> <span class="nx">argValues</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">withStackArgs</span><span class="p">(</span><span class="nx">args</span><span class="p">,</span>
+      <span class="s2">&quot;js_invoke_constructor(env, &quot;</span> <span class="o">+</span> <span class="nx">expression</span><span class="p">(</span><span class="nx">fun</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span> <span class="o">+</span> <span class="nx">args</span><span class="p">.</span><span class="nx">length</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+    <span class="p">);</span>
   <span class="p">};</span>
 
   <span class="kd">var</span> <span class="nx">addTemplate</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">program</span><span class="p">)</span> <span class="p">{</span>
@@ -375,16 +555,21 @@ Please note this function will modify the tree in-place.</p>             </td>  
       <span class="s1">&#39;#include &lt;stdio.h&gt;\n&#39;</span> <span class="o">+</span>
       <span class="s1">&#39;#include &quot;src/js.c&quot;\n&#39;</span> <span class="o">+</span>
       <span class="nx">functions</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;\n&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\n&quot;</span> <span class="o">+</span>
-      <span class="s1">&#39;int main() {\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;int main(int argc, char** argv) {\n&#39;</span> <span class="o">+</span>
       <span class="s1">&#39;  JSEnv* env = malloc(sizeof(JSEnv));\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  env-&gt;call_stack_count = 0;\n&#39;</span> <span class="o">+</span>
       <span class="s1">&#39;  env-&gt;exceptions_count = 0;\n&#39;</span> <span class="o">+</span>
-      <span class="s1">&#39;  env-&gt;global = js_new_bare_object();\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  env-&gt;global = js_object_value_from_object(object_new(NULL));\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  js_gc_setup(env);\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  js_gc_save_object(env, env-&gt;global.as.object);\n&#39;</span> <span class="o">+</span>
       <span class="s1">&#39;  js_create_native_objects(env);\n&#39;</span> <span class="o">+</span>
-      <span class="s1">&#39;  Dict binding = dict_create();\n&#39;</span> <span class="o">+</span>
-      <span class="s1">&#39;  js_dump_value(&#39;</span> <span class="o">+</span> <span class="nx">program</span> <span class="o">+</span> <span class="s1">&#39;);\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  js_create_argv(env, argc, argv);\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  JSObject* binding = NULL;\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  JSValue this = js_new_undefined();\n&#39;</span> <span class="o">+</span>
+      <span class="s1">&#39;  &#39;</span> <span class="o">+</span> <span class="nx">program</span> <span class="o">+</span> <span class="s1">&#39;;\n&#39;</span> <span class="o">+</span>
       <span class="s1">&#39;  return 0;\n&#39;</span> <span class="o">+</span>
       <span class="s1">&#39;}\n&#39;</span><span class="p">;</span>
-  <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>Wrap program statements in try {} block and anonymous function invocation.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">program</span> <span class="o">=</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Invocation</span><span class="p">(</span><span class="nx">AST</span><span class="p">.</span><span class="nx">FunctionLiteral</span><span class="p">([],</span>
+  <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Wrap program statements in try {} block and anonymous function invocation.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">program</span> <span class="o">=</span> <span class="nx">AST</span><span class="p">.</span><span class="nx">Invocation</span><span class="p">(</span><span class="nx">AST</span><span class="p">.</span><span class="nx">FunctionLiteral</span><span class="p">([],</span>
     <span class="p">[</span><span class="nx">AST</span><span class="p">.</span><span class="nx">TryStatement</span><span class="p">(</span>
       <span class="nx">ast</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">,</span>
       <span class="p">[</span><span class="nx">AST</span><span class="p">.</span><span class="nx">ExpressionStatement</span><span class="p">(</span>
