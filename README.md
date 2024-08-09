@@ -2,7 +2,7 @@
 
 A toy compiler for a subset of JavaScript.
 
-You can read [annotated source](http://jdudek.github.com/tatende-js/) (incomplete).
+You can read [annotated source](http://jdudek.github.io/tatende-js/) (incomplete).
 
 ## Requirements
 
